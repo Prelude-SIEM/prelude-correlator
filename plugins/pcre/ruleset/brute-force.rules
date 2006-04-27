@@ -1,0 +1,56 @@
+# Detect brute force attempt by address (1 of 2)
+# This rule looks for all classifications that match login or authentication
+# attempts, and creates a record of their idents, then resets the ident timer
+# to 600 seconds.
+#
+# Detect brute force attempt by address (2 of 2)
+# This rule looks for all classifications that match login or authentication
+# attempts, and detects when they exceed a certain threshold.  It then uses
+# the ident context above to create an alert.
+
+pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
+	  assessment.impact.completion: failed; \
+	  source(0).node.address(0).address: (.*); \
+	  target(0).node.address(0).address: (.*); \
+	  messageid: (.+); \
+	  analyzer(-2).analyzerid: (.*)
+pre_action = correlation_alert.alertident(>>).alertident=$3; \
+             correlation_alert.alertident(>>).analyzerid=$4
+new_context = BRUTE_SOURCE_TARGET_$1_$2; expire: 600; threshold: 10;
+optional_context = BRUTE_SOURCE_TARGET_$1_$2
+action = classification.text=Brute force attack; \
+	 assessment.impact.severity=high; \
+	 assessment.impact.description=Multiple failed attempts have been made to login to a user account; \
+	 correlation_alert.name=Multiple failed login; \
+	 additional_data(>>).data = ignore_atomic_event
+destroy_context = BRUTE_SOURCE_TARGET_$1_$2
+
+
+
+# Detect brute force attempt by user (1 of 2)
+# This rule looks for all classifications that match login or authentication
+# attempts, and creates a record of their idents, then resets the ident timer
+# to 600 seconds.
+#
+# Detect brute force attempt by user (2 of 2)
+# This rule looks for all classifications that match login or authentication
+# attempts, and detects when they exceed a certain threshold.  It then uses
+# the ident context above to create an alert.
+
+pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
+	  assessment.impact.completion: failed; \
+          target(0).user.user_id(0).name: (.*); \
+          messageid: (.+); \
+          analyzer(-2).analyzerid: (.*)
+
+pre_action = correlation_alert.alertident(>>).alertident=$2;
+             correlation_alert.alertident(-1).analyzerid=$3
+
+new_context = BRUTE_USER_$1; expire: 600; threshold: 30
+optional_context = BRUTE_USER_$1
+
+action = classification.text=Brute force attack; \
+         assessment.impact.severity=high; \
+         assessment.impact.description=Multiple failed attempts have been made to login to a user account; \
+         correlation_alert.name=Multiple failed login; \
+         additional_data(>>).data = ignore_atomic_event

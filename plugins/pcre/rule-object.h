@@ -21,6 +21,8 @@
 *
 *****/
 
+#include "capture-string.h"
+
 typedef struct rule_object_list rule_object_list_t;
 
 int rule_object_add(rule_object_list_t *olist,
@@ -29,7 +31,7 @@ int rule_object_add(rule_object_list_t *olist,
 
 int rule_object_build_message(pcre_rule_t *rule,
                               rule_object_list_t *olist, idmef_message_t **message,
-                              idmef_message_t *idmef_input, char **capture, size_t capture_size);
+                              idmef_message_t *idmef_input, capture_string_t *capture);
 
 rule_object_list_t *rule_object_list_new(void);
 

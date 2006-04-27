@@ -161,21 +161,28 @@ static int parse_value(value_container_t *vcont, const char *line)
 
 
 
-static void resolve_referenced_value(prelude_string_t *outstr, value_item_t *vitem, char **capture, size_t capture_size)
+static void resolve_referenced_value(prelude_string_t *outstr, value_item_t *vitem, capture_string_t *capture)
 {
-        if ( (vitem->refno - 1) < 0 || (vitem->refno - 1) >= capture_size ) {
-                prelude_log(PRELUDE_LOG_ERR, "Invalid reference: %d (max is %lu).\n", vitem->refno, capture_size);
+        unsigned int index;
+        
+        index = capture_string_get_index(capture);
+        
+        if ( (vitem->refno - 1) < 0 || (vitem->refno - 1) >= index ) {
+                prelude_log(PRELUDE_LOG_ERR, "Invalid reference: %d (max is %u).\n", vitem->refno, index);
                 return;
         }
-        
-        if ( capture[vitem->refno - 1] )
-                prelude_string_cat(outstr, capture[vitem->refno - 1]);
+
+
+        if ( ! capture_string_is_element_string(capture, vitem->refno - 1) )
+                printf("ITEM IS NOT STRING\n");
+        else
+                prelude_string_cat(outstr, capture_string_get_element(capture, vitem->refno - 1));
 }
 
 
 
 prelude_string_t *value_container_resolve(value_container_t *vcont, const pcre_rule_t *rule,
-                                          char **capture, size_t capture_size)
+                                          capture_string_t *capture)
 {
         int ret;
         value_item_t *vitem;
@@ -192,7 +199,7 @@ prelude_string_t *value_container_resolve(value_container_t *vcont, const pcre_r
                 vitem = prelude_list_entry(tmp, value_item_t, list);
                 
                 if ( vitem->refno != -1 )
-                        resolve_referenced_value(str, vitem, capture, capture_size);
+                        resolve_referenced_value(str, vitem, capture);
                 
                 else if ( prelude_string_cat(str, vitem->value) < 0 ) {
                         prelude_string_destroy(str);

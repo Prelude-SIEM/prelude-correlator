@@ -43,7 +43,6 @@
 #include "rule-regex.h"
 
 
-
 #ifndef MIN
 # define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #endif
@@ -67,6 +66,15 @@ struct rule_regex {
 typedef struct {
         idmef_message_t *idmef;
 } pcre_state_t;
+
+
+struct exec_pcre_cb_data {
+        capture_string_t *capture;
+        prelude_string_t *subject;
+        rule_regex_t *regex;
+        pcre_rule_t *rule;
+        int ovector[MAX_REFERENCE_PER_RULE * 3];
+};
 
 
 
@@ -100,28 +108,79 @@ static int do_pcre_exec(rule_regex_t *item, int *real_ret,
 
 
 
-static int listed_value_cb(idmef_value_t *value, void *extra)
+static int exec_pcre_cb(void *ptr)
+{
+        char buf[1024];
+        int ret, real_ret, i;
+        struct exec_pcre_cb_data *data = ptr;
+                
+        /*
+         * arg:
+         * - subject
+         */
+        
+        ret = do_pcre_exec(data->regex, &real_ret, prelude_string_get_string(data->subject),
+                           prelude_string_get_len(data->subject), data->ovector,
+                           sizeof(data->ovector) / sizeof(*data->ovector));
+        if ( ret < 0 )
+                return ret;
+        
+        prelude_log_debug(5, "id=%d regex=%s path=%s value=%s ret=%d (real=%d)\n", data->rule->id,
+                          data->regex->regex_string, idmef_path_get_name(data->regex->path, -1),
+                          prelude_string_get_string(data->subject), ret, real_ret);
+                        
+        for ( i = 1; i < ret; i++ ) {                        
+                pcre_copy_substring(prelude_string_get_string(data->subject),
+                                    data->ovector, real_ret, i, buf, sizeof(buf));
+                
+                capture_string_add_string(data->capture, buf);
+        }
+
+        return i;
+}
+
+
+
+static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
 {
         int ret;
+        struct exec_pcre_cb_data *data = extra;
         
-        if ( ! prelude_string_is_empty(extra) )
-                prelude_string_cat(extra, ",");
-        
-        ret = idmef_value_to_string(value, extra);
-        if ( ret < 0 ) {
-                prelude_perror(ret, "error converting value to string");
-                return ret;
+        if ( idmef_value_is_list(value) ) {
+                struct exec_pcre_cb_data data2;
+
+                memcpy(&data2, extra, sizeof(data2));
+                capture_string_new(data2.capture, &data2.capture);
+                
+                ret = idmef_value_iterate(value, maybe_listed_value_cb, &data2);
         }
+
+        else {
+                prelude_string_clear(data->subject);
+                
+                ret = idmef_value_to_string(value, data->subject);
+                if ( ret < 0 ) {
+                        prelude_perror(ret, "error converting value to string");
+                        return ret;
+                }
+
+                ret = exec_pcre_cb(extra);
+        }
+        
 
         return ret;
 }
 
 
 
-static int get_regex_subject(rule_regex_t *regex, idmef_message_t *idmef, prelude_string_t *outstr)
+
+static int get_regex_subject(pcre_rule_t *rule,
+                             rule_regex_t *regex, idmef_message_t *idmef,
+                             capture_string_t *capture, prelude_string_t *outstr)
 {
         int ret;
         idmef_value_t *value;
+        struct exec_pcre_cb_data data;
         
         ret = idmef_path_get(regex->path, idmef, &value);
         if ( ret < 0 ) {
@@ -129,39 +188,30 @@ static int get_regex_subject(rule_regex_t *regex, idmef_message_t *idmef, prelud
                 return ret;
         }
 
-        else if ( ret == 0 )
+        data.rule = rule;
+        data.regex = regex;
+        data.subject = outstr;
+        data.capture = capture;
+                
+        if ( ret == 0 ) {
                 prelude_string_set_constant(outstr, "");
-
-        else if ( idmef_value_is_list(value) ) {
-                printf("VALUE IS LIST\n");
-                idmef_value_iterate(value, listed_value_cb, outstr);
-                
-        } else {     
-                ret = idmef_value_to_string(value, outstr);
-                idmef_value_destroy(value);
-                
-                if ( ret < 0 ) {
-                        prelude_perror(ret, "error converting value to string");
-                        return ret;
-                }
+                return exec_pcre_cb(&data);
         }
+        
+        ret = maybe_listed_value_cb(value, &data);
+        idmef_value_destroy(value);
 
-        return 0;
+        return ret;
 }
 
 
 
-static int exec_regex(pcre_rule_t *rule, idmef_message_t *input,
-                      char **capture, size_t *capture_size)
+static int exec_regex(pcre_rule_t *rule, idmef_message_t *input, capture_string_t *capture)
 {
-        char buf[1024];
+        int ret;
         rule_regex_t *item;
         prelude_list_t *tmp;
         prelude_string_t *subject;
-        size_t max_capsize = *capture_size;
-        int ovector[MAX_REFERENCE_PER_RULE * 3], osize = sizeof(ovector) / sizeof(int), real_ret, ret, i = 0;
-
-        *capture_size = 0;
         
         ret = prelude_string_new(&subject);
         if ( ret < 0 )
@@ -170,45 +220,28 @@ static int exec_regex(pcre_rule_t *rule, idmef_message_t *input,
         prelude_list_for_each(&rule->regex_list, tmp) {
                 item = prelude_linked_object_get_object(tmp);
 
-                ret = get_regex_subject(item, input, subject);
+                ret = get_regex_subject(rule, item, input, capture, subject);
                 if ( ret < 0 ) {
                         prelude_string_destroy(subject);
                         return ret;
-                }
-
-                ret = do_pcre_exec(item, &real_ret, prelude_string_get_string(subject),
-                                   prelude_string_get_len(subject), ovector, osize);
-                
-                prelude_log_debug(5, "id=%d regex=%s path=%s value=%s ret=%d (real=%d)\n", rule->id, item->regex_string,
-                                  idmef_path_get_name(item->path, -1), prelude_string_get_string(subject), ret, real_ret);
-                if ( ret < 0 ) {
-                        prelude_string_destroy(subject);
-                        return -1;
-                }
-                                
-                for ( i = 1; i < ret && *capture_size < max_capsize; i++ ) {                        
-                        pcre_copy_substring(prelude_string_get_string(subject), ovector, real_ret, i, buf, sizeof(buf));
-
-                        prelude_log_debug(5, "capture[%d] = %s\n", *capture_size, buf);
-                        capture[(*capture_size)++] = strdup(buf);
                 }
 
                 prelude_string_clear(subject);
         }
 
         prelude_string_destroy(subject);
-        return *capture_size;
+        return 0;
 }
 
 
 
 static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *plugin,
-                                      pcre_rule_t *rule, char **capture, size_t capture_size)
+                                      pcre_rule_t *rule, capture_string_t *capture)
 {
         pcre_context_t *ctx;
         prelude_string_t *str;
         
-        str = value_container_resolve(vcont, rule, capture, capture_size);
+        str = value_container_resolve(vcont, rule, capture);
         if ( ! str )
                 return NULL;
         
@@ -219,18 +252,10 @@ static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *p
 }
 
 
-static void free_capture(char **capture, size_t capture_size)
-{
-        size_t i;
-
-        for ( i = 0; i < capture_size; i++ )
-                free(capture[i]);
-}
-
 
 static void create_context_if_needed(pcre_context_t **used_ctx, value_container_t **used_vcont,
                                      pcre_plugin_t *plugin, pcre_rule_t *rule,
-                                     pcre_state_t *state, char **capture, size_t capture_size)
+                                     pcre_state_t *state, capture_string_t *capture)
 {
         prelude_list_t *tmp;
         prelude_string_t *str;
@@ -240,7 +265,7 @@ static void create_context_if_needed(pcre_context_t **used_ctx, value_container_
         prelude_list_for_each(&rule->create_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
                         
-                str = value_container_resolve(vcont, rule, capture, capture_size);
+                str = value_container_resolve(vcont, rule, capture);
                 if ( ! str )
                         continue;
 
@@ -257,7 +282,7 @@ static void create_context_if_needed(pcre_context_t **used_ctx, value_container_
 
 static int check_context(pcre_context_t **used_context, value_container_t **used_vcont,
                          pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
-                         idmef_message_t *input, char **capture, size_t csize)
+                         idmef_message_t *input, capture_string_t *capture)
 {
         prelude_list_t *tmp;
         value_container_t *vcont;
@@ -268,12 +293,12 @@ static int check_context(pcre_context_t **used_context, value_container_t **used
         
         prelude_list_for_each(&rule->not_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
-                if ( lookup_context(vcont, plugin, rule, capture, csize) )
+                if ( lookup_context(vcont, plugin, rule, capture) )
                         return -1;
         }
                 
         if ( rule->required_context ) {
-                ctx = lookup_context(rule->required_context, plugin, rule, capture, csize);                
+                ctx = lookup_context(rule->required_context, plugin, rule, capture);                
                 if ( ! ctx )
                         return -1;
                 
@@ -282,7 +307,7 @@ static int check_context(pcre_context_t **used_context, value_container_t **used
         }
 
         if ( rule->optional_context ) {
-                ctx = lookup_context(rule->optional_context, plugin, rule, capture, csize);
+                ctx = lookup_context(rule->optional_context, plugin, rule, capture);
                 if ( ctx )                
                         state->idmef = idmef_message_ref(pcre_context_get_idmef(ctx));
 
@@ -306,7 +331,7 @@ static void destroy_idmef_state(pcre_state_t *state)
 
 
 
-static void destroy_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule, char **capture, size_t capture_size)
+static void destroy_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule, capture_string_t *capture)
 {
         pcre_context_t *ctx;
         prelude_list_t *tmp;
@@ -316,7 +341,7 @@ static void destroy_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule, 
         prelude_list_for_each(&rule->destroy_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
                 
-                str = value_container_resolve(vcont, rule, capture, capture_size);
+                str = value_container_resolve(vcont, rule, capture);
                 if ( ! str )
                         continue;
 
@@ -343,12 +368,13 @@ static int match_rule_list(pcre_plugin_t *plugin,
         pcre_rule_t *rule = rc->rule;
         pcre_rule_container_t *child;
         value_container_t *vcont = NULL;
-        char *capture[MAX_REFERENCE_PER_RULE];
-        size_t capture_size = MAX_REFERENCE_PER_RULE;
+        capture_string_t *capture;
+
+        capture_string_new(NULL, &capture);
         
-        ret = exec_regex(rule, input, capture, &capture_size);
+        ret = exec_regex(rule, input, capture);
         if ( ret < 0 ) {
-                free_capture(capture, capture_size);
+                capture_string_destroy(capture);
                 return -1;
         }
         
@@ -358,7 +384,7 @@ static int match_rule_list(pcre_plugin_t *plugin,
                 ret = match_rule_list(plugin, child, state, input, &gl);
                 if ( ret < 0 && ! child->optional ) {
                         destroy_idmef_state(state);
-                        free_capture(capture, capture_size);
+                        capture_string_destroy(capture);
                         return -1;
                 }
 
@@ -372,45 +398,45 @@ static int match_rule_list(pcre_plugin_t *plugin,
                 
         if ( optmatch < rule->min_optgoto_match ) {
                 destroy_idmef_state(state);
-                free_capture(capture, capture_size);
+                capture_string_destroy(capture);
                 return -1;
         }
 
         /*
          * Current rule and sub-rules matched, verify contexts.
          */
-        ret = check_context(&ctx, &vcont, plugin, rule, state, input, capture, capture_size);
+        ret = check_context(&ctx, &vcont, plugin, rule, state, input, capture);
         if ( ret < 0 ) {
                 destroy_idmef_state(state);
-                free_capture(capture, capture_size);
+                capture_string_destroy(capture);
                 return -1;
         }
 
         /*
          * Context verification succeeded, build the pre_action stuff.
          */
-        ret = rule_object_build_message(rule, rule->pre_action_object_list, &state->idmef, input, capture, capture_size);
+        ret = rule_object_build_message(rule, rule->pre_action_object_list, &state->idmef, input, capture);
         if ( ret < 0 ) {
                 destroy_idmef_state(state);
-                free_capture(capture, capture_size);
+                capture_string_destroy(capture);
                 return ret;
         }
         
-        create_context_if_needed(&ctx, &vcont, plugin, rule, state, capture, capture_size);
+        create_context_if_needed(&ctx, &vcont, plugin, rule, state, capture);
         
         if ( ctx && vcont ) {
                 ret = pcre_context_check_correlation(ctx, value_container_get_data(vcont));
                 if ( ret < 0 ) {
                         destroy_idmef_state(state);
-                        free_capture(capture, capture_size);
+                        capture_string_destroy(capture);
                         return -1;
                 }
         }
         
-        ret = rule_object_build_message(rule, rule->action_object_list, &state->idmef, input, capture, capture_size);
+        ret = rule_object_build_message(rule, rule->action_object_list, &state->idmef, input, capture);
         if ( ret < 0 ) {
                 destroy_idmef_state(state);
-                free_capture(capture, capture_size);
+                capture_string_destroy(capture);
                 return ret;
         }
         
@@ -427,8 +453,8 @@ static int match_rule_list(pcre_plugin_t *plugin,
                         *match_flags |= PCRE_MATCH_FLAGS_LAST;
         }
         
-        destroy_context_if_needed(plugin, rule, capture, capture_size);
-        free_capture(capture, capture_size);
+        destroy_context_if_needed(plugin, rule, capture);
+        capture_string_destroy(capture);
         
         return 0;
 }

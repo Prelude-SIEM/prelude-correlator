@@ -1,6 +1,6 @@
 /*****
 *
-* Copyright (C) 2006 PreludeIDS Technologies. All Rights Reserved.
+* Copyright (C) 2005 PreludeIDS Technologies. All Rights Reserved.
 * Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 *
 * This file is part of the Prelude-LML program.
@@ -21,24 +21,21 @@
 *
 *****/
 
-#ifndef VALUE_CONTAINER_H
-#define VALUE_CONTAINER_H
+#ifndef _CAPTURE_STRING_H
+#define _CAPTURE_STRING_H
 
-#include "capture-string.h"
+typedef struct capture_string capture_string_t;
 
-typedef struct value_container value_container_t;
+int capture_string_add_string(capture_string_t *capture, const char *string);
 
-int value_container_new(value_container_t **vcont, const char *str);
+int capture_string_new(capture_string_t *parent, capture_string_t **new);
 
-void value_container_destroy(value_container_t *vcont);
+void *capture_string_get_element(capture_string_t *root, unsigned int index);
 
-void value_container_reset(value_container_t *vcont);
+prelude_bool_t capture_string_is_element_string(capture_string_t *root, unsigned int index);
 
-void *value_container_get_data(value_container_t *vcont);
+void capture_string_destroy(capture_string_t *root);
 
-void value_container_set_data(value_container_t *vcont, void *data);
-
-prelude_string_t *value_container_resolve(value_container_t *vcont, const pcre_rule_t *rule,
-                                          capture_string_t *capture);
+unsigned int capture_string_get_index(capture_string_t *root);
 
 #endif

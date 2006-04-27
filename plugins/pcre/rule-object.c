@@ -118,7 +118,7 @@ static idmef_value_t *build_message_object_value(pcre_rule_t *rule, rule_object_
 
 
 int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idmef_message_t **message,
-                              idmef_message_t *idmef_in, char **capture, size_t capture_size)
+                              idmef_message_t *idmef_in, capture_string_t *capture)
 {
         int ret;
         prelude_list_t *tmp;
@@ -138,7 +138,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
         prelude_list_for_each(&olist->rule_object_list, tmp) {
                 rule_object = prelude_list_entry(tmp, rule_object_t, list);
 
-                strbuf = value_container_resolve(rule_object->vcont, rule, capture, capture_size);
+                strbuf = value_container_resolve(rule_object->vcont, rule, capture);
                 if ( ! strbuf )
                         continue;
 

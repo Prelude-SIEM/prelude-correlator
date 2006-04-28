@@ -20,6 +20,7 @@ static unsigned long message_processed = 0;
 static volatile sig_atomic_t got_signal = 0;
 
 
+static prelude_bool_t dry_run = FALSE;
 static prelude_client_t *client = NULL;
 static prelude_io_t *print_input_fd = NULL;
 static prelude_io_t *print_output_fd = NULL;
@@ -116,6 +117,13 @@ static int set_debug_level(prelude_option_t *opt, const char *optarg, prelude_st
 }
 
 
+static int set_dry_run(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
+{
+        dry_run = TRUE;
+        return 0;
+}
+
+
 static int init_options(prelude_option_t *ropt, int argc, char **argv)
 {
         int ret;
@@ -124,6 +132,10 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 'h', "help",
                            "Print this help", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_print_help, NULL);
+
+        prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "dry-run",
+                           "No report to the specified Manager will occur.", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
+                           set_print_input, NULL);
         
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "print-input",
                            "Dump alert input from manager to the specified file", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
@@ -310,7 +322,7 @@ static void setup_signal(void)
 
 void correlation_alert_emit(idmef_message_t *idmef)
 {        
-        if ( client )
+        if ( ! dry_run )
                 prelude_client_send_idmef(client, idmef);
         
         if ( print_output_fd )
@@ -352,21 +364,21 @@ int main(int argc, char **argv)
                 prelude_perror(ret, "error creating prelude client");
                 return -1;
         }
-        
+
         prelude_client_set_required_permission(client, PRELUDE_CONNECTION_PERMISSION_IDMEF_READ|
                                                PRELUDE_CONNECTION_PERMISSION_IDMEF_WRITE);
         
         analyzer = prelude_client_get_analyzer(client);
-
+        
         prelude_string_new_constant(&str, ANALYZER_MODEL);
         idmef_analyzer_set_model(analyzer, str);
-
+        
         prelude_string_new_constant(&str, ANALYZER_CLASS);
         idmef_analyzer_set_model(analyzer, str);
-
+        
         prelude_string_new_constant(&str, VERSION);
         idmef_analyzer_set_model(analyzer, str);
-
+        
         ret = prelude_client_start(client);
         if ( ret < 0 ) {
                 prelude_perror(ret, "error starting prelude client");

@@ -16,7 +16,7 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  analyzer(-2).analyzerid: (.*)
 pre_action = correlation_alert.alertident(>>).alertident=$3; \
              correlation_alert.alertident(>>).analyzerid=$4
-new_context = BRUTE_SOURCE_TARGET_$1_$2; expire: 600; threshold: 10;
+new_context = BRUTE_SOURCE_TARGET_$1_$2; expire: 600; threshold: 4;
 optional_context = BRUTE_SOURCE_TARGET_$1_$2
 action = classification.text=Brute force attack; \
 	 assessment.impact.severity=high; \

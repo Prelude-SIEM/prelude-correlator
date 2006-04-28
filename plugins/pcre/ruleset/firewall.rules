@@ -35,7 +35,8 @@ pattern = classification.text: [Pp]acket [Dd]ropped|[Dd]enied; \
 	  analyzer(-2).analyzerid: (.*); \
 	  messageid: (.*);
 set_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4; expire:10;
-silent; last;
+silent
+last
 
 
 
@@ -53,7 +54,8 @@ pattern = source(0).node.address(0).address: (.+); \
 not_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4;
 new_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4; expire:10; alert_on_expire;
 action = correlation_alert.name=No firewall drop reported; \
- 	 correlation_alert.alertident(0).analyzerid=$5; \
- 	 correlation_alert.alertident(0).alertident=$6; \
- 	 additional_data(>>).data = ignore_atomic_event;
-silent; last;
+ 	 correlation_alert.alertident(0).analyzerid=$5;  \
+ 	 correlation_alert.alertident(0).alertident=$6;  \
+ 	 additional_data(>>).data = ignore_atomic_event; 
+silent
+last

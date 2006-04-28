@@ -119,5 +119,5 @@ void pcre_context_destroy(pcre_context_t *ctx);
 
 idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx);
 
-int pcre_context_check_correlation(pcre_context_t *ctx, pcre_context_setting_t *setting);
+int pcre_context_check_correlation(pcre_context_t *ctx);
 

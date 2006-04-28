@@ -104,7 +104,7 @@ static int parse_key_and_value(char *input, char **key, char **value)
         /*
          * strip whitespace at the tail of the key.
          */
-        while ( tmp && (*tmp == '=' || *tmp == ':' || isspace((int) *tmp)) )
+        while ( tmp && (*tmp == '=' || *tmp == ':' || *tmp == ';' || isspace((int) *tmp)) )
                 *tmp-- = '\0';
 
         if ( ! ptr )
@@ -348,7 +348,7 @@ static int _parse_create_context(pcre_rule_t *rule, const char *arg, pcre_contex
         pcs->flags = flags;
 
         while ( (ret = parse_multiple_key_and_value(&arg, &key, &value)) == 1 ) {                
-                                
+                
                 if ( ! cname )
                         cname = key;
                 
@@ -610,7 +610,7 @@ static int parse_rule_keyword(pcre_plugin_t *plugin, pcre_rule_t *rule,
         for ( i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++ ) {
                 if ( strcmp(keyword, keywords[i].keyword) != 0 )
                         continue;
-                
+
                 if ( keywords[i].func(plugin, rule, value) < 0 ) {
                         prelude_log(PRELUDE_LOG_WARN, "%s:%d: error parsing value for '%s'.\n", filename, line, keyword);
                         return -1;
@@ -729,8 +729,7 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, const char
         int first_directive = 1;
         pcre_rule_t *rule = NULL;
         
-        while ( prelude_read_multiline(fd, &line, buf, sizeof(buf)) == 0 ) {
-                
+        while ( prelude_read_multiline(fd, &line, buf, sizeof(buf)) == 0 ) {                
                 ptr = buf + strlen(buf) - 1;
                 if ( *ptr == '\n' )
                         *ptr = '\0'; /* strip \n */
@@ -946,7 +945,7 @@ static void _pcre_context_destroy(pcre_context_t *ctx)
 
 
 void pcre_context_destroy(pcre_context_t *ctx)
-{        
+{
         if ( ctx->setting->flags & PCRE_CONTEXT_SETTING_FLAGS_ALERT_ON_DESTROY && ctx->idmef ) {
                 prelude_log_debug(1, "[%s]: emit alert on destroy.\n", ctx->name);
                 correlation_alert_emit(ctx->idmef);
@@ -978,8 +977,10 @@ idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx)
 
 
 
-int pcre_context_check_correlation(pcre_context_t *ctx, pcre_context_setting_t *setting)
+int pcre_context_check_correlation(pcre_context_t *ctx)
 {
+        pcre_context_setting_t *setting = ctx->setting;
+        
         if ( ! setting )
                 return 0;
 
@@ -1007,13 +1008,10 @@ int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
                                 pcre_context_destroy(ctx);
                         } else {
                                 prelude_log_debug(1, "[%s]: already exist, create only specified.\n", name);
-                                return 0;
+                                return -2;
                         }
                 }
         }
-        
-        prelude_log_debug(1, "[%s]: creating context (expire=%ds cthresh=%d).\n", name, setting->timeout,
-                          setting->correlation_threshold);
         
         *out = ctx = calloc(1, sizeof(*ctx));
         if ( ! ctx ) {
@@ -1021,6 +1019,9 @@ int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
                 return -1;
         }
 
+        prelude_log_debug(1, "[%s]: creating context (expire=%ds cthresh=%d).\n", name, setting->timeout,
+                          setting->correlation_threshold);
+        
         ctx->name = strdup(name);
         if ( ! ctx->name ) {
                 free(ctx);

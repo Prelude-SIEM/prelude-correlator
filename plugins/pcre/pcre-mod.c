@@ -543,7 +543,7 @@ static int parse_include(pcre_rule_t *rule, pcre_plugin_t *plugin, const char *v
 
         fd = fopen(filename, "r");
         if ( ! fd ) {
-                prelude_log(PRELUDE_LOG_ERR, "couldn't open %s for reading.\n", filename);
+                prelude_log(PRELUDE_LOG_ERR, "couldn't open %s for reading: %s.\n", filename, strerror(errno));
                 return -1;
         }
         
@@ -872,7 +872,7 @@ static int set_pcre_ruleset(prelude_option_t *opt, const char *optarg, prelude_s
         
         fd = fopen(optarg, "r");
         if ( ! fd ) {
-                prelude_string_sprintf(err, "couldn't open %s for reading", optarg);
+                prelude_string_sprintf(err, "couldn't open %s for reading: %s", optarg, strerror(errno));
                 return -1;
         }
 

@@ -1,0 +1,78 @@
+#####
+#
+# Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
+# All Rights Reserved.
+#
+# This file is part of the Prelude-Correlator program.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#####
+
+# Previously unknown worm-like activity (1 of 3)
+# This rule looks for events against a host, records the messageid, then sets
+# a timer of 600 seconds. Future events against the same host of the same type
+# extend this timer.
+pattern = messageid: (\d+); \
+          analyzer(-1).analyzerid: (.*); \
+          analyzer(-2).analyzerid: (.*); \
+          classification.text: (.+); \
+          target(0).node.address(0).address: (.+)
+pre_action = correlation_alert.alertident(>>).alertident=$1; \
+     	     correlation_alert.alertident(-1).analyzerid=%analyzerid;
+
+new_context = WORM_HOST_$5_$4; expire: 600; threshold: 5
+
+#action=eval %analyzerid ("$2" || "$3"); \
+#       add WORM_HOST_IDENT_$5_$4 %s; \
+#       set WORM_HOST_IDENT_$5_$4 600
+
+# Previously unknown worm-like activity (2 of 3)
+# This rule records events being played from a host against other hosts, but
+# only if that same event has been seen played against that host within the
+# timer period, and records the messageid.  It doesn't interact with the timer
+# otherwise.
+pattern=messageid: (\d+); \
+        analyzer(-1).analyzerid: (.*); \
+        analyzer(-2).analyzerid: (.*); \
+        classification.text: (.+); \
+        source(0).node.address(0).address: (.+)
+context=WORM_HOST_$5_$4
+continue=TakeNext
+desc=correlation_alert.alertident(>>).alertident=$1; \
+     correlation_alert.alertident(-1).analyzerid=%analyzerid
+action=eval %analyzerid ("$2" || "$3"); \
+       add WORM_HOST_IDENT_$5_$4 %s
+
+# Previously unknown worm-like activity (3 of 3)
+# This rule looks for 5 matches of an event being played by a host against
+# other hosts, but only if that same event was played against the host within
+# the timer period above.
+pattern=classification.text: (.+); \
+        source(0).node.address(0).address: (.+)
+context=WORM_HOST_$2_$1
+continue=TakeNext
+desc=assessment.impact.severity=high; \
+     assessment.impact.description=$2 has repeated actions taken against it recently at least 5 times.  It may have been infected with a worm.; \
+     correlation_alert.name=Possible Worm Activity
+action=copy WORM_HOST_IDENT_$2_$1 %ALERT_IDENTS; \
+       delete WORM_HOST_IDENT_$2_$1; \
+       add IDMEF_MESSAGE %s; \
+       add IDMEF_MESSAGE %ALERT_IDENTS; \
+       copy IDMEF_MESSAGE %IDMEF_MESSAGE; \
+       delete IDMEF_MESSAGE; \
+       prelude %IDMEF_MESSAGE
+thresh=5
+window=600

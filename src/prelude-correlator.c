@@ -135,7 +135,7 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
 
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "dry-run",
                            "No report to the specified Manager will occur.", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
-                           set_print_input, NULL);
+                           set_dry_run, NULL);
         
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "print-input",
                            "Dump alert input from manager to the specified file", PRELUDE_OPTION_ARGUMENT_OPTIONAL,

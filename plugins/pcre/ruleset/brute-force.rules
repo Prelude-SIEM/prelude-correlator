@@ -70,10 +70,10 @@ pre_action = correlation_alert.alertident(>>).alertident=$2;
              correlation_alert.alertident(-1).analyzerid=$3
 
 new_context = BRUTE_USER_$1; expire: 600; threshold: 30
-optional_context = BRUTE_USER_$1
+optional_context = BRUTE_USER_$1;
 
 action = classification.text=Brute force attack; \
          assessment.impact.severity=high; \
          assessment.impact.description=Multiple failed attempts have been made to login to a user account; \
-         correlation_alert.name=Multiple failed login; \
-         additional_data(>>).data = ignore_atomic_event
+         correlation_alert.name = Multiple failed login; \
+	 additional_data(>>).data = ignore_atomic_event

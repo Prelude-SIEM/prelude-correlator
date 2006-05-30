@@ -53,9 +53,9 @@ pattern = source(0).node.address(0).address: (.+); \
  	  messageid: (.*);
 not_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4;
 new_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4; expire:10; alert_on_expire;
-action = correlation_alert.name=No firewall drop reported; \
+action = classification.text = No firewall drop reported; \
+	 correlation_alert.name = Events to firewall correlation; \
  	 correlation_alert.alertident(0).analyzerid=$5;  \
  	 correlation_alert.alertident(0).alertident=$6;  \
  	 additional_data(>>).data = ignore_atomic_event; 
 silent
-last

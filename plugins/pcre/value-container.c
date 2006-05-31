@@ -27,6 +27,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <pcre.h>
+#include <assert.h>
 
 #include <libprelude/prelude.h>
 #include <libprelude/prelude-string.h>
@@ -46,13 +47,15 @@ struct value_container {
 
 typedef struct {
         prelude_list_t list;
+        prelude_bool_t multiple_value;
         int refno;
         char *value;
 } value_item_t;
 
 
 
-static int add_dynamic_object_value(value_container_t *vcont, unsigned int reference)
+static int add_dynamic_object_value(value_container_t *vcont,
+                                    unsigned int reference, prelude_bool_t multiple)
 {
         value_item_t *vitem;
 
@@ -69,6 +72,8 @@ static int add_dynamic_object_value(value_container_t *vcont, unsigned int refer
         
         vitem->value = NULL;
         vitem->refno = reference;
+        vitem->multiple_value = multiple;
+        
         prelude_list_add_tail(&vcont->value_item_list, &vitem->list);
 
         return 0;                
@@ -107,16 +112,23 @@ static int parse_value(value_container_t *vcont, const char *line)
         int i, ret;
         char num[10];
         const char *str;
+        prelude_bool_t multiple;
         prelude_string_t *strbuf;
 
         str = line;
 
         while ( *str ) {
                 if ( *str == '$' && *(str + 1) != '$' ) {
-
+                                                
                         i = 0;
                         str++;
-                        
+
+                        multiple = FALSE;
+                        if ( *str == '*' ) {
+                                str++;
+                                multiple = TRUE;
+                        }
+
                         while ( isdigit((int) *str) && i < sizeof(num) )
                                 num[i++] = *str++;
 
@@ -125,7 +137,7 @@ static int parse_value(value_container_t *vcont, const char *line)
 
                         num[i] = 0;
 
-                        if ( add_dynamic_object_value(vcont, atoi(num)) < 0 )
+                        if ( add_dynamic_object_value(vcont, atoi(num), multiple) < 0 )
                                 return -1;
 
                         continue;
@@ -161,10 +173,154 @@ static int parse_value(value_container_t *vcont, const char *line)
 
 
 
-static void resolve_referenced_value(prelude_string_t *outstr, value_item_t *vitem, capture_string_t *capture)
+
+static int propagate_string(prelude_list_t *outlist, const char *str)
+{
+        int ret;
+        prelude_list_t *tmp;
+        prelude_string_t *base;
+
+        if ( prelude_list_is_empty(outlist) ) {
+                ret = prelude_string_new_dup(&base, str);
+                if ( ret < 0 )
+                        return ret;
+                
+                prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) base);
+                return 0;
+        }
+        
+        prelude_list_for_each(outlist, tmp) {
+                base = prelude_linked_object_get_object(tmp);
+
+                ret = prelude_string_cat(base, str);
+                if ( ret < 0 )
+                        return ret;
+        }
+
+        return 0;
+}
+
+
+
+static int multidimensional_capture_to_flat_string(prelude_list_t *outlist,
+                                                   value_item_t *vitem, capture_string_t *capture)
+{
+        int ret;
+        unsigned int index, i;
+        prelude_string_t *str;
+
+        ret = prelude_string_new(&str);
+        if ( ret < 0 )
+                return ret;
+        
+        index = capture_string_get_index(capture);
+        
+        for ( i = 0; i < index; i++ ) {
+                void *sub = capture_string_get_element(capture, i);
+                
+                if ( ! capture_string_is_element_string(capture, i) )
+                        multidimensional_capture_to_flat_string(outlist, vitem, sub);
+                else {
+                        prelude_string_cat(str, sub);
+                        
+                        if ( i + 1 < index )
+                                prelude_string_cat(str, ",");
+                }
+        }
+
+        if ( ! prelude_string_is_empty(str) )
+                propagate_string(outlist, prelude_string_get_string(str));
+        
+        prelude_string_destroy(str);
+
+        return 0;
+}
+
+
+
+static inline void __list_splice(prelude_list_t *head, prelude_list_t *added)
+{
+        prelude_list_t *first = added->next;
+        prelude_list_t *last = added->prev;
+        prelude_list_t *at = head->next;
+
+        first->prev = head;
+        head->next = first;
+
+        last->next = at;
+        at->prev = last;
+}
+
+
+/**
+ * list_splice - join two lists
+ * @list: the new list to add.
+ * @head: the place to add it in the first list.
+ */
+static inline void prelude_list_splice(prelude_list_t *head, prelude_list_t *added)
+{
+        if ( ! prelude_list_is_empty(added) )
+                __list_splice(head, added);
+}
+
+
+
+static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
+                                                        value_item_t *vitem, capture_string_t *capture)
+{
+        unsigned int index, i;
+        prelude_list_t *tmp, *bkp;
+        prelude_string_t *str, *base;
+        
+        if ( prelude_list_is_empty(outlist) ) {                
+                index = capture_string_get_index(capture);
+                        
+                for ( i = 0; i < index; i++ ) {
+                        void *sub = capture_string_get_element(capture, i);
+                        
+                        if ( ! capture_string_is_element_string(capture, i) )
+                                multidimensional_capture_to_multiple_string(outlist, vitem, sub);
+                        else {
+                                prelude_string_new_dup(&str, sub);
+                                prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) str);
+                        }
+                }
+        }
+        
+        else {
+                prelude_list_t newlist;
+                prelude_list_init(&newlist);
+                                
+                index = capture_string_get_index(capture);
+                                
+                prelude_list_for_each_safe(outlist, tmp, bkp) {
+                        base = prelude_linked_object_get_object(tmp);
+                                                
+                        for ( i = 0; i < index; i++ ) {
+                                void *sub = capture_string_get_element(capture, i);
+                                
+                                if ( ! capture_string_is_element_string(capture, i) )        
+                                        multidimensional_capture_to_multiple_string(outlist, vitem, sub);
+                                else {                                        
+                                        prelude_string_new_dup(&str, prelude_string_get_string(base));
+                                        prelude_string_cat(str, sub);
+                                        prelude_linked_object_add_tail(&newlist, (prelude_linked_object_t *) str);
+                                }
+                        }
+                        
+                        prelude_string_destroy(base);
+                }
+
+                prelude_list_splice(outlist, &newlist);
+        }
+}
+
+
+
+static void resolve_referenced_value(prelude_list_t *outlist, value_item_t *vitem, capture_string_t *capture)
 {
         unsigned int index;
-        
+         
         index = capture_string_get_index(capture);
         
         if ( (vitem->refno - 1) < 0 || (vitem->refno - 1) >= index ) {
@@ -173,47 +329,63 @@ static void resolve_referenced_value(prelude_string_t *outstr, value_item_t *vit
         }
 
 
-        if ( ! capture_string_is_element_string(capture, vitem->refno - 1) )
-                printf("ITEM IS NOT STRING\n");
-        else
-                prelude_string_cat(outstr, capture_string_get_element(capture, vitem->refno - 1));
+        if ( ! capture_string_is_element_string(capture, vitem->refno - 1) ) {
+                capture_string_t *sub = capture_string_get_element(capture, vitem->refno - 1);
+                
+                if ( vitem->multiple_value )
+                        multidimensional_capture_to_multiple_string(outlist, vitem, sub);
+                else
+                        multidimensional_capture_to_flat_string(outlist, vitem, sub);
+        } else
+                propagate_string(outlist, capture_string_get_element(capture, vitem->refno - 1));
 }
 
 
 
-prelude_string_t *value_container_resolve(value_container_t *vcont, const pcre_rule_t *rule,
-                                          capture_string_t *capture)
+int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *vcont,
+                                   const pcre_rule_t *rule, capture_string_t *capture)
 {
-        int ret;
-        value_item_t *vitem;
         prelude_list_t *tmp;
-        prelude_string_t *str;
-        
-        ret = prelude_string_new(&str);
-        if ( ret < 0 ) {
-                prelude_perror(ret, "error creating prelude-string");
-                return NULL;
-        }
+        value_item_t *vitem;
 
+        prelude_list_init(outlist);
+        
         prelude_list_for_each(&vcont->value_item_list, tmp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);
                 
                 if ( vitem->refno != -1 )
-                        resolve_referenced_value(str, vitem, capture);
-                
-                else if ( prelude_string_cat(str, vitem->value) < 0 ) {
-                        prelude_string_destroy(str);
-                        return NULL;
-                }
+                        resolve_referenced_value(outlist, vitem, capture);
+                else
+                        propagate_string(outlist, vitem->value);
         }
+        
+        
+        return 0;
+}
 
-        if ( prelude_string_is_empty(str) ) {
-                prelude_string_destroy(str);
+
+
+prelude_string_t *value_container_resolve(value_container_t *vcont,
+                                          const pcre_rule_t *rule, capture_string_t *capture)
+{
+        int ret;
+        prelude_list_t outlist, *tmp;
+        prelude_string_t *str = NULL;
+        
+        prelude_list_init(&outlist);
+
+        ret = value_container_resolve_listed(&outlist, vcont, rule, capture);
+        if ( ret < 0 )
                 return NULL;
+        
+        prelude_list_for_each(&outlist, tmp) {
+                assert(str == NULL);
+                str = prelude_linked_object_get_object(tmp);
         }
         
         return str;
 }
+
 
 
 

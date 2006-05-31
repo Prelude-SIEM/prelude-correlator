@@ -238,16 +238,25 @@ static int exec_regex(pcre_rule_t *rule, idmef_message_t *input, capture_string_
 static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *plugin,
                                       pcre_rule_t *rule, capture_string_t *capture)
 {
-        pcre_context_t *ctx;
+        int ret;
         prelude_string_t *str;
-        
-        str = value_container_resolve(vcont, rule, capture);
-        if ( ! str )
+        prelude_list_t list, *tmp, *bkp;
+        pcre_context_t *ctx = NULL;
+
+        ret = value_container_resolve_listed(&list, vcont, rule, capture);
+        if ( ret < 0 )
                 return NULL;
-        
-        ctx = pcre_context_search(plugin, prelude_string_get_string(str));        
-        prelude_string_destroy(str);
+
+        prelude_list_for_each_safe(&list, tmp, bkp) {
+                str = prelude_linked_object_get_object(tmp);
                 
+                if ( ! ctx ) 
+                        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+
+                prelude_string_destroy(str);
+        
+        }
+                        
         return ctx;
 }
 
@@ -258,31 +267,35 @@ static int create_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule,
 {
         int ret;
         pcre_context_t *ctx;
-        prelude_list_t *tmp;
         prelude_string_t *str;
         value_container_t *vcont;
         pcre_context_setting_t *pcs;
+        prelude_list_t outlist, *tmp, *tmp2, *bkp;
         prelude_bool_t correlation_check_failed = FALSE;
         
         prelude_list_for_each(&rule->create_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
-                        
-                str = value_container_resolve(vcont, rule, capture);
-                if ( ! str )
-                        continue;
 
-                pcs = value_container_get_data(vcont);
-                        
-                ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), state->idmef, pcs);
-                prelude_string_destroy(str);
-
-                if ( ret < 0 && ret != -2 ) 
+                ret = value_container_resolve_listed(&outlist, vcont, rule, capture);
+                if ( ret < 0 )
                         return -1;
+
+                prelude_list_for_each_safe(&outlist, tmp2, bkp) {
+                        str = prelude_linked_object_get_object(tmp2);
+                        pcs = value_container_get_data(vcont);
+                        
+                        ret = pcre_context_new(&ctx, plugin,
+                                               prelude_string_get_string(str), state->idmef, pcs);
+                        prelude_string_destroy(str);
+
+                        if ( ret < 0 && ret != -2 ) 
+                                return -1;
                 
-                if ( ret != -2 ) /* context didn't exist yet */ {        
-                        ret = pcre_context_check_correlation(ctx);
-                        if ( ret < 0 )
-                                correlation_check_failed = TRUE;
+                        if ( ret != -2 ) /* context didn't exist yet */ {        
+                                ret = pcre_context_check_correlation(ctx);
+                                if ( ret < 0 )
+                                        correlation_check_failed = TRUE;
+                        }
                 }
         }
 
@@ -510,7 +523,7 @@ rule_regex_t *rule_regex_new(const char *path, const char *regex)
                 return NULL;
         }
         prelude_list_init(&new->_list);
-
+        
         ret = idmef_path_new(&new->path, "alert.%s", path);
         if ( ret < 0 ) {
                 prelude_perror(ret, "unable to create IDMEF path '%s'", path);

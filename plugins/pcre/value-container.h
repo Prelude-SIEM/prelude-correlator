@@ -38,6 +38,9 @@ void *value_container_get_data(value_container_t *vcont);
 
 void value_container_set_data(value_container_t *vcont, void *data);
 
+int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *vcont,
+                                   const pcre_rule_t *rule, capture_string_t *capture);
+
 prelude_string_t *value_container_resolve(value_container_t *vcont, const pcre_rule_t *rule,
                                           capture_string_t *capture);
 

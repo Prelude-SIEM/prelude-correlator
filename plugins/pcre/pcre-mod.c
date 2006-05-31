@@ -99,7 +99,7 @@ static int parse_key_and_value(char *input, char **key, char **value)
          * search first '=' in the input,
          * corresponding to the key = value separator.
          */
-        tmp = ptr = input + strcspn(input, "=:");
+        tmp = ptr = input + strcspn(input, "=:;");
         
         /*
          * strip whitespace at the tail of the key.
@@ -138,8 +138,11 @@ static int parse_multiple_key_and_value(const char **input, char **key, char **v
 {
         int ret;
         char *ptr;
+        union { char **rw; const char **ro; } val;
+
+        val.ro = input;
         
-        ptr = strsep(input, ";");
+        ptr = strsep(val.rw, ";");
         if ( ! ptr )
                 return 0;
 
@@ -290,7 +293,7 @@ static int parse_rule_last(pcre_plugin_t *plugin, pcre_rule_t *rule, const char 
 
 
 static int parse_rule_silent(pcre_plugin_t *plugin, pcre_rule_t *rule, const char *arg)
-{
+{        
         rule->flags |= PCRE_RULE_FLAGS_SILENT;
         return 0;
 }
@@ -506,7 +509,7 @@ static int action_parse(struct rule_object_list *object_list, const char *arg)
                 ret = parse_multiple_key_and_value(&arg, &key, &value);
                 if ( ret != 1 )
                         return ret;
-
+                
                 ret = rule_object_add(object_list, NULL, 0, key, value); 
                 if ( ret < 0 )
                         return ret;
@@ -730,10 +733,7 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, const char
         pcre_rule_t *rule = NULL;
         
         while ( prelude_read_multiline(fd, &line, buf, sizeof(buf)) == 0 ) {                
-                ptr = buf + strlen(buf) - 1;
-                if ( *ptr == '\n' )
-                        *ptr = '\0'; /* strip \n */
-
+                ptr = buf + strlen(buf);
                 
                 /*
                  * filter space and tab at the begining of the line.
@@ -746,7 +746,7 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, const char
                 if ( *ptr == '\0' || *ptr == '#' )
                         continue;
                 
-                ret = parse_key_and_value(buf, &key, &value);
+                ret = parse_key_and_value(buf, &key, &value);                
                 if ( ret < 0 )
                         continue;
                 

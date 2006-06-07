@@ -984,8 +984,8 @@ int pcre_context_check_correlation(pcre_context_t *ctx)
         if ( ! setting )
                 return 0;
 
-        prelude_log_debug(1, "correlation check threshold=%d required=%d\n",
-                          ctx->threshold + 1, setting->correlation_threshold);
+        prelude_log_debug(1, "[%s]: correlation check threshold=%d required=%d.\n",
+                          ctx->name, ctx->threshold + 1, setting->correlation_threshold);
         
         if ( setting->correlation_threshold && ++ctx->threshold != setting->correlation_threshold )
                 return -1;

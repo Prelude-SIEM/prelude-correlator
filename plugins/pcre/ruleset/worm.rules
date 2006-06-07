@@ -27,52 +27,32 @@
 # extend this timer.
 pattern = messageid: (\d+); \
           analyzer(-1).analyzerid: (.*); \
-          analyzer(-2).analyzerid: (.*); \
           classification.text: (.+); \
           target(0).node.address(0).address: (.+)
-pre_action = correlation_alert.alertident(>>).alertident=$1; \
-     	     correlation_alert.alertident(-1).analyzerid=%analyzerid;
 
-new_context = WORM_HOST_$5_$4; expire: 600; threshold: 5
+action = correlation_alert.alertident(>>).alertident=$1; \
+  	 correlation_alert.alertident(-1).analyzerid=$2;
 
-#action=eval %analyzerid ("$2" || "$3"); \
-#       add WORM_HOST_IDENT_$5_$4 %s; \
-#       set WORM_HOST_IDENT_$5_$4 600
+new_context = WORM_HOST_$3_$4; expire: 600; threshold: 5;
+silent;
+
 
 # Previously unknown worm-like activity (2 of 3)
 # This rule records events being played from a host against other hosts, but
 # only if that same event has been seen played against that host within the
 # timer period, and records the messageid.  It doesn't interact with the timer
 # otherwise.
-pattern=messageid: (\d+); \
-        analyzer(-1).analyzerid: (.*); \
-        analyzer(-2).analyzerid: (.*); \
-        classification.text: (.+); \
-        source(0).node.address(0).address: (.+)
-context=WORM_HOST_$5_$4
-continue=TakeNext
-desc=correlation_alert.alertident(>>).alertident=$1; \
-     correlation_alert.alertident(-1).analyzerid=%analyzerid
-action=eval %analyzerid ("$2" || "$3"); \
-       add WORM_HOST_IDENT_$5_$4 %s
+pattern = messageid: (\d+); \
+          analyzer(-1).analyzerid: (.*); \
+          classification.text: (.+); \
+          source(0).node.address(0).address: (.+)
 
-# Previously unknown worm-like activity (3 of 3)
-# This rule looks for 5 matches of an event being played by a host against
-# other hosts, but only if that same event was played against the host within
-# the timer period above.
-pattern=classification.text: (.+); \
-        source(0).node.address(0).address: (.+)
-context=WORM_HOST_$2_$1
-continue=TakeNext
-desc=assessment.impact.severity=high; \
-     assessment.impact.description=$2 has repeated actions taken against it recently at least 5 times.  It may have been infected with a worm.; \
-     correlation_alert.name=Possible Worm Activity
-action=copy WORM_HOST_IDENT_$2_$1 %ALERT_IDENTS; \
-       delete WORM_HOST_IDENT_$2_$1; \
-       add IDMEF_MESSAGE %s; \
-       add IDMEF_MESSAGE %ALERT_IDENTS; \
-       copy IDMEF_MESSAGE %IDMEF_MESSAGE; \
-       delete IDMEF_MESSAGE; \
-       prelude %IDMEF_MESSAGE
-thresh=5
-window=600
+require_context = WORM_HOST_$3_$4
+
+pre_action = correlation_alert.alertident(>>).alertident = $1; \
+             correlation_alert.alertident(-1).analyzerid = $2;
+
+action = classification.text = Possible Worm Activity; \
+	 correlation_alert.name = Source host repeating actions taken against it recently; \
+	 assessment.impact.severity = high; \
+         assessment.impact.description = $4 has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.;

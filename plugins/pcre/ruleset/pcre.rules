@@ -1,3 +1,4 @@
 include = firewall.rules;
-include = nessus.rules;
 include = brute-force.rules;
+include = nessus.rules;
+include = worm.rules;

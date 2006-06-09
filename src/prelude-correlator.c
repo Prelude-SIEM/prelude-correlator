@@ -321,9 +321,19 @@ static void setup_signal(void)
 
 
 void correlation_alert_emit(idmef_message_t *idmef)
-{        
-        if ( ! dry_run )
+{
+        idmef_alert_t *alert;
+        
+        alert = idmef_message_get_alert(idmef);
+        if ( ! alert )
+                return;
+
+        idmef_alert_set_messageid(alert, NULL);
+        
+        if ( ! dry_run ) {
+                idmef_alert_set_analyzer(alert, idmef_analyzer_ref(prelude_client_get_analyzer(client)), IDMEF_LIST_APPEND);
                 prelude_client_send_idmef(client, idmef);
+        }
         
         if ( print_output_fd )
                 idmef_message_print(idmef, print_output_fd);

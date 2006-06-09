@@ -121,6 +121,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                               idmef_message_t *idmef_in, capture_string_t *capture)
 {
         int ret;
+        idmef_path_t *test;
         prelude_list_t *tmp;
         idmef_value_t *value;
         prelude_string_t *strbuf;
@@ -141,13 +142,28 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                 strbuf = value_container_resolve(rule_object->vcont, rule, capture);
                 if ( ! strbuf )
                         continue;
-
-                value = build_message_object_value(rule, rule_object, prelude_string_get_string(strbuf));
-                prelude_string_destroy(strbuf);
                 
+                if ( strncmp(prelude_string_get_string(strbuf), "alert", 5) == 0 )
+                        ret = idmef_path_new(&test, "%s", prelude_string_get_string(strbuf));
+                else
+                        ret = idmef_path_new(&test, "alert.%s", prelude_string_get_string(strbuf));
+
+                if ( ret < 0 )
+                        value = build_message_object_value(rule, rule_object, prelude_string_get_string(strbuf));
+                else {
+                        ret = idmef_path_get(test, idmef_in, &value);
+                        if ( ret < 0 ) {
+                                prelude_perror(ret, "idmef path get failed for %s", idmef_path_get_name(rule_object->object, -1));
+                                continue;
+                        }
+                        
+                        idmef_path_destroy(test);
+                }
+                
+                prelude_string_destroy(strbuf);
                 if ( ! value )
                         continue;
-                
+
                 ret = idmef_path_set(rule_object->object, *message, value);
 
                 idmef_value_destroy(value);
@@ -172,7 +188,11 @@ int rule_object_add(rule_object_list_t *olist,
         idmef_path_t *object;
         rule_object_t *rule_object;
 
-        ret = idmef_path_new(&object, "alert.%s", object_name);
+        if ( strncmp(object_name, "alert", 5) == 0 )
+                ret = idmef_path_new(&object, "%s", object_name);
+        else
+                ret = idmef_path_new(&object, "alert.%s", object_name);
+        
         if ( ret < 0 ) {
                 prelude_perror(ret, "%s:%d: could not create 'alert.%s' path", filename, line, object_name);
                 return -1;

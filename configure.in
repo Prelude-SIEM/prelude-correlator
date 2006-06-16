@@ -90,6 +90,12 @@ dnl Checks for library functions.
 AC_TYPE_SIGNAL
 
 
+configdir=$sysconfdir/prelude-correlator
+prelude_correlator_conf=$configdir/prelude-correlator.conf
+
+AC_SUBST(configdir)
+AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONF, "$prelude_correlator_conf", Path to Prelude-Correlator configuration file)
+
 AX_CFLAGS_GCC_OPTION(-Wall)
 AX_CFLAGS_GCC_OPTION(-Wstrict-prototypes)
 AX_CFLAGS_GCC_OPTION(-Wmissing-prototypes)
@@ -103,6 +109,7 @@ AC_SUBST(CFLAGS)
 
 AC_CONFIG_FILES([
 Makefile
+prelude-correlator.conf
 
 src/Makefile 
 src/include/Makefile

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,6 +13,8 @@
 #define CLIENT_NAME      "prelude-correlator"
 #define ANALYZER_MODEL   "prelude-correlator"
 #define ANALYZER_CLASS   "Correlator"
+
+static const char *config_file = PRELUDE_CORRELATOR_CONF;
 
 
 static char **global_argv;
@@ -124,15 +128,28 @@ static int set_dry_run(prelude_option_t *opt, const char *optarg, prelude_string
 }
 
 
+static int set_conf_file(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
+{
+        config_file = strdup(optarg);
+        return 0;
+}
+
+
 static int init_options(prelude_option_t *ropt, int argc, char **argv)
 {
         int ret;
         prelude_string_t *err;
+        prelude_option_t *opt;
         
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 'h', "help",
                            "Print this help", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_print_help, NULL);
 
+        prelude_option_add(ropt, &opt, PRELUDE_OPTION_TYPE_CLI, 'c', "config",
+                           "Configuration file to use", PRELUDE_OPTION_ARGUMENT_REQUIRED,
+                           set_conf_file, NULL);
+        prelude_option_set_priority(opt, PRELUDE_OPTION_PRIORITY_IMMEDIATE);
+        
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "dry-run",
                            "No report to the specified Manager will occur.", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_dry_run, NULL);
@@ -148,8 +165,8 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "debug",
                            "Enable debug ouptut (optional debug level argument)", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_debug_level, NULL);
-        
-        ret = prelude_option_read(ropt, NULL, &argc, argv, &err, NULL);
+
+        ret = prelude_option_read(ropt, &config_file, &argc, argv, &err, NULL);
         if ( ret < 0 ) {
                 if ( prelude_error_get_code(ret) == PRELUDE_ERROR_EOF )
                         return -1;

@@ -148,15 +148,17 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                 else
                         ret = idmef_path_new(&test, "alert.%s", prelude_string_get_string(strbuf));
 
+                value = NULL;
                 if ( ret < 0 )
                         value = build_message_object_value(rule, rule_object, prelude_string_get_string(strbuf));
                 else {
-                        ret = idmef_path_get(test, idmef_in, &value);
+                        ret = idmef_path_get(test, idmef_in, &value);                        
                         if ( ret < 0 ) {
-                                prelude_perror(ret, "idmef path get failed for %s", idmef_path_get_name(rule_object->object, -1));
+                                prelude_perror(ret, "idmef path get failed for %s", idmef_path_get_name(test, -1));
+                                idmef_path_destroy(test);
                                 continue;
                         }
-                        
+
                         idmef_path_destroy(test);
                 }
                 
@@ -195,12 +197,6 @@ int rule_object_add(rule_object_list_t *olist,
         
         if ( ret < 0 ) {
                 prelude_perror(ret, "%s:%d: could not create 'alert.%s' path", filename, line, object_name);
-                return -1;
-        }
-
-        if ( idmef_path_is_ambiguous(object) ) {
-                prelude_log(PRELUDE_LOG_WARN, "%s:%d: Missing index in path '%s'.\n", filename, line, object_name);
-                idmef_path_destroy(object);
                 return -1;
         }
 

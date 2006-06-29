@@ -217,15 +217,15 @@ static int multidimensional_capture_to_flat_string(prelude_list_t *outlist,
         
         for ( i = 0; i < index; i++ ) {
                 void *sub = capture_string_get_element(capture, i);
-                
-                if ( ! capture_string_is_element_string(capture, i) )
-                        multidimensional_capture_to_flat_string(outlist, vitem, sub);
-                else {
-                        prelude_string_cat(str, sub);
-                        
-                        if ( i + 1 < index )
-                                prelude_string_cat(str, ",");
-                }
+
+                /*
+                 * As of now, the list should be flat
+                 */
+                assert(capture_string_is_element_string(capture, i));
+
+                prelude_string_cat(str, sub);        
+                if ( i + 1 < index )
+                        prelude_string_cat(str, ",");
         }
 
         if ( ! prelude_string_is_empty(str) )
@@ -277,13 +277,10 @@ static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
                         
                 for ( i = 0; i < index; i++ ) {
                         void *sub = capture_string_get_element(capture, i);
-                        
-                        if ( ! capture_string_is_element_string(capture, i) )
-                                multidimensional_capture_to_multiple_string(outlist, vitem, sub);
-                        else {
-                                prelude_string_new_dup(&str, sub);
-                                prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) str);
-                        }
+                        assert(capture_string_is_element_string(capture, i));
+
+                        prelude_string_new_dup(&str, sub);
+                        prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) str);
                 }
         }
         
@@ -299,14 +296,15 @@ static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
                         
                         for ( i = 0; i < index; i++ ) {
                                 void *sub = capture_string_get_element(capture, i);
+
+                                /*
+                                 * As of now, the list should be flat
+                                 */
+                                assert(capture_string_is_element_string(capture, i));
                                 
-                                if ( ! capture_string_is_element_string(capture, i) )        
-                                        multidimensional_capture_to_multiple_string(outlist, vitem, sub);
-                                else {                                        
-                                        prelude_string_new_dup(&str, prelude_string_get_string(base));
-                                        prelude_string_cat(str, sub);
-                                        prelude_linked_object_add_tail(&newlist, (prelude_linked_object_t *) str);
-                                }
+                                prelude_string_new_dup(&str, prelude_string_get_string(base));
+                                prelude_string_cat(str, sub);
+                                prelude_linked_object_add_tail(&newlist, (prelude_linked_object_t *) str);
                         }
                         
                         prelude_string_destroy(base);
@@ -348,8 +346,6 @@ int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *v
 {
         prelude_list_t *tmp;
         value_item_t *vitem;
-
-        prelude_list_init(outlist);
         
         prelude_list_for_each(&vcont->value_item_list, tmp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);

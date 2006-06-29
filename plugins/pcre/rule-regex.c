@@ -148,7 +148,7 @@ static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
         struct exec_pcre_cb_data *data = extra;
         
         if ( idmef_value_is_list(value) ) {
-                if ( ! data->already_in_list++ == 0 )
+                if ( data->already_in_list++ == 0 )
                         capture_string_new(data->capture, &data->capture);
                 
                 ret = idmef_value_iterate(value, maybe_listed_value_cb, data);

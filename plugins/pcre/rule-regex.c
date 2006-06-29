@@ -69,6 +69,7 @@ typedef struct {
 
 
 struct exec_pcre_cb_data {
+        int already_in_list;
         capture_string_t *capture;
         prelude_string_t *subject;
         rule_regex_t *regex;
@@ -147,12 +148,13 @@ static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
         struct exec_pcre_cb_data *data = extra;
         
         if ( idmef_value_is_list(value) ) {
-                struct exec_pcre_cb_data data2;
-
-                memcpy(&data2, extra, sizeof(data2));
-                capture_string_new(data2.capture, &data2.capture);
+                if ( ! data->already_in_list++ == 0 )
+                        capture_string_new(data->capture, &data->capture);
                 
-                ret = idmef_value_iterate(value, maybe_listed_value_cb, &data2);
+                ret = idmef_value_iterate(value, maybe_listed_value_cb, data);
+
+                if ( --data->already_in_list == 0 )
+                        data->capture = capture_string_get_parent(data->capture);
         }
 
         else {
@@ -192,7 +194,8 @@ static int get_regex_subject(pcre_rule_t *rule,
         data.regex = regex;
         data.subject = outstr;
         data.capture = capture;
-                
+        data.already_in_list = 0;
+        
         if ( ret == 0 ) {
                 prelude_string_set_constant(outstr, "");
                 return exec_pcre_cb(&data);
@@ -243,6 +246,8 @@ static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *p
         prelude_list_t list, *tmp, *bkp;
         pcre_context_t *ctx = NULL;
 
+        prelude_list_init(&list);
+        
         ret = value_container_resolve_listed(&list, vcont, rule, capture);
         if ( ret < 0 )
                 return NULL;
@@ -276,6 +281,8 @@ static int create_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule,
         prelude_list_for_each(&rule->create_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
 
+                prelude_list_init(&outlist);
+                
                 ret = value_container_resolve_listed(&outlist, vcont, rule, capture);
                 if ( ret < 0 )
                         return -1;

@@ -38,4 +38,6 @@ void capture_string_destroy(capture_string_t *root);
 
 unsigned int capture_string_get_index(capture_string_t *root);
 
+capture_string_t *capture_string_get_parent(capture_string_t *cur);
+
 #endif

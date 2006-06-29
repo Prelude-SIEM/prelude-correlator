@@ -16,6 +16,7 @@ typedef struct capture_elem {
 
 struct capture_string {
         unsigned int index;
+        capture_string_t *parent;
         capture_elem_t *elem[MAX_REF];
 };
 
@@ -51,23 +52,33 @@ int capture_string_new(capture_string_t *parent, capture_string_t **new)
                 return -1;
 
         (*new)->index = 0;
-
+        (*new)->parent = parent;
+        
         if ( parent ) {
-                if ( parent->index == MAX_REF )
+                if ( parent->index == MAX_REF ) {
+                        free(*new);
                         return -1;
+                }
                 
                 elem = malloc(sizeof(*elem));
                 if ( ! elem ) {
                         free(*new);
                         return -1;
                 }
-        
+
                 elem->element = *new;
                 elem->is_string = FALSE;
                 parent->elem[parent->index++] = elem;
         }
         
         return 0;
+}
+
+
+
+capture_string_t *capture_string_get_parent(capture_string_t *cur)
+{
+        return cur->parent;
 }
 
 

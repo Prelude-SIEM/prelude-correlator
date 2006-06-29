@@ -28,12 +28,12 @@
 pattern = messageid: (\d+); \
           analyzer(-1).analyzerid: (.*); \
           classification.text: (.+); \
-          target(0).node.address(0).address: (.+)
+          target(*).node.address(*).address: (.+)
 
 action = correlation_alert.alertident(>>).alertident=$1; \
   	 correlation_alert.alertident(-1).analyzerid=$2;
 
-new_context = WORM_HOST_$3_$4; expire: 600; threshold: 5;
+new_context = WORM_HOST_$3_$*4; expire: 600; threshold: 5;
 silent;
 
 
@@ -45,14 +45,19 @@ silent;
 pattern = messageid: (\d+); \
           analyzer(-1).analyzerid: (.*); \
           classification.text: (.+); \
-          source(0).node.address(0).address: (.+)
+          source(*).node.address(*).address: (.+)
 
-require_context = WORM_HOST_$3_$4
+require_context = WORM_HOST_$3_$*4;
 
 pre_action = correlation_alert.alertident(>>).alertident = $1; \
-             correlation_alert.alertident(-1).analyzerid = $2;
+             correlation_alert.alertident(-1).analyzerid = $2; \
+             target(>>) = target;
 
-action = classification.text = Possible Worm Activity; \
+action = correlation_alert.alertident(>>).alertident = $1; \
+         correlation_alert.alertident(-1).analyzerid = $2; \
+         target(>>) = target; \
+	 source = source; \
+	 classification.text = Possible Worm Activity; \
 	 correlation_alert.name = Source host repeating actions taken against it recently; \
 	 assessment.impact.severity = high; \
          assessment.impact.description = $4 has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.;

@@ -155,6 +155,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                         ret = idmef_path_get(test, idmef_in, &value);                        
                         if ( ret < 0 ) {
                                 prelude_perror(ret, "idmef path get failed for %s", idmef_path_get_name(test, -1));
+                                prelude_string_destroy(strbuf);
                                 idmef_path_destroy(test);
                                 continue;
                         }

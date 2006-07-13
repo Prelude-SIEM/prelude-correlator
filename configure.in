@@ -38,7 +38,7 @@ dnl **************************************************
 dnl * Check for libprelude                           *
 dnl **************************************************
 
-AM_PATH_LIBPRELUDE(0.9.6, libprelude=yes, libprelude=no)
+AM_PATH_LIBPRELUDE(0.9.10, libprelude=yes, libprelude=no)
 if test x$libprelude != xyes; then
 	AC_MSG_ERROR(libprelude is required in order to build prelude-lml.)
 fi

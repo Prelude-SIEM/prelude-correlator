@@ -267,8 +267,8 @@ static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *p
 
 
 
-static int create_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                                    pcre_state_t *state, capture_string_t *capture)
+static int create_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
+                                    idmef_message_t *input, capture_string_t *capture, prelude_list_t *nctx_list)
 {
         int ret;
         pcre_context_t *ctx;
@@ -290,23 +290,24 @@ static int create_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 prelude_list_for_each_safe(&outlist, tmp2, bkp) {
                         str = prelude_linked_object_get_object(tmp2);
                         pcs = value_container_get_data(vcont);
-                        
-                        ret = pcre_context_new(&ctx, plugin,
-                                               prelude_string_get_string(str), state->idmef, pcs);
+
+                        ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), state->idmef, pcs);
                         prelude_string_destroy(str);
 
                         if ( ret < 0 && ret != -2 ) 
                                 return -1;
-                
+                        
                         if ( ret != -2 ) /* context didn't exist yet */ {        
                                 ret = pcre_context_check_correlation(ctx);
                                 if ( ret < 0 )
                                         correlation_check_failed = TRUE;
+                                
+                                prelude_linked_object_add_tail(nctx_list, (prelude_linked_object_t *) ctx);
                         }
                 }
         }
 
-        return (correlation_check_failed) ? -1 : 0;
+        return (correlation_check_failed) ? -2 : 0;
 }
 
 
@@ -341,7 +342,7 @@ static int check_context(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t 
                 ctx = lookup_context(rule->optional_context, plugin, rule, capture);
                 if ( ctx ) {
                         state->idmef = idmef_message_ref(pcre_context_get_idmef(ctx));
-
+                        
                         ret = pcre_context_check_correlation(ctx);
                         if ( ret < 0 )
                                 return -2;
@@ -394,7 +395,7 @@ static int match_rule_list(pcre_plugin_t *plugin,
                            idmef_message_t *input,
                            pcre_match_flags_t *match_flags)
 {        
-        prelude_list_t *tmp;
+        prelude_list_t *tmp, nctx_list;
         int ret, optmatch = 0;
         pcre_match_flags_t gl = 0;
         pcre_rule_t *rule = rc->rule;
@@ -437,7 +438,12 @@ static int match_rule_list(pcre_plugin_t *plugin,
         /*
          * Current rule and sub-rules matched, verify contexts.
          */
-        ret = check_context(plugin, rule, state, input, capture);
+        prelude_list_init(&nctx_list);
+        
+        ret = check_context(plugin, rule, state, input, capture);        
+        if ( ret == 0 )
+                ret = create_context_if_needed(plugin, rule, state, input, capture, &nctx_list);
+        
         if ( ret < 0 ) {
                 if ( ret != -2 ) { /* context requirement failed */
                         destroy_idmef_state(state);
@@ -455,8 +461,9 @@ static int match_rule_list(pcre_plugin_t *plugin,
 
                 correlation_check_failed = TRUE;
         }
-
+        
         if ( ! correlation_check_failed ) {
+                
                 ret = rule_object_build_message(rule, rule->action_object_list, &state->idmef, input, capture);
                 if ( ret < 0 ) {
                         destroy_idmef_state(state);
@@ -465,13 +472,15 @@ static int match_rule_list(pcre_plugin_t *plugin,
                 }
         }
         
-        ret = create_context_if_needed(plugin, rule, state, capture);
-        if ( ret < 0 ) {
-                destroy_idmef_state(state);
-                capture_string_destroy(capture);
-                return ret;
+        if ( state->idmef ) {
+                pcre_context_t *ctx;
+                
+                prelude_list_for_each(&nctx_list, tmp) {
+                        ctx = prelude_linked_object_get_object(tmp);
+                        pcre_context_set_idmef(ctx, state->idmef);
+                }
         }
-
+        
         if ( correlation_check_failed ) {
                 destroy_idmef_state(state);
                 capture_string_destroy(capture);

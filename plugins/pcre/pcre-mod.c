@@ -56,7 +56,8 @@ struct pcre_plugin {
 
 
 struct pcre_context {
-        prelude_list_t list;
+        PRELUDE_LINKED_OBJECT;
+        prelude_list_t intlist;
         
         char *name;
         prelude_timer_t timer;
@@ -936,8 +937,8 @@ static void _pcre_context_destroy(pcre_context_t *ctx)
                 idmef_message_destroy(ctx->idmef);
         
         prelude_timer_destroy(&ctx->timer);
-        prelude_list_del(&ctx->list);
-
+        prelude_list_del(&ctx->intlist);
+        
         free(ctx->name);
         free(ctx);
 }
@@ -945,7 +946,7 @@ static void _pcre_context_destroy(pcre_context_t *ctx)
 
 
 void pcre_context_destroy(pcre_context_t *ctx)
-{
+{               
         if ( ctx->setting->flags & PCRE_CONTEXT_SETTING_FLAGS_ALERT_ON_DESTROY && ctx->idmef ) {
                 prelude_log_debug(1, "[%s]: emit alert on destroy.\n", ctx->name);
                 correlation_alert_emit(ctx->idmef);
@@ -959,7 +960,7 @@ void pcre_context_destroy(pcre_context_t *ctx)
 static void pcre_context_expire(void *data)
 {
         pcre_context_t *ctx = data;
-        
+
         if ( ctx->setting->flags & PCRE_CONTEXT_SETTING_FLAGS_ALERT_ON_EXPIRE && ctx->idmef ) {
                 prelude_log_debug(1, "[%s]: emit alert on expire.\n", ctx->name);
                 correlation_alert_emit(ctx->idmef);
@@ -1042,9 +1043,16 @@ int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
         if ( idmef )
                 ctx->idmef = idmef_message_ref(idmef);
         
-        prelude_list_add_tail(&plugin->context_list, &ctx->list);
+        prelude_list_add_tail(&plugin->context_list, &ctx->intlist);
         
         return 0;
+}
+
+
+
+void pcre_context_set_idmef(pcre_context_t *ctx, idmef_message_t *idmef)
+{
+        ctx->idmef = idmef_message_ref(idmef);
 }
 
 
@@ -1055,7 +1063,7 @@ pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name)
         prelude_list_t *tmp;
 
         prelude_list_for_each(&plugin->context_list, tmp) {
-                ctx = prelude_list_entry(tmp, pcre_context_t, list);
+                ctx = prelude_list_entry(tmp, pcre_context_t, intlist);
 
                 if ( strcmp(ctx->name, name) == 0 )
                         return ctx;

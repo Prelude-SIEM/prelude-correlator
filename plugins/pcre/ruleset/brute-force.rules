@@ -39,13 +39,17 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  analyzer(-2).analyzerid: (.*)
 
 pre_action = correlation_alert.alertident(>>).alertident=$3; \
-             correlation_alert.alertident(>>).analyzerid=$4
+             correlation_alert.alertident(-1).analyzerid=$4
 
 new_context = BRUTE_SOURCE_TARGET_$*1_$*2; expire: 600; threshold: 4;
 
 optional_context = BRUTE_SOURCE_TARGET_$*1_$*2
 
-action = classification.text=Brute force attack; \
+action = source(>>) = source; \
+	 target(>>) = target; \
+	 correlation_alert.alertident(>>).alertident=$3; \
+         correlation_alert.alertident(-1).analyzerid=$4; \
+ 	 classification.text=Brute force attack; \
 	 assessment.impact.severity=high; \
 	 assessment.impact.description=Multiple failed attempts have been made to login to a user account; \
 	 correlation_alert.name = Multiple failed login; \
@@ -71,7 +75,7 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
           messageid: (.+); \
           analyzer(-2).analyzerid: (.*)
 
-pre_action = correlation_alert.alertident(>>).alertident=$2;
+pre_action = correlation_alert.alertident(>>).alertident=$2; \
              correlation_alert.alertident(-1).analyzerid=$3
 
 new_context = BRUTE_USER_$*1; expire: 600; threshold: 30

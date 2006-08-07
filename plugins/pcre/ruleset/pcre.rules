@@ -1,4 +1,6 @@
-include = firewall.rules;
+# Disabled by default - noisy without specific device support
+# include = firewall.rules;
 include = brute-force.rules;
-include = nessus.rules;
+# Disabled by default - commercial ruleset
+# include = nessus.rules;
 include = worm.rules;

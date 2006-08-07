@@ -116,6 +116,72 @@ static idmef_value_t *build_message_object_value(pcre_rule_t *rule, rule_object_
 
 
 
+typedef struct {
+        const idmef_path_t *path;
+        idmef_message_t *idmef;
+        idmef_value_t *value;
+} match_cb_t;
+
+
+static int match_iterate_cb(idmef_value_t *value, void *extra) 
+{
+        int ret;
+        match_cb_t *mcb = extra;
+        
+        if ( idmef_value_is_list(value) )
+                return idmef_value_iterate(value, match_iterate_cb, extra);
+
+        ret = idmef_value_match(value, mcb->value, IDMEF_CRITERION_OPERATOR_EQUAL);        
+        if ( ret == 0 ) {
+                ret = idmef_path_set(mcb->path, mcb->idmef, value);
+                if ( ret < 0 )
+                        prelude_perror(ret, "could not set output path '%s'", idmef_path_get_name(mcb->path, -1));    
+        }
+        
+        return 0;
+}
+
+
+
+static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *input, idmef_message_t *output)
+{
+        int ret;
+        match_cb_t mcb;
+        idmef_value_t *value = NULL;
+
+        mcb.path = path;
+        mcb.value = NULL;
+        mcb.idmef = output;
+                        
+        ret = idmef_path_get(path, input, &value);
+        if ( ret == 0 )
+                return 0;
+        
+        if ( ret < 0 ) {
+                prelude_perror(ret, "could not retrieve input path '%s'", idmef_path_get_name(path, -1));  
+                return -1;
+        }
+        
+        ret = idmef_path_get(path, output, &mcb.value);
+        if ( ret < 0 ) {
+                prelude_perror(ret, "could not retrieve output path '%s'", idmef_path_get_name(path, -1));
+                idmef_value_destroy(value);
+                return -1;
+        }
+
+        if ( ret == 0 )
+                mcb.value = NULL;
+        
+        ret = idmef_value_iterate(value, match_iterate_cb, &mcb);
+
+        idmef_value_destroy(value);
+        if ( mcb.value )
+                idmef_value_destroy(mcb.value);
+
+        return ret;
+}
+
+
 
 int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idmef_message_t **message,
                               idmef_message_t *idmef_in, capture_string_t *capture)
@@ -152,14 +218,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                 if ( ret < 0 )
                         value = build_message_object_value(rule, rule_object, prelude_string_get_string(strbuf));
                 else {
-                        ret = idmef_path_get(test, idmef_in, &value);                        
-                        if ( ret < 0 ) {
-                                prelude_perror(ret, "idmef path get failed for %s", idmef_path_get_name(test, -1));
-                                prelude_string_destroy(strbuf);
-                                idmef_path_destroy(test);
-                                continue;
-                        }
-
+                        ret = copy_idmef_path_if_needed(test, idmef_in, *message);
                         idmef_path_destroy(test);
                 }
                 

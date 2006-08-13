@@ -292,11 +292,11 @@ static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
                                 
                 prelude_list_for_each_safe(outlist, tmp, bkp) {
                         base = prelude_linked_object_get_object(tmp);
-                        prelude_linked_object_del_init(base);
+                        prelude_linked_object_del_init((prelude_linked_object_t *) base);
                         
                         for ( i = 0; i < index; i++ ) {
                                 void *sub = capture_string_get_element(capture, i);
-
+                                
                                 /*
                                  * As of now, the list should be flat
                                  */

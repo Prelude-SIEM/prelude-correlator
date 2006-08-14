@@ -28,35 +28,19 @@
 pattern = messageid: (\d+); \
           analyzer(-1).analyzerid: (.*); \
           classification.text: (.+); \
-          target(*).node.address(*).address: (.+)
+	  source(*).node.address(*).address: (.+); \
+          target(*).node.address(*).address: (.+);
 
-action = correlation_alert.alertident(>>).alertident=$1; \
-  	 correlation_alert.alertident(-1).analyzerid=$2;
+optional_context = WORM_HOST_$3_$*4;
+new_context = WORM_HOST_$3_$*5; expire: 600; threshold: 5;
 
-new_context = WORM_HOST_$3_$*4; expire: 600; threshold: 5;
-silent;
+pre_action = correlation_alert.alertident(>>).alertident=$1; \
+  	     correlation_alert.alertident(-1).analyzerid=$2; \
+	     source(>>) = source; target(>>) = target;
 
-
-# Previously unknown worm-like activity (2 of 3)
-# This rule records events being played from a host against other hosts, but
-# only if that same event has been seen played against that host within the
-# timer period, and records the messageid.  It doesn't interact with the timer
-# otherwise.
-pattern = messageid: (\d+); \
-          analyzer(-1).analyzerid: (.*); \
-          classification.text: (.+); \
-          source(*).node.address(*).address: (.+)
-
-require_context = WORM_HOST_$3_$*4;
-
-pre_action = correlation_alert.alertident(>>).alertident = $1; \
-             correlation_alert.alertident(-1).analyzerid = $2; \
-             target(>>) = target;
-
-action = correlation_alert.alertident(>>).alertident = $1; \
+action = source(>>) = source; target(>>) = target; \
+	 correlation_alert.alertident(>>).alertident = $1; \
          correlation_alert.alertident(-1).analyzerid = $2; \
-         target(>>) = target; \
-	 source = source; \
 	 classification.text = Possible Worm Activity; \
 	 correlation_alert.name = Source host repeating actions taken against it recently; \
 	 assessment.impact.severity = high; \

@@ -349,7 +349,7 @@ static int check_context(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t 
                 }
         }
 
-        return 0;
+        return (ctx) ? 1 : 0;
 }
 
 
@@ -439,10 +439,38 @@ static int match_rule_list(pcre_plugin_t *plugin,
          * Current rule and sub-rules matched, verify contexts.
          */
         prelude_list_init(&nctx_list);
-        
+
+        /*
+         * check_context():
+         * return  0 -> All ok, but no context found.
+         * return -1 -> Context requirement failed.
+         * return  1 -> Context found, correlation check ok.
+         * return -2 -> Context found, correlation check not ok.
+        */
         ret = check_context(plugin, rule, state, input, capture);        
-        if ( ret == 0 )
-                ret = create_context_if_needed(plugin, rule, state, input, capture, &nctx_list);
+        if ( ret >= 0 ) {
+                int ret2;
+                
+                ret2 = create_context_if_needed(plugin, rule, state, input, capture, &nctx_list);
+                if ( ret2 < 0 ) {
+                        if ( ret2 != -2 ) { /* context requirement failed */
+                                destroy_idmef_state(state);
+                                capture_string_destroy(capture);
+                                return -1;
+                        }
+
+                        /* correlation check failed */
+                        ret2 = rule_object_build_message(rule, rule->pre_action_object_list, &state->idmef, input, capture);
+                        if ( ret2 < 0 ) {
+                                destroy_idmef_state(state);
+                                capture_string_destroy(capture);
+                                return ret2;
+                        }
+                }
+
+                if ( ret != 1 )
+                        correlation_check_failed = TRUE;
+        }
         
         if ( ret < 0 ) {
                 if ( ret != -2 ) { /* context requirement failed */

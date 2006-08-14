@@ -30,9 +30,9 @@ int capture_string_add_string(capture_string_t *capture, const char *string);
 
 int capture_string_new(capture_string_t *parent, capture_string_t **new);
 
-void *capture_string_get_element(capture_string_t *root, unsigned int index);
+void *capture_string_get_element(capture_string_t *root, int index);
 
-prelude_bool_t capture_string_is_element_string(capture_string_t *root, unsigned int index);
+prelude_bool_t capture_string_is_element_string(capture_string_t *root, int index);
 
 void capture_string_destroy(capture_string_t *root);
 

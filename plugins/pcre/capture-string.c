@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <libprelude/prelude.h>
 #include <libprelude/prelude-log.h>
@@ -106,21 +107,28 @@ capture_string_t *capture_string_get_parent(capture_string_t *cur)
 
 
 
-void *capture_string_get_element(capture_string_t *root, unsigned int index)
+void *capture_string_get_element(capture_string_t *root, int index)
 {
-        if ( index >= root->index )
-                return NULL;
+        if ( index < 0 )
+                index = root->index - (-index);
 
+        if ( index < 0 || index >= root->index )
+                return NULL;
+        
         return root->elem[index]->element;
 }
 
 
 
-prelude_bool_t capture_string_is_element_string(capture_string_t *root, unsigned int index)
+prelude_bool_t capture_string_is_element_string(capture_string_t *root, int index)
 {
+        if ( index < 0 )
+                index = root->index - (-index);
+
+        assert(index >= 0 && index < root->index);
+
         return root->elem[index]->is_string;
 }
-
 
 
 void capture_string_destroy(capture_string_t *root)

@@ -125,13 +125,15 @@ typedef struct {
 
 static int match_iterate_cb(idmef_value_t *value, void *extra) 
 {
-        int ret;
+        int ret = 0;
         match_cb_t *mcb = extra;
         
         if ( idmef_value_is_list(value) )
                 return idmef_value_iterate(value, match_iterate_cb, extra);
 
-        ret = idmef_value_match(value, mcb->value, IDMEF_CRITERION_OPERATOR_EQUAL);        
+        if ( mcb->value )
+                ret = idmef_value_match(value, mcb->value, IDMEF_CRITERION_OPERATOR_EQUAL);        
+
         if ( ret == 0 ) {
                 ret = idmef_path_set(mcb->path, mcb->idmef, value);
                 if ( ret < 0 )

@@ -367,24 +367,31 @@ static void destroy_idmef_state(pcre_state_t *state)
 
 static void destroy_context_if_needed(pcre_plugin_t *plugin, pcre_rule_t *rule, capture_string_t *capture)
 {
+        int ret;
         pcre_context_t *ctx;
-        prelude_list_t *tmp;
         prelude_string_t *str;
         value_container_t *vcont;
+        prelude_list_t *tmp, *tmp2, *bkp, dlist;
         
         prelude_list_for_each(&rule->destroy_context_list, tmp) {
                 vcont = prelude_linked_object_get_object(tmp);
+
+                prelude_list_init(&dlist);
                 
-                str = value_container_resolve(vcont, rule, capture);
-                if ( ! str )
+                ret = value_container_resolve_listed(&dlist, vcont, rule, capture);
+                if ( ret < 0 )
                         continue;
 
-                ctx = pcre_context_search(plugin, prelude_string_get_string(str));
-                if ( ! ctx )
-                        continue;
+                prelude_list_for_each_safe(&dlist, tmp2, bkp) {
+                        str = prelude_linked_object_get_object(tmp2);
+                        
+                        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+                        if ( ! ctx )
+                                continue;
                 
-                pcre_context_destroy(ctx);
-                prelude_string_destroy(str);
+                        pcre_context_destroy(ctx);
+                        prelude_string_destroy(str);
+                }
         }
 }
 
@@ -448,6 +455,7 @@ static int match_rule_list(pcre_plugin_t *plugin,
          * return -2 -> Context found, correlation check not ok.
         */
         ret = check_context(plugin, rule, state, input, capture);        
+                
         if ( ret >= 0 ) {
                 int ret2;
                 

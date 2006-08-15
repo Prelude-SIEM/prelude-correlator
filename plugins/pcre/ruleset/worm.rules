@@ -26,21 +26,21 @@
 # a timer of 600 seconds. Future events against the same host of the same type
 # extend this timer.
 pattern = messageid: (\d+); \
-          analyzer(-1).analyzerid: (.*); \
+          analyzer(*).analyzerid: (.*); \
           classification.text: (.+); \
 	  source(*).node.address(*).address: (.+); \
           target(*).node.address(*).address: (.+);
 
-optional_context = WORM_HOST_$3_$*4;
-new_context = WORM_HOST_$3_$*5; expire: 600; threshold: 5;
+optional_context = WORM_HOST_$3_$4[*];
+new_context = WORM_HOST_$3_$5[*]; expire:600; threshold=4;
 
 pre_action = correlation_alert.alertident(>>).alertident=$1; \
-  	     correlation_alert.alertident(-1).analyzerid=$2; \
+  	     correlation_alert.alertident(-1).analyzerid=$2[-1]; \
 	     source(>>) = source; target(>>) = target;
 
 action = source(>>) = source; target(>>) = target; \
 	 correlation_alert.alertident(>>).alertident = $1; \
-         correlation_alert.alertident(-1).analyzerid = $2; \
+         correlation_alert.alertident(-1).analyzerid = $2[-1]; \
 	 classification.text = Possible Worm Activity; \
 	 correlation_alert.name = Source host repeating actions taken against it recently; \
 	 assessment.impact.severity = high; \

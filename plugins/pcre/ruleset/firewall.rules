@@ -31,9 +31,7 @@ pattern = classification.text: [Pp]acket [Dd]ropped|[Dd]enied; \
 	  source(0).node.address(0).address: (.+); \
 	  source(0).service.port: (.*); \
 	  target(0).node.address(0).address: (.+); \
-	  target(0).service.port: (.*);            \
-	  analyzer(-2).analyzerid: (.*); \
-	  messageid: (.*);
+	  target(0).service.port: (.*);
 set_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4; expire:10;
 silent
 
@@ -48,7 +46,7 @@ pattern = source(0).node.address(0).address: (.+); \
  	  source(0).service.port: (.*); \
  	  target(0).node.address(0).address: (.+); \
  	  target(0).service.port: (.*);            \
- 	  analyzer(-2).analyzerid: (.*); \
+ 	  analyzer(*).analyzerid: (.*); \
  	  messageid: (.*); 
 not_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4;
 add_context = FIREWALL_SOURCE_TARGET_DROP_$1_$2_$3_$4; expire:10; alert_on_expire;
@@ -57,7 +55,7 @@ action = classification = classification; \
 	 source = source; \
 	 target = target; \
 	 correlation_alert.name = Events to firewall correlation; \
- 	 correlation_alert.alertident(0).analyzerid=$5;  \
+ 	 correlation_alert.alertident(0).analyzerid=$5[-1];  \
  	 correlation_alert.alertident(0).alertident=$6;  \
  	 additional_data(>>).data = ignore_atomic_event; 
 silent;

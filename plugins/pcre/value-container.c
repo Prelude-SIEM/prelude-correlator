@@ -49,13 +49,14 @@ typedef struct {
         prelude_list_t list;
         prelude_bool_t multiple_value;
         int refno;
+        int listindex;
         char *value;
 } value_item_t;
 
 
 
 static int add_dynamic_object_value(value_container_t *vcont,
-                                    unsigned int reference, prelude_bool_t multiple)
+                                    unsigned int reference, unsigned int lindex, prelude_bool_t multiple)
 {
         value_item_t *vitem;
 
@@ -72,6 +73,7 @@ static int add_dynamic_object_value(value_container_t *vcont,
         
         vitem->value = NULL;
         vitem->refno = reference;
+        vitem->listindex = lindex;
         vitem->multiple_value = multiple;
         
         prelude_list_add_tail(&vcont->value_item_list, &vitem->list);
@@ -85,7 +87,7 @@ static int add_fixed_object_value(value_container_t *vcont, prelude_string_t *bu
 {
         int ret;
         value_item_t *vitem;
-
+        
         vitem = malloc(sizeof(*vitem));
         if ( ! vitem ) {
                 prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
@@ -106,72 +108,95 @@ static int add_fixed_object_value(value_container_t *vcont, prelude_string_t *bu
 }
 
 
-
-static int parse_value(value_container_t *vcont, const char *line)
+static int parse_variable(const char **str, int *reference, int *index, prelude_bool_t *multiple) 
 {
-        int i, ret;
-        char num[10];
-        const char *str;
-        prelude_bool_t multiple;
-        prelude_string_t *strbuf;
-
-        str = line;
-
-        while ( *str ) {
-                if ( *str == '$' && *(str + 1) != '$' ) {
-                                                
-                        i = 0;
-                        str++;
-
-                        multiple = FALSE;
-                        if ( *str == '*' ) {
-                                str++;
-                                multiple = TRUE;
-                        }
-
-                        while ( isdigit((int) *str) && i < sizeof(num) )
-                                num[i++] = *str++;
-
-                        if ( ! i )
-                                return -1;
-
-                        num[i] = 0;
-
-                        if ( add_dynamic_object_value(vcont, atoi(num), multiple) < 0 )
-                                return -1;
-
-                        continue;
-                }
-
-                ret = prelude_string_new(&strbuf);
-                if ( ret < 0 ) {
-                        prelude_perror(ret, "error creating new prelude-string");
-                        return -1;
-                }
-
-                while ( *str ) {
-                        if ( *str == '$' ) {
-                                if ( *(str + 1) == '$' )
-                                        str++;
-                                else
-                                        break;
-                        }
-
-                        if ( prelude_string_ncat(strbuf, str, 1) < 0 )
-                                return -1;
-                        str++;
-                }
-
-                if ( add_fixed_object_value(vcont, strbuf) < 0 )
-                        return -1;
-
-                prelude_string_destroy(strbuf);
+        char *eptr;
+        
+        *reference = strtoul(*str, &eptr, 10);
+        if ( eptr == *str ) {
+                fprintf(stderr, "Invalid reference '%s'.\n", *str);
+                return -1;      
         }
+        
+        if ( *eptr != '[' )
+                return 0;
+
+        *str = eptr + 1;
+        *index = strtol(*str, &eptr, 10);
+        if ( eptr == *str ) {
+                if ( **str != '*' ) {
+                        fprintf(stderr, "Invalid variable index '%c'.\n", **str);
+                        return -1;
+                }
+
+                *multiple = TRUE;
+                eptr++;
+        }
+        
+        *str = eptr + 1;
+        if ( *eptr != ']' )
+                return -1;
 
         return 0;
 }
 
 
+
+static int add_fixed_object_value_if_needed(value_container_t *vcont, prelude_string_t *buf)
+{
+        int ret;
+        
+        if ( prelude_string_is_empty(buf) )
+                return 0;
+
+        ret = add_fixed_object_value(vcont, buf);
+        prelude_string_clear(buf);
+
+        return ret;
+}
+
+
+static int parse_value(value_container_t *vcont, const char *line)
+{
+        prelude_string_t *buf;
+        int ret, reference = 0, lindex = 0;
+        prelude_bool_t escaped = FALSE, multiple = FALSE;
+        
+        ret = prelude_string_new(&buf);
+        if ( ret < 0 )
+                return ret;
+
+        while ( *line ) {
+                if ( *line == '\\' && ! escaped ) {
+                        escaped = TRUE;
+                        continue;
+                }
+
+                else if ( ! escaped && *line == '$' ) {
+                        if ( add_fixed_object_value_if_needed(vcont, buf) < 0 )
+                                goto err;
+
+                        line++;
+                        ret = parse_variable(&line, &reference, &lindex, &multiple);
+                        if ( ret < 0 )
+                                goto err;
+
+                        if ( add_dynamic_object_value(vcont, reference, lindex, multiple) < 0 )
+                                goto err;
+                }
+
+                else {
+                        prelude_string_ncat(buf, line++, 1);
+                        escaped = FALSE;
+                }
+        }
+        
+        ret = add_fixed_object_value_if_needed(vcont, buf);
+        
+ err:
+        prelude_string_destroy(buf);
+        return ret;
+}
 
 
 static int propagate_string(prelude_list_t *outlist, const char *str)
@@ -197,6 +222,32 @@ static int propagate_string(prelude_list_t *outlist, const char *str)
                         return ret;
         }
 
+        return 0;
+}
+
+
+
+static int multidimensional_capture_with_index(prelude_list_t *outlist,
+                                               value_item_t *vitem, capture_string_t *capture)
+{
+        int ret;
+        unsigned int index;
+        prelude_string_t *str;
+
+        ret = prelude_string_new(&str);
+        if ( ret < 0 )
+                return ret;
+        
+        index = capture_string_get_index(capture);
+        assert(index < vitem->listindex);
+
+        prelude_string_cat(str, capture_string_get_element(capture, vitem->listindex));
+        
+        if ( ! prelude_string_is_empty(str) )
+                propagate_string(outlist, prelude_string_get_string(str));
+
+        prelude_string_destroy(str);
+        
         return 0;
 }
 
@@ -333,6 +384,9 @@ static void resolve_referenced_value(prelude_list_t *outlist, value_item_t *vite
                 
                 if ( vitem->multiple_value )
                         multidimensional_capture_to_multiple_string(outlist, vitem, sub);
+                
+                else if ( vitem->listindex )
+                        multidimensional_capture_with_index(outlist, vitem, sub);
                 else
                         multidimensional_capture_to_flat_string(outlist, vitem, sub);
         } else

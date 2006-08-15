@@ -36,25 +36,25 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  source(*).node.address(*).address: (.*); \
 	  target(*).node.address(*).address: (.*); \
 	  messageid: (.+); \
-	  analyzer(-2).analyzerid: (.*)
+	  analyzer(*).analyzerid: (.*)
 
-new_context = BRUTE_SOURCE_TARGET_$*1_$*2; expire: 600; threshold: 4;
-optional_context = BRUTE_SOURCE_TARGET_$*1_$*2;
+new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; expire: 600; threshold: 4;
+optional_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 pre_action = correlation_alert.alertident(>>).alertident=$3; \
-             correlation_alert.alertident(-1).analyzerid=$4; \
+             correlation_alert.alertident(-1).analyzerid=$4[-1]; \
 	     source(>>) = source; target(>>) = target;
 
 action = source(>>) = source; target(>>) = target; \
 	 correlation_alert.alertident(>>).alertident=$3; \
-         correlation_alert.alertident(-1).analyzerid=$4; \
+         correlation_alert.alertident(-1).analyzerid=$4[-1]; \
  	 classification.text=Brute force attack; \
 	 assessment.impact.severity=high; \
 	 assessment.impact.description=Multiple failed attempts have been made to login to a user account; \
 	 correlation_alert.name = Multiple failed login; \
 	 additional_data(>>).data = ignore_atomic_event
 
-destroy_context = BRUTE_SOURCE_TARGET_$*1_$*2
+destroy_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]
 
 
 
@@ -72,14 +72,14 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  assessment.impact.completion: failed; \
           target(*).user.user_id(*).name: (.*); \
           messageid: (.+); \
-          analyzer(-2).analyzerid: (.*)
+          analyzer(*).analyzerid: (.*)
 
 pre_action = source(>>) = source; target(>>) = target; \
 	     correlation_alert.alertident(>>).alertident=$2; \
-             correlation_alert.alertident(-1).analyzerid=$3
+             correlation_alert.alertident(-1).analyzerid=$3[-1]
 
-new_context = BRUTE_USER_$*1; expire: 600; threshold: 30
-optional_context = BRUTE_USER_$*1;
+new_context = BRUTE_USER_$1[*]; expire: 600; threshold: 30
+optional_context = BRUTE_USER_$1[*];
 
 action = source(>>) = source; target(>>) = target; \
 	 classification.text=Brute force attack; \

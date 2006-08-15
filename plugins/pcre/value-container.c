@@ -117,12 +117,12 @@ static int parse_variable(const char **str, int *reference, int *index, prelude_
                 fprintf(stderr, "Invalid reference '%s'.\n", *str);
                 return -1;      
         }
-        
+
+        *str = eptr;
         if ( *eptr != '[' )
                 return 0;
 
-        *str = eptr + 1;
-        *index = strtol(*str, &eptr, 10);
+        *index = strtol(++(*str), &eptr, 10);
         if ( eptr == *str ) {
                 if ( **str != '*' ) {
                         fprintf(stderr, "Invalid variable index '%c'.\n", **str);
@@ -169,9 +169,9 @@ static int parse_value(value_container_t *vcont, const char *line)
         while ( *line ) {
                 if ( *line == '\\' && ! escaped ) {
                         escaped = TRUE;
-                        continue;
+                        line++;
                 }
-
+                
                 else if ( ! escaped && *line == '$' ) {
                         if ( add_fixed_object_value_if_needed(vcont, buf) < 0 )
                                 goto err;
@@ -185,7 +185,7 @@ static int parse_value(value_container_t *vcont, const char *line)
                                 goto err;
                 }
 
-                else {
+                else {                        
                         prelude_string_ncat(buf, line++, 1);
                         escaped = FALSE;
                 }

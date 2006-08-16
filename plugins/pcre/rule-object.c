@@ -220,8 +220,8 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
                 if ( ret < 0 )
                         value = build_message_object_value(rule, rule_object, prelude_string_get_string(strbuf));
                 else {
-                        ret = copy_idmef_path_if_needed(test, idmef_in, *message);
-                        idmef_path_destroy(test);
+                        idmef_path_destroy(test); /* use the left operand object (handling of list prepend/append). */
+                        ret = copy_idmef_path_if_needed(rule_object->object, idmef_in, *message);
                 }
                 
                 prelude_string_destroy(strbuf);

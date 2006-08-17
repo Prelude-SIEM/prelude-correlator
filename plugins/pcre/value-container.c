@@ -420,8 +420,8 @@ prelude_string_t *value_container_resolve(value_container_t *vcont,
                                           const pcre_rule_t *rule, capture_string_t *capture)
 {
         int ret;
-        prelude_list_t outlist, *tmp;
         prelude_string_t *str = NULL;
+        prelude_list_t outlist, *tmp, *bkp;
         
         prelude_list_init(&outlist);
 
@@ -429,11 +429,13 @@ prelude_string_t *value_container_resolve(value_container_t *vcont,
         if ( ret < 0 )
                 return NULL;
         
-        prelude_list_for_each(&outlist, tmp) {
+        prelude_list_for_each_safe(&outlist, tmp, bkp) {
                 assert(str == NULL);
+                
                 str = prelude_linked_object_get_object(tmp);
+                prelude_linked_object_del((prelude_linked_object_t *) str);
         }
-        
+                
         return str;
 }
 

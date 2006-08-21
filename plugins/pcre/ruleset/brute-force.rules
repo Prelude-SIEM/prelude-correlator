@@ -21,15 +21,9 @@
 #
 #####
 
-# Detect brute force attempt by address (1 of 2)
+# Detect brute force attempt by address
 # This rule looks for all classifications that match login or authentication
-# attempts, and creates a record of their idents, then resets the ident timer
-# to 600 seconds.
-#
-# Detect brute force attempt by address (2 of 2)
-# This rule looks for all classifications that match login or authentication
-# attempts, and detects when they exceed a certain threshold.  It then uses
-# the ident context above to create an alert.
+# attempts, and detects when they exceed a certain threshold. 
 
 pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  assessment.impact.completion: failed; \
@@ -58,15 +52,9 @@ destroy_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]
 
 
 
-# Detect brute force attempt by user (1 of 2)
+# Detect brute force attempt by user
 # This rule looks for all classifications that match login or authentication
-# attempts, and creates a record of their idents, then resets the ident timer
-# to 600 seconds.
-#
-# Detect brute force attempt by user (2 of 2)
-# This rule looks for all classifications that match login or authentication
-# attempts, and detects when they exceed a certain threshold.  It then uses
-# the ident context above to create an alert.
+# attempts, and detects when they exceed a certain threshold.
 
 pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  assessment.impact.completion: failed; \
@@ -78,7 +66,7 @@ pre_action = source(>>) = source; target(>>) = target; \
 	     correlation_alert.alertident(>>).alertident=$2; \
              correlation_alert.alertident(-1).analyzerid=$3[-1]
 
-new_context = BRUTE_USER_$1[*]; expire: 600; threshold: 30
+new_context = BRUTE_USER_$1[*]; expire: 600; threshold: 20
 optional_context = BRUTE_USER_$1[*];
 
 action = source(>>) = source; target(>>) = target; \

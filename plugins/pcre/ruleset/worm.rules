@@ -21,10 +21,11 @@
 #
 #####
 
-# Previously unknown worm-like activity (1 of 3)
+# Previously unknown worm-like activity
 # This rule looks for events against a host, records the messageid, then sets
-# a timer of 600 seconds. Future events against the same host of the same type
-# extend this timer.
+# a timer of 600 seconds.   If the host then replays the event against
+# other hosts multiple times, an event is generated.
+
 pattern = messageid: (\d+); \
           analyzer(*).analyzerid: (.*); \
           classification.text: (.+); \

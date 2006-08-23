@@ -54,19 +54,9 @@ struct pcre_rule {
         /**/
         pcre_rule_flags_t flags;
 
-        
-        prelude_list_t create_context_list;
-        prelude_list_t destroy_context_list;
-        prelude_list_t not_context_list;
-        
-        value_container_t *required_context;
-        value_container_t *optional_context;
-                
         prelude_list_t rule_list;
         prelude_list_t regex_list;
-
-        struct rule_object_list *action_object_list;
-        struct rule_object_list *pre_action_object_list;
+        prelude_list_t operation_list;
 };
 
 
@@ -97,18 +87,34 @@ typedef enum {
 
 typedef struct {
         int timeout;
+        
+        value_container_t *vcont;
         pcre_context_setting_flags_t flags;
         
         unsigned int correlation_window;
         unsigned int correlation_threshold;
 } pcre_context_setting_t;
 
-#if 0
+
+
 typedef struct {
-        unsigned int window;
-        unsigned int threshold;
-} correlation_setting_t;
-#endif
+        PRELUDE_LINKED_OBJECT;
+        pcre_context_t *ctx;
+} pcre_context_container_t;
+
+
+typedef struct {
+        idmef_message_t *idmef;
+} pcre_state_t;
+
+
+typedef struct {
+        prelude_list_t list;
+        void *extra;
+        int (*op)(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
+                  idmef_message_t *input, capture_string_t *capture, void *extra, prelude_list_t *context_result);
+} pcre_operation_t;
+
 
 pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name);
 
@@ -116,8 +122,6 @@ int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
                      const char *name, idmef_message_t *idmef, pcre_context_setting_t *setting);
 
 void pcre_context_destroy(pcre_context_t *ctx);
-
-void pcre_context_set_idmef(pcre_context_t *ctx, idmef_message_t *idmef);
 
 idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx);
 

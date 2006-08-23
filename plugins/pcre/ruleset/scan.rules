@@ -31,72 +31,82 @@ pattern = source(*).node.address(*).address: (.*); \
 	  analyzer(*).analyzerid: (.*)
 
 new_context = SCAN_EVENTSCAN_$1[*]_$2[*]; expire: 600; threshold: 30;
-optional_context = SCAN_EVENTSCAN_$1[*]_$2[*];
 
-pre_action = correlation_alert.alertident(>>).alertident=$3; \
-             correlation_alert.alertident(-1).analyzerid=$4[-1]; \
-	     source(>>)=source; \
-	     target(>>)=target;
+action = correlation_alert.alertident(>>).alertident = $3;     \
+         correlation_alert.alertident(-1).analyzerid = $4[-1]; \
+	 source(>>) = source;                                  \
+	 target(>>) = target;
 
-action = source(>>)=source; \
-	 target(>>)=target; \
-	 correlation_alert.alertident(>>).alertident=$3; \
-         correlation_alert.alertident(-1).analyzerid=$4[-1]; \
- 	 classification.text=Eventscan; \
-	 assessment.impact.severity=high; \
-	 assessment.impact.description=A single host has played many events against a single target.  This may be a general vulnerability scan.; \
-	 correlation_alert.name=Eventscan; \
-	 additional_data(>>).data=ignore_atomic_event
+check_correlation = SCAN_EVENTSCAN_$1[*]_$2[*];
+
+action = source(>>) = source;                                  \
+	 target(>>) = target;                                  \
+	 correlation_alert.alertident(>>).alertident = $3;     \
+         correlation_alert.alertident(-1).analyzerid = $4[-1]; \
+ 	 classification.text = Eventscan;                      \
+	 assessment.impact.severity = high;                    \
+	 assessment.impact.description = A single host has played many events against a single target.  This may be a general vulnerability scan.; \
+	 correlation_alert.name = Eventscan;                   \
+	 additional_data(>>).data = ignore_atomic_event
 
 destroy_context = SCAN_EVENTSCAN_$1[*]_$2[*]
 
+
+
+#
 # Detect Eventsweep
 # Eventsweep: Playing the same event from a single host against multiple hosts
-
+#
 pattern = classification.text: (.+); \
 	  source(*).node.address(*).address: (.*); \
           messageid: (.+); \
           analyzer(*).analyzerid: (.*)
 
-pre_action = source(>>)=source; \
-	     target(>>)=target; \
-	     correlation_alert.alertident(>>).alertident=$3; \
-             correlation_alert.alertident(-1).analyzerid=$4[-1]
-
 new_context = SCAN_EVENTSWEEP_$1_$2[*]; expire: 600; threshold: 30
-optional_context = SCAN_EVENTSWEEP_$1_$2[*];
 
-action = source(>>)=source; \
-	 target(>>)=target; \
-	 classification.text=Eventsweep; \
-         assessment.impact.severity=high; \
-         assessment.impact.description=A single host has played the same event against multiple targets.  This may be a network scan for a specific vulnerability.; \
-         correlation_alert.name=Eventsweep; \
-	 additional_data(>>).data=ignore_atomic_event
+action = source(>>) = source; \
+         target(>>) = target; \
+	 correlation_alert.alertident(>>).alertident = $3; \
+         correlation_alert.alertident(-1).analyzerid = $4[-1]
+
+check_correlation = SCAN_EVENTSWEEP_$1_$2[*];
+
+action = source(>>) = source;                \
+	 target(>>) = target;                \
+	 classification.text = Eventsweep;   \
+         assessment.impact.severity = high;  \
+         assessment.impact.description = A single host has played the same event against multiple targets.  This may be a network scan for a specific vulnerability.; \
+         correlation_alert.name = Eventsweep; \
+	 additional_data(>>).data = ignore_atomic_event
 
 destroy_context = SCAN_EVENTSWEEP_$1_$2[*]
 
+
+
+
+#
 # Detect Eventstorm
 # Eventsweep: Playing excessive events by a single host
-
+#
 pattern = source(*).node.address(*).address: (.*); \
-          messageid: (.+); \
+          messageid: (.+);                         \
           analyzer(*).analyzerid: (.*)
 
-pre_action = source(>>)=source; \
-             target(>>)=target; \
-             correlation_alert.alertident(>>).alertident=$2; \
-             correlation_alert.alertident(-1).analyzerid=$3[-1]
-
 new_context = SCAN_EVENTSTORM_$1[*]; expire: 600; threshold: 150
-optional_context = SCAN_EVENTSTORM_$1[*];
 
-action = source(>>)=source; \
-         target(>>)=target; \
-         classification.text=Eventstorm; \
-         assessment.impact.severity=high; \
-         assessment.impact.description=A single host is producing an unusual amount of traffic.; \
-         correlation_alert.name=Eventstorm; \
-         additional_data(>>).data=ignore_atomic_event
+action = source(>>) = source;                                \
+         target(>>) = target;                                \
+         correlation_alert.alertident(>>).alertident = $2;   \
+         correlation_alert.alertident(-1).analyzerid = $3[-1]
+
+check_correlation = SCAN_EVENTSTORM_$1[*];
+
+action = source(>>) = source;                 \
+         target(>>) = target;                 \
+         classification.text = Eventstorm;    \
+         assessment.impact.severity = high;   \
+         assessment.impact.description = A single host is producing an unusual amount of traffic.; \
+         correlation_alert.name = Eventstorm; \
+         additional_data(>>).data = ignore_atomic_event;
 
 destroy_context = SCAN_EVENTSTORM_$1[*]

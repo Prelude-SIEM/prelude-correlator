@@ -433,7 +433,7 @@ prelude_string_t *value_container_resolve(value_container_t *vcont,
                 assert(str == NULL);
                 
                 str = prelude_linked_object_get_object(tmp);
-                prelude_linked_object_del((prelude_linked_object_t *) str);
+                prelude_linked_object_del_init((prelude_linked_object_t *) str);
         }
                 
         return str;

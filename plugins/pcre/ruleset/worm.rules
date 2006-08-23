@@ -1,6 +1,7 @@
 #####
 #
 # Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
+# Copyright (C) 2006 PreludeIDS Technologies <yoann.v@prelude-ids.com>
 # All Rights Reserved.
 #
 # This file is part of the Prelude-Correlator program.
@@ -21,10 +22,10 @@
 #
 #####
 
-# Previously unknown worm-like activity
 # This rule looks for events against a host, records the messageid, then sets
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.
+
 
 pattern = messageid: (\d+); \
           analyzer(*).analyzerid: (.*); \
@@ -32,17 +33,41 @@ pattern = messageid: (\d+); \
 	  source(*).node.address(*).address: (.+); \
           target(*).node.address(*).address: (.+);
 
-optional_context = WORM_HOST_$3_$4[*];
-new_context = WORM_HOST_$3_$5[*]; expire:600; threshold=4;
 
-pre_action = correlation_alert.alertident(>>).alertident=$1; \
-  	     correlation_alert.alertident(-1).analyzerid=$2[-1]; \
-	     source(>>) = source; target(>>) = target;
+#
+# Create context for classification combined with all the target.
+#
+new_context = WORM_HOST_$3_$5[*]; expire:600; threshold:4;
 
-action = source(>>) = source; target(>>) = target; \
-	 correlation_alert.alertident(>>).alertident = $1; \
-         correlation_alert.alertident(-1).analyzerid = $2[-1]; \
-	 classification.text = Possible Worm Activity; \
+action = source(>>) = source; \
+	 target(>>) = target; \
+	 correlation_alert.alertident(>>).alertident=$1; \
+	 correlation_alert.alertident(-1).analyzerid=$2[-1]; 
+
+#
+# We are trying to see whether a previous target is now attacking other hosts
+# thus, we check whether a context exist with this classification combined to 
+# this source.
+#
+require_context = WORM_HOST_$3_$4[*];
+
+action = source(>>) = source; \
+	 target(>>) = target; \
+	 correlation_alert.alertident(>>).alertident=$1; \
+	 correlation_alert.alertident(-1).analyzerid=$2[-1]; 
+
+#
+# Increase and check the context threshold. 
+#
+check_correlation = WORM_HOST_$3_$4[*];
+
+#
+# If the correlation process matched, we can now setup remaining alert part,
+# and issue the alert.
+#
+action = classification.text = Possible Worm Activity; \
 	 correlation_alert.name = Source host repeating actions taken against it recently; \
 	 assessment.impact.severity = high; \
          assessment.impact.description = $4 has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.;
+
+destroy_context = WORM_HOST_$3_$4[*];

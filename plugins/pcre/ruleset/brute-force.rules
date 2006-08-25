@@ -27,8 +27,8 @@
 
 pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  assessment.impact.completion: failed;            \
-	  source(*).node.address(*).address: (.*);         \
-	  target(*).node.address(*).address: (.*);         \
+	  source(*).node.address(*).address: (.+);         \
+	  target(*).node.address(*).address: (.+);         \
 	  messageid: (.+);                                 \
 	  analyzer(*).analyzerid: (.*);
 
@@ -57,7 +57,7 @@ destroy_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 pattern = classification.text: [Ll]ogin|[Aa]uthentication;   \
 	  assessment.impact.completion: failed;              \
-          target(*).user.user_id(*).name: (.*);              \
+          target(*).user.user_id(*).name: (.+);              \
           messageid: (.+);                                   \
           analyzer(*).analyzerid: (.*)
 

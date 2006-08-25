@@ -58,7 +58,7 @@ destroy_context = SCAN_EVENTSCAN_$1[*]_$2[*]
 # Eventsweep: Playing the same event from a single host against multiple hosts
 #
 pattern = classification.text: (.+); \
-	  source(*).node.address(*).address: (.*); \
+	  source(*).node.address(*).address: (.+); \
           messageid: (.+); \
           analyzer(*).analyzerid: (.*)
 
@@ -88,7 +88,7 @@ destroy_context = SCAN_EVENTSWEEP_$1_$2[*]
 # Detect Eventstorm
 # Eventsweep: Playing excessive events by a single host
 #
-pattern = source(*).node.address(*).address: (.*); \
+pattern = source(*).node.address(*).address: (.+); \
           messageid: (.+);                         \
           analyzer(*).analyzerid: (.*)
 

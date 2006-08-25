@@ -32,7 +32,11 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  messageid: (.+);                                 \
 	  analyzer(*).analyzerid: (.*);
 
-new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; expire: 600; threshold: 4;
+new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; \
+	      expire: 60; \
+	      threshold: 5;
+
+reset_timer = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 action = source(>>) = source;                                  \
          target(>>) = target;                                  \
@@ -61,7 +65,11 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication;   \
           messageid: (.+);                                   \
           analyzer(*).analyzerid: (.*)
 
-new_context = BRUTE_USER_$1[*]; expire: 600; threshold: 30;
+new_context = BRUTE_USER_$1[*]; \
+	      expire: 120; \
+	      threshold: 30;
+
+reset_timer = BRUTE_USER_$1[*];
 
 action = source(>>) = source;                                 \
 	 target(>>) = target;                                 \

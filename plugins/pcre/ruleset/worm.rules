@@ -37,7 +37,10 @@ pattern = messageid: (\d+); \
 #
 # Create context for classification combined with all the target.
 #
-new_context = WORM_HOST_$3_$5[*]; expire:600; threshold:4;
+new_context = WORM_HOST_$3_$5[*]; expire:300; threshold:5;
+
+reset_timer = WORM_HOST_$3_$5[*]; \
+	      WORM_HOST_$3_$4[*];
 
 action = source(>>) = source; \
 	 target(>>) = target; \

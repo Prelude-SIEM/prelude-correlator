@@ -73,6 +73,23 @@ void correlation_plugins_run(idmef_message_t *idmef)
 }
 
 
+
+void correlation_plugins_destroy(void)
+{
+        prelude_list_t *tmp;
+        prelude_plugin_generic_t *pl;
+        prelude_plugin_instance_t *pi;
+        
+        prelude_list_for_each(&correlation_plugins_instance, tmp) {
+                pi = prelude_linked_object_get_object(tmp);
+                pl = prelude_plugin_instance_get_plugin(pi);
+
+                pl->destroy(pi, NULL);
+        }
+}
+
+
+
 int correlation_plugins_init(void *data)
 {
         int ret;

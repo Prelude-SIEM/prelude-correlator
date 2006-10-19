@@ -148,7 +148,9 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                         ret = idmef_message_new(&idmef);
                         if ( ret < 0 )
                                 goto err;
-        
+
+                        idmef_message_set_pmsg(idmef, prelude_msg_ref(msg));
+                        
                         ret = idmef_message_read(idmef, msg);
                         if ( ret < 0 ) {
                                 idmef_message_destroy(idmef);

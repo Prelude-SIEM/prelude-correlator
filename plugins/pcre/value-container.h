@@ -34,6 +34,8 @@ void value_container_destroy(value_container_t *vcont);
 
 void value_container_reset(value_container_t *vcont);
 
+const char *value_container_get_string(value_container_t *vcont);
+
 void *value_container_get_data(value_container_t *vcont);
 
 void value_container_set_data(value_container_t *vcont, void *data);

@@ -86,7 +86,9 @@ typedef enum {
 
 
 typedef struct {
+        //int value;
         int timeout;
+        prelude_bool_t need_destroy;
         
         value_container_t *vcont;
         pcre_context_setting_flags_t flags;
@@ -111,6 +113,7 @@ typedef struct {
 typedef struct {
         prelude_list_t list;
         void *extra;
+        void (*extra_destroy)(void *extra);
         int (*op)(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
                   idmef_message_t *input, capture_string_t *capture, void *extra, prelude_list_t *context_result);
 } pcre_operation_t;
@@ -119,11 +122,22 @@ typedef struct {
 pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name);
 
 int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
-                     const char *name, idmef_message_t *idmef, pcre_context_setting_t *setting);
+                     const char *name, pcre_context_setting_t *setting);
 
 void pcre_context_destroy(pcre_context_t *ctx);
 
 idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx);
 
+const char *pcre_context_get_name(pcre_context_t *ctx);
+
+prelude_timer_t *pcre_context_get_timer(pcre_context_t *ctx);
+
+void pcre_context_set_threshold(pcre_context_t *ctx, unsigned int threshold);
+
+unsigned int pcre_context_get_threshold(pcre_context_t *ctx);
+
+pcre_context_setting_t *pcre_context_get_setting(pcre_context_t *ctx);
+
 int pcre_context_check_correlation(pcre_context_t *ctx);
 
+void pcre_context_set_idmef(pcre_context_t *ctx, idmef_message_t *idmef);

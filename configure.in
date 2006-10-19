@@ -38,7 +38,7 @@ dnl **************************************************
 dnl * Check for libprelude                           *
 dnl **************************************************
 
-AM_PATH_LIBPRELUDE(0.9.10, libprelude=yes, libprelude=no)
+AM_PATH_LIBPRELUDE(0.9.11, libprelude=yes, libprelude=no)
 if test x$libprelude != xyes; then
 	AC_MSG_ERROR(libprelude is required in order to build prelude-lml.)
 fi
@@ -92,9 +92,12 @@ AC_TYPE_SIGNAL
 
 configdir=$sysconfdir/prelude-correlator
 prelude_correlator_conf=$configdir/prelude-correlator.conf
+prelude_correlator_context_dir=$localstatedir/lib/prelude-correlator
 
 AC_SUBST(configdir)
+AC_SUBST(prelude_correlator_context_dir)
 AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONF, "$prelude_correlator_conf", Path to Prelude-Correlator configuration file)
+AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONTEXT_DIR, "$prelude_correlator_context_dir", Path to Prelude-Correlator runtime file)
 
 AX_CFLAGS_GCC_OPTION(-Wall)
 AX_CFLAGS_GCC_OPTION(-Wstrict-prototypes)

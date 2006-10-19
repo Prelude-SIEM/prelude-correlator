@@ -36,6 +36,7 @@
 #include "pcre-mod.h"
 #include "rule-object.h"
 #include "rule-regex.h"
+#include "context-save-restore.h"
 
 
 int pcre_LTX_prelude_plugin_version(void);
@@ -74,15 +75,25 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, const char
 
 
 
-
 static PRELUDE_LIST(chained_rule_list);
 static prelude_correlator_plugin_t pcre_plugin;
+static unsigned int restored_context_count = 0;
+
+
+static void context_setting_destroy(pcre_context_setting_t *settings)
+{
+        if ( settings->vcont )
+                value_container_destroy(settings->vcont);
+
+        free(settings);
+}
 
 
 
 static int add_operation(pcre_rule_t *rule, int (*op_cb)(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
                                                          idmef_message_t *input, capture_string_t *capture, void *extra,
-                                                         prelude_list_t *context_result), void *extra)
+                                                         prelude_list_t *context_result), void (*extra_destroy)(void *extra),
+                         void *extra)
 {
         pcre_operation_t *op;
 
@@ -92,6 +103,8 @@ static int add_operation(pcre_rule_t *rule, int (*op_cb)(pcre_plugin_t *plugin, 
 
         op->op = op_cb;
         op->extra = extra;
+        op->extra_destroy = extra_destroy;
+        
         prelude_list_add_tail(&rule->operation_list, &op->list);
 
         return 0;
@@ -147,7 +160,7 @@ static int op_create_context(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_stat
         prelude_list_for_each_safe(&outlist, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
                 
-                ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), state->idmef, pcs);                
+                ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), pcs);                
                 prelude_string_destroy(str);
                 
                 if ( ret < 0 && ret != -2 ) 
@@ -288,6 +301,7 @@ static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t
         if ( ! ctx )
                 return -1;
 
+        prelude_timer_set_expire(&ctx->timer, ctx->setting->timeout);
         prelude_timer_reset(&ctx->timer);
         
         return 0;
@@ -532,7 +546,7 @@ static int parse_require_context(pcre_plugin_t *plugin, pcre_rule_t *rule, const
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_check_req_context, vcont);
+        return add_operation(rule, op_check_req_context, (void *) value_container_destroy, vcont);
 }
 
 
@@ -546,7 +560,7 @@ static int parse_optional_context(pcre_plugin_t *plugin, pcre_rule_t *rule, cons
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_check_opt_context, vcont);
+        return add_operation(rule, op_check_opt_context, (void *) value_container_destroy, vcont);
 }
 
 
@@ -559,7 +573,7 @@ static int parse_check_correlation(pcre_plugin_t *plugin, pcre_rule_t *rule, con
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_check_correlation, vcont);
+        return add_operation(rule, op_check_correlation, (void *) value_container_destroy, vcont);
 }
 
 
@@ -573,7 +587,7 @@ static int parse_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule, const cha
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_reset_timer, vcont);
+        return add_operation(rule, op_reset_timer, (void *) value_container_destroy, vcont);
 }
 
 
@@ -586,7 +600,7 @@ static int parse_not_context(pcre_plugin_t *plugin, pcre_rule_t *rule, const cha
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_check_not_context, vcont);
+        return add_operation(rule, op_check_not_context, (void *) value_container_destroy, vcont);
 }
 
 
@@ -601,7 +615,7 @@ static int parse_destroy_context(pcre_plugin_t *plugin, pcre_rule_t *rule, const
         if ( ret < 0 )
                 return ret;
 
-        return add_operation(rule, op_destroy_context, vcont);
+        return add_operation(rule, op_destroy_context, (void *) value_container_destroy, vcont);
 }
 
 
@@ -638,19 +652,19 @@ static int _parse_create_context(pcre_rule_t *rule, const char *arg, pcre_contex
                         pcs->timeout = atoi(value);
                 
                 else {
-                        free(pcs);
+                        context_setting_destroy(pcs);
                         prelude_log(PRELUDE_LOG_WARN, "Unknown context creation argument: '%s'.\n", key);
                         return -1;
                 }
         }
-
+        
         if ( ret == 0 ) {
                 value_container_new(&pcs->vcont, cname);
-                ret = add_operation(rule, op_create_context, pcs);
+                ret = add_operation(rule, op_create_context, (void *) context_setting_destroy, pcs);
         }
         
         if ( ret < 0 )
-                free(pcs);
+                context_setting_destroy(pcs);
         
         return ret;
 }
@@ -777,7 +791,7 @@ static int parse_action(pcre_plugin_t *plugin, pcre_rule_t *rule, const char *ar
                 return -1;
         }
 
-        ret = add_operation(rule, op_action_list, object_list);
+        ret = add_operation(rule, op_action_list, (void *) rule_object_list_destroy, object_list);
         if ( ret < 0 ) {
                 rule_object_list_destroy(object_list);
                 return -1;
@@ -922,6 +936,8 @@ static void free_rule(pcre_rule_t *rule)
 
         prelude_list_for_each_safe(&rule->operation_list, tmp, bkp) {
                 op = prelude_linked_object_get_object(tmp);
+
+                op->extra_destroy(op->extra);
                 free(op);
         }
 
@@ -1123,7 +1139,8 @@ static int set_pcre_ruleset(prelude_option_t *opt, const char *optarg, prelude_s
         if ( ret < 0 )
                 return -1;
 
-        prelude_log(PRELUDE_LOG_INFO, "- pcre plugin added %d rules.\n", plugin->rulesnum);
+        prelude_log(PRELUDE_LOG_INFO, "- pcre plugin loaded %d rules, restored %d context.\n",
+                    plugin->rulesnum, restored_context_count);
 
         remove_top_chained();
         
@@ -1142,8 +1159,9 @@ static int pcre_activate(prelude_option_t *opt, const char *optarg, prelude_stri
 
         prelude_list_init(&new->rule_list);
         prelude_list_init(&new->context_list);
-        
         prelude_plugin_instance_set_plugin_data(context, new);
+        
+        restored_context_count = pcre_context_restore(context);
         
         return 0;
 }
@@ -1153,15 +1171,21 @@ static int pcre_activate(prelude_option_t *opt, const char *optarg, prelude_stri
 
 static void pcre_destroy(prelude_plugin_instance_t *pi, prelude_string_t *err)
 {
+        pcre_context_t *ctx;
         prelude_list_t *tmp, *bkp;
         pcre_rule_container_t *rule;
         pcre_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(pi);
+
+        prelude_list_for_each_safe(&plugin->context_list, tmp, bkp) {
+                ctx = prelude_list_entry(tmp, pcre_context_t, intlist);
+                pcre_context_save(pi, ctx);
+        }
         
         prelude_list_for_each_safe(&plugin->rule_list, tmp, bkp) {
                 rule = prelude_list_entry(tmp, pcre_rule_container_t, list);
                 free_rule_container(rule);
         }
-        
+
         free(plugin);
 }
 
@@ -1175,6 +1199,9 @@ static void _pcre_context_destroy(pcre_context_t *ctx)
         
         prelude_timer_destroy(&ctx->timer);
         prelude_list_del(&ctx->intlist);
+
+        if ( ctx->setting->need_destroy )
+                context_setting_destroy(ctx->setting);
         
         free(ctx->name);
         free(ctx);
@@ -1208,6 +1235,39 @@ static void pcre_context_expire(void *data)
 
 
 
+prelude_timer_t *pcre_context_get_timer(pcre_context_t *ctx)
+{
+        return &ctx->timer;
+}
+
+
+pcre_context_setting_t *pcre_context_get_setting(pcre_context_t *ctx)
+{
+        return ctx->setting;
+}
+
+
+unsigned int pcre_context_get_threshold(pcre_context_t *ctx)
+{
+        return ctx->threshold;
+}
+
+
+
+void pcre_context_set_threshold(pcre_context_t *ctx, unsigned int threshold)
+{
+        ctx->threshold = threshold;
+}
+
+
+
+const char *pcre_context_get_name(pcre_context_t *ctx)
+{
+        return ctx->name;
+}
+
+
+
 idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx)
 {
         return ctx->idmef;
@@ -1225,8 +1285,10 @@ int pcre_context_check_correlation(pcre_context_t *ctx)
         prelude_log_debug(1, "[%s]: correlation check threshold=%d required=%d.\n",
                           ctx->name, ctx->threshold + 1, setting->correlation_threshold);
 
-        if ( setting->timeout )
+        if ( setting->timeout ) {
+                prelude_timer_set_expire(&ctx->timer, setting->timeout);
                 prelude_timer_reset(&ctx->timer);
+        }
         
         if ( setting->correlation_threshold && ++ctx->threshold != setting->correlation_threshold )
                 return -1;
@@ -1236,8 +1298,19 @@ int pcre_context_check_correlation(pcre_context_t *ctx)
 
 
 
+void pcre_context_set_idmef(pcre_context_t *ctx, idmef_message_t *idmef)
+{
+        if ( ctx->idmef )
+                idmef_message_destroy(ctx->idmef);
+
+        ctx->idmef = idmef_message_ref(idmef);
+}
+
+
+
+
 int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
-                     const char *name, idmef_message_t *idmef, pcre_context_setting_t *setting)
+                     const char *name, pcre_context_setting_t *setting)
 {
         int ret;
         pcre_context_t *ctx;

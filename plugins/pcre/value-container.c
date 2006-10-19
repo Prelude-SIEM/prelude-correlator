@@ -42,7 +42,6 @@ struct value_container {
         prelude_list_t list;
         prelude_list_t value_item_list;
         void *data;
-        char *string;
 };
 
 
@@ -454,8 +453,6 @@ int value_container_new(value_container_t **vcont, const char *str)
         }
 
         (*vcont)->data = NULL;
-        (*vcont)->string = strdup(str);
-        
         prelude_list_init(&(*vcont)->value_item_list);
         
         ret = parse_value(*vcont, str);
@@ -484,7 +481,6 @@ void value_container_destroy(value_container_t *vcont)
                 free(vitem);
         }
 
-        free(vcont->string);
         free(vcont);
 }
 
@@ -516,11 +512,4 @@ void *value_container_get_data(value_container_t *vcont)
 void value_container_set_data(value_container_t *vcont, void *data)
 {
         vcont->data = data;
-}
-
-
-
-const char *value_container_get_string(value_container_t *vcont)
-{
-        return vcont->string;
 }

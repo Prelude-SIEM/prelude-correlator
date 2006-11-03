@@ -185,7 +185,8 @@ static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *
 
 
 
-int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idmef_message_t **message,
+int rule_object_build_message(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                              rule_object_list_t *olist, idmef_message_t **message,
                               idmef_message_t *idmef_in, capture_string_t *capture)
 {
         int ret;
@@ -207,7 +208,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
         prelude_list_for_each(&olist->rule_object_list, tmp) {
                 rule_object = prelude_list_entry(tmp, rule_object_t, list);
 
-                strbuf = value_container_resolve(rule_object->vcont, rule, capture);
+                strbuf = value_container_resolve(rule_object->vcont, plugin, rule, capture);
                 if ( ! strbuf )
                         continue;
                 
@@ -244,9 +245,7 @@ int rule_object_build_message(pcre_rule_t *rule, rule_object_list_t *olist, idme
 
 
 
-int rule_object_add(rule_object_list_t *olist,
-                    const char *filename, int line,
-                    const char *object_name, const char *value)
+int rule_object_add(rule_object_list_t *olist, const char *object_name, const char *value)
 {
         int ret;
         idmef_path_t *object;
@@ -257,16 +256,14 @@ int rule_object_add(rule_object_list_t *olist,
         else
                 ret = idmef_path_new(&object, "alert.%s", object_name);
         
-        if ( ret < 0 ) {
-                prelude_perror(ret, "%s:%d: could not create 'alert.%s' path", filename, line, object_name);
-                return -1;
-        }
+        if ( ret < 0 )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "could not create 'alert.%s' path: %s",
+                                             object_name, prelude_strerror(ret));
 
         rule_object = malloc(sizeof(*rule_object));
         if ( ! rule_object ) {
-                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
                 idmef_path_destroy(object);
-                return -1;
+                return prelude_error_from_errno(errno);
         }
         
         rule_object->object = object;

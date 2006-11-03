@@ -35,6 +35,7 @@
 #include <libprelude/prelude-extract.h>
 
 #include "pcre-mod.h"
+#include "pcre-context.h"
 #include "context-save-restore.h"
 
 
@@ -50,7 +51,9 @@
 #define CONTEXT_TIMER_TAG_ELAPSED                  6
 #define CONTEXT_TIMER_TAG_SHUTDOWN                 7
 
-#define CONTEXT_TAG_IDMEF                          8
+#define CONTEXT_TAG_VALUE_IDMEF                    8
+#define CONTEXT_TAG_VALUE_STRING                   9
+#define CONTEXT_TAG_VALUE_FLOAT                   10
 
 
 
@@ -73,10 +76,12 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         void *buf;
         uint8_t tag;
         uint32_t len;
-        const char *name;
+        float float_val = 0;
         idmef_message_t *idmef = NULL;
         pcre_context_setting_t *settings;
-        uint32_t threshold, elapsed, shutdown;
+        const char *name, *string_val = NULL;
+        uint32_t threshold = 0, elapsed = 0, shutdown = 0;
+        pcre_context_type_t type = PCRE_CONTEXT_TYPE_UNKNOWN;
         
         settings = calloc(1, sizeof(*settings));
         if ( ! settings )
@@ -143,8 +148,25 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                                 goto err;
                         
                         break;
+
                         
-                case CONTEXT_TAG_IDMEF:
+                case CONTEXT_TAG_VALUE_FLOAT:
+                        ret = prelude_extract_float_safe(&float_val, buf, len);
+                        if ( ret < 0 )
+                                goto err;
+                        
+                        type = PCRE_CONTEXT_TYPE_FLOAT;
+                        break;
+                        
+                case CONTEXT_TAG_VALUE_STRING:
+                        ret = prelude_extract_characters_safe(&string_val, buf, len);
+                        if ( ret < 0 )
+                                goto err;
+
+                        type = PCRE_CONTEXT_TYPE_STRING;
+                        break;
+                        
+                case CONTEXT_TAG_VALUE_IDMEF:
                         ret = idmef_message_new(&idmef);
                         if ( ret < 0 )
                                 goto err;
@@ -156,7 +178,8 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                                 idmef_message_destroy(idmef);
                                 goto err;
                         }
-                        
+
+                        type = PCRE_CONTEXT_TYPE_IDMEF;
                         break;
                         
                 default:
@@ -166,27 +189,30 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         }
 
         ret = pcre_context_new(ctx, plugin, name, settings);
-        if ( idmef ) {
-                pcre_context_set_idmef(*ctx, idmef);
-                idmef_message_destroy(idmef);
-        }
-        
-        if ( ret < 0 )
+        if ( ret < 0 ) {
                 free(settings);
-        else {
-                prelude_timer_t *timer = pcre_context_get_timer(*ctx);
-                
-                pcre_context_set_threshold(*ctx, (unsigned int) threshold);
-                compute_next_expire(timer, time(NULL) - shutdown, elapsed);
-                
+                return ret;
         }
         
+        if ( type == PCRE_CONTEXT_TYPE_IDMEF )
+                pcre_context_set_value_idmef(*ctx, idmef);
+
+        else if ( type == PCRE_CONTEXT_TYPE_FLOAT )
+                pcre_context_set_value_float(*ctx, float_val);
+        
+        else if ( type == PCRE_CONTEXT_TYPE_STRING )
+                pcre_context_set_value_string(*ctx, string_val);
+        
+        pcre_context_set_threshold(*ctx, (unsigned int) threshold);
+
+        if ( type == PCRE_CONTEXT_TYPE_IDMEF && settings->timeout )
+                compute_next_expire(pcre_context_get_timer(*ctx), time(NULL) - shutdown, elapsed);
         
         return ret;
 
  err:
         free(settings);
-        return ret;
+        return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "error decoding value tagged %d: %s", tag, prelude_strerror(ret));
 }
 
 
@@ -196,6 +222,9 @@ static int write_context_settings(pcre_context_setting_t *settings, prelude_msgb
         int ret;
         uint32_t value;
 
+        if ( ! settings )
+                return 0;
+        
         value = (uint32_t) htonl(settings->timeout);        
         ret = prelude_msgbuf_set(msgbuf, CONTEXT_SETTINGS_TAG_TIMEOUT, sizeof(value), &value);
         if ( ret < 0 )
@@ -307,22 +336,41 @@ int pcre_context_save(prelude_plugin_instance_t *pi, pcre_context_t *context)
                 prelude_log(PRELUDE_LOG_ERR, "error writing context: %s.\n", strerror(errno));
                 goto err;
         }
-
-        if ( pcre_context_get_idmef(context) ) {
-                ret = prelude_msgbuf_set(msgbuf, CONTEXT_TAG_IDMEF, 0, NULL);
+        
+        if ( pcre_context_get_type(context) == PCRE_CONTEXT_TYPE_IDMEF ) {
+                ret = prelude_msgbuf_set(msgbuf, CONTEXT_TAG_VALUE_IDMEF, 0, NULL);
                 if ( ret < 0 ) {
                         prelude_perror(ret, "error writing IDMEF message");
                         goto err;
                 }
                 
-                ret = idmef_message_write(pcre_context_get_idmef(context), msgbuf);
+                ret = idmef_message_write(pcre_context_get_value_idmef(context), msgbuf);
                 if ( ret < 0 ) {
                         prelude_perror(ret, "error writing IDMEF message");
                         goto err;
                 }
         }
         
+        else if ( pcre_context_get_type(context) == PCRE_CONTEXT_TYPE_STRING ) {
+                const char *str = pcre_context_get_value_string(context);
                 
+                ret = prelude_msgbuf_set(msgbuf, CONTEXT_TAG_VALUE_STRING, strlen(str) + 1, str);
+                if ( ret < 0 ) {
+                        prelude_perror(ret, "error writing IDMEF message");
+                        goto err;
+                }
+        }
+
+        else if ( pcre_context_get_type(context) == PCRE_CONTEXT_TYPE_FLOAT ) {
+                uint32_t tmp = prelude_htonf(pcre_context_get_value_float(context));
+                       
+                ret = prelude_msgbuf_set(msgbuf, CONTEXT_TAG_VALUE_FLOAT, sizeof(tmp), &tmp);
+                if ( ret < 0 ) {
+                        prelude_perror(ret, "error writing IDMEF message");
+                        goto err;
+                }
+        }
+        
         prelude_msgbuf_mark_end(msgbuf);
 
  err:
@@ -358,6 +406,8 @@ unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin)
         
         fd = fopen(filename, "r");                
         if ( ! fd ) {
+                prelude_io_destroy(io);
+                
                 if ( errno == ENOENT )
                         return 0;
                 

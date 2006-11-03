@@ -26,10 +26,9 @@
 typedef struct rule_object_list rule_object_list_t;
 
 int rule_object_add(rule_object_list_t *olist,
-                    const char *filename, int line,
                     const char *object_name, const char *value);
 
-int rule_object_build_message(pcre_rule_t *rule,
+int rule_object_build_message(pcre_plugin_t *plugin, pcre_rule_t *rule,
                               rule_object_list_t *olist, idmef_message_t **message,
                               idmef_message_t *idmef_input, capture_string_t *capture);
 

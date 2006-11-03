@@ -22,6 +22,10 @@
 *****/
 
 typedef struct pcre_rule pcre_rule_t;
+typedef struct pcre_plugin pcre_plugin_t;
+typedef struct pcre_context pcre_context_t;
+
+
 #include "value-container.h"
 
 
@@ -30,9 +34,6 @@ typedef struct pcre_rule pcre_rule_t;
  * it should be large enough
  */
 #define MAX_REFERENCE_PER_RULE 64
-
-typedef struct pcre_plugin pcre_plugin_t;
-typedef struct pcre_context pcre_context_t;
 
 typedef enum {
         PCRE_RULE_FLAGS_LAST    = 0x01,
@@ -76,68 +77,24 @@ typedef enum {
 } pcre_match_flags_t;
 
 
-
-typedef enum {
-        PCRE_CONTEXT_SETTING_FLAGS_OVERWRITE     = 0x01,
-        PCRE_CONTEXT_SETTING_FLAGS_QUEUE         = 0x02,
-        PCRE_CONTEXT_SETTING_FLAGS_ALERT_ON_EXPIRE  = 0x04,
-        PCRE_CONTEXT_SETTING_FLAGS_ALERT_ON_DESTROY = 0x08
-} pcre_context_setting_flags_t;
-
-
-typedef struct {
-        //int value;
-        int timeout;
-        prelude_bool_t need_destroy;
-        
-        value_container_t *vcont;
-        pcre_context_setting_flags_t flags;
-        
-        unsigned int correlation_window;
-        unsigned int correlation_threshold;
-} pcre_context_setting_t;
-
-
-
-typedef struct {
-        PRELUDE_LINKED_OBJECT;
-        pcre_context_t *ctx;
-} pcre_context_container_t;
-
-
 typedef struct {
         idmef_message_t *idmef;
 } pcre_state_t;
 
 
-typedef struct {
+struct pcre_operation {
         prelude_list_t list;
         void *extra;
         void (*extra_destroy)(void *extra);
-        int (*op)(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_state_t *state,
+        int (*op)(pcre_plugin_t *plugin, pcre_rule_t *rule,
                   idmef_message_t *input, capture_string_t *capture, void *extra, prelude_list_t *context_result);
-} pcre_operation_t;
+};
 
 
-pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name);
+typedef struct pcre_operation pcre_operation_t;
 
-int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
-                     const char *name, pcre_context_setting_t *setting);
 
-void pcre_context_destroy(pcre_context_t *ctx);
+prelude_list_t *pcre_plugin_get_context_list(pcre_plugin_t *plugin);
 
-idmef_message_t *pcre_context_get_idmef(pcre_context_t *ctx);
-
-const char *pcre_context_get_name(pcre_context_t *ctx);
-
-prelude_timer_t *pcre_context_get_timer(pcre_context_t *ctx);
-
-void pcre_context_set_threshold(pcre_context_t *ctx, unsigned int threshold);
-
-unsigned int pcre_context_get_threshold(pcre_context_t *ctx);
-
-pcre_context_setting_t *pcre_context_get_setting(pcre_context_t *ctx);
-
-int pcre_context_check_correlation(pcre_context_t *ctx);
-
-void pcre_context_set_idmef(pcre_context_t *ctx, idmef_message_t *idmef);
+int pcre_operation_execute(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                           prelude_list_t *operation_list, idmef_message_t *input, capture_string_t *capture);

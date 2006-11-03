@@ -38,19 +38,23 @@ new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; \
 
 reset_timer = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
-action = source(>>) = source;                                  \
+
+$BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
+	 source(>>) = source;                                  \
          target(>>) = target;                                  \
 	 correlation_alert.alertident(>>).alertident = $3;     \
          correlation_alert.alertident(-1).analyzerid = $4[-1]; \
 	 
 check_correlation = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
-action = classification.text = Brute force attack;                                                           \
+$BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
+	 classification.text = Brute force attack;                                                           \
 	 correlation_alert.name = Multiple failed login;                                                     \ 
 	 assessment.impact.severity = high;                                                                  \
 	 assessment.impact.description = Multiple failed attempts have been made to login to a user account; \
 	 additional_data(>>).data = ignore_atomic_event;
 
+alert = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 destroy_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 
@@ -71,17 +75,20 @@ new_context = BRUTE_USER_$1[*]; \
 
 reset_timer = BRUTE_USER_$1[*];
 
-action = source(>>) = source;                                 \
+$BRUTE_USER_$1[*] = \
+	 source(>>) = source;                                 \
 	 target(>>) = target;                                 \
      	 correlation_alert.alertident(>>).alertident = $2;    \
          correlation_alert.alertident(-1).analyzerid = $3[-1]
 
 check_correlation = BRUTE_USER_$1[*]
 
-action = classification.text = Brute force attack;        \
+$BRUTE_USER_$1[*] = \
+	 classification.text = Brute force attack;        \
          correlation_alert.name = Multiple failed login;  \         
 	 assessment.impact.severity = high;               \
          assessment.impact.description = Multiple failed attempts have been made to login to a user account; \
 	 additional_data(>>).data = ignore_atomic_event
 
+alert = $BRUTE_USER_$1[*];
 destroy_context = BRUTE_USER_$1[*]

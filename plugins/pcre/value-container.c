@@ -35,6 +35,7 @@
 
 #include "prelude-correlator.h"
 #include "pcre-mod.h"
+#include "pcre-context.h"
 #include "value-container.h"
 
 
@@ -45,21 +46,77 @@ struct value_container {
 };
 
 
+typedef enum {
+        VALUE_ITEM_FIXED     = 0,
+        VALUE_ITEM_CONTEXT   = 1,
+        VALUE_ITEM_REFERENCE = 2
+} prelude_value_item_type_t;
+
+
 typedef struct {
         prelude_list_t list;
-        prelude_bool_t multiple_value;
-        int refno;
-        int listindex;
-        char *value;
+        prelude_value_item_type_t type;
 } value_item_t;
 
+typedef struct {
+        prelude_list_t list;
+        prelude_value_item_type_t type;
+
+        value_container_t *context;
+} value_item_context_t;
+
+typedef struct {
+        prelude_list_t list;
+        prelude_value_item_type_t type;
+        
+        char *value;
+} value_item_fixed_t;
+
+typedef struct {
+        prelude_list_t list;
+        prelude_value_item_type_t type;
+        
+        prelude_bool_t multiple_value;
+        int listindex;
+        int refno;
+} value_item_reference_t;
 
 
-static int add_dynamic_object_value(value_container_t *vcont,
-                                    unsigned int reference, unsigned int lindex, prelude_bool_t multiple)
+
+static int add_context_value(value_container_t *vcont, const char *context)
 {
-        value_item_t *vitem;
+        int ret;
+        value_container_t *sub;
+        value_item_context_t *vitem;
 
+        printf("add ctx value %s\n", context);
+        
+        ret = value_container_new(&sub, context);
+        if ( ret < 0 )
+                return ret;
+        
+        vitem = malloc(sizeof(*vitem));
+        if ( ! vitem ) {
+                value_container_destroy(sub);
+                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
+                return -1;
+        }
+
+        vitem->context = sub;
+        vitem->type = VALUE_ITEM_CONTEXT;
+        
+        prelude_list_add_tail(&vcont->value_item_list, &vitem->list);
+
+        return 0;                
+}
+
+
+
+static int add_reference_value(value_container_t *vcont,
+                               unsigned int reference, unsigned int lindex, prelude_bool_t multiple)
+{
+        value_item_reference_t *vitem;
+        
         if ( reference >= MAX_REFERENCE_PER_RULE ) {
                 prelude_log(PRELUDE_LOG_WARN, "reference number %d is too high.\n", reference);
                 return -1;
@@ -71,10 +128,10 @@ static int add_dynamic_object_value(value_container_t *vcont,
                 return -1;
         }
         
-        vitem->value = NULL;
         vitem->refno = reference;
         vitem->listindex = lindex;
         vitem->multiple_value = multiple;
+        vitem->type = VALUE_ITEM_REFERENCE;
         
         prelude_list_add_tail(&vcont->value_item_list, &vitem->list);
 
@@ -83,11 +140,11 @@ static int add_dynamic_object_value(value_container_t *vcont,
 
 
 
-static int add_fixed_object_value(value_container_t *vcont, prelude_string_t *buf)
+static int add_fixed_value(value_container_t *vcont, prelude_string_t *buf)
 {
         int ret;
-        value_item_t *vitem;
-        
+        value_item_fixed_t *vitem;
+
         vitem = malloc(sizeof(*vitem));
         if ( ! vitem ) {
                 prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
@@ -100,12 +157,50 @@ static int add_fixed_object_value(value_container_t *vcont, prelude_string_t *bu
                 free(vitem);
                 return -1;
         }
-
-        vitem->refno = -1;
+        
+        vitem->type = VALUE_ITEM_FIXED;
         prelude_list_add_tail(&vcont->value_item_list, &vitem->list);
 
         return 0;
 }
+
+
+
+static int parse_context(const char **str, char **ctx)
+{
+        int ret;
+        prelude_string_t *out;
+        unsigned int keep_going = 0;
+        
+        ret = prelude_string_new(&out);
+        if ( ret < 0 )
+                return ret;
+        
+        while ( **str && ! isspace(**str) /*|| keep_going */ ) {                
+                if ( **str == '(' ) {
+                        if ( keep_going++ == 0 ) {
+                                (*str)++;
+                                continue;
+                        }
+                }
+
+                if ( **str == ')' && --keep_going == 0 ) {
+                        (*str)++;
+                        break;
+                }
+                
+                prelude_string_ncat(out, (*str)++, 1);
+        }
+
+        if ( keep_going )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "missing closure parenthesis");
+        
+        ret = prelude_string_get_string_released(out, ctx);
+        prelude_string_destroy(out);
+        
+        return ret;
+}
+
 
 
 static int parse_variable(const char **str, int *reference, int *index, prelude_bool_t *multiple) 
@@ -142,14 +237,14 @@ static int parse_variable(const char **str, int *reference, int *index, prelude_
 
 
 
-static int add_fixed_object_value_if_needed(value_container_t *vcont, prelude_string_t *buf)
+static int add_fixed_value_if_needed(value_container_t *vcont, prelude_string_t *buf)
 {
         int ret;
         
         if ( prelude_string_is_empty(buf) )
                 return 0;
 
-        ret = add_fixed_object_value(vcont, buf);
+        ret = add_fixed_value(vcont, buf);
         prelude_string_clear(buf);
 
         return ret;
@@ -173,16 +268,31 @@ static int parse_value(value_container_t *vcont, const char *line)
                 }
                 
                 else if ( ! escaped && *line == '$' ) {
-                        if ( add_fixed_object_value_if_needed(vcont, buf) < 0 )
+                        if ( add_fixed_value_if_needed(vcont, buf) < 0 )
                                 goto err;
 
                         line++;
-                        ret = parse_variable(&line, &reference, &lindex, &multiple);
-                        if ( ret < 0 )
-                                goto err;
+                        
+                        if ( isdigit(*line) ) {
+                                ret = parse_variable(&line, &reference, &lindex, &multiple);
+                                if ( ret < 0 )
+                                        goto err;
 
-                        if ( add_dynamic_object_value(vcont, reference, lindex, multiple) < 0 )
-                                goto err;
+                                if ( add_reference_value(vcont, reference, lindex, multiple) < 0 )
+                                        goto err;
+                        } else {
+                                char *context;
+                                
+                                ret = parse_context(&line, &context);
+                                if ( ret < 0 )
+                                        goto err;
+
+                                ret = add_context_value(vcont, context);
+                                free(context);
+                                
+                                if ( ret < 0 )
+                                        goto err;
+                        }
                 }
 
                 else {                        
@@ -191,7 +301,7 @@ static int parse_value(value_container_t *vcont, const char *line)
                 }
         }
         
-        ret = add_fixed_object_value_if_needed(vcont, buf);
+        ret = add_fixed_value_if_needed(vcont, buf);
         
  err:
         prelude_string_destroy(buf);
@@ -228,7 +338,7 @@ static int propagate_string(prelude_list_t *outlist, const char *str)
 
 
 static int multidimensional_capture_with_index(prelude_list_t *outlist,
-                                               value_item_t *vitem, capture_string_t *capture)
+                                               value_item_reference_t *vitem, capture_string_t *capture)
 {
         int ret;
         unsigned int index;
@@ -254,7 +364,7 @@ static int multidimensional_capture_with_index(prelude_list_t *outlist,
 
 
 static int multidimensional_capture_to_flat_string(prelude_list_t *outlist,
-                                                   value_item_t *vitem, capture_string_t *capture)
+                                                   value_item_reference_t *vitem, capture_string_t *capture)
 {
         int ret;
         unsigned int index, i;
@@ -317,7 +427,7 @@ static inline void prelude_list_splice(prelude_list_t *head, prelude_list_t *add
 
 
 static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
-                                                        value_item_t *vitem, capture_string_t *capture)
+                                                        value_item_reference_t *vitem, capture_string_t *capture)
 {
         unsigned int index, i;
         prelude_list_t *tmp, *bkp;
@@ -367,7 +477,8 @@ static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
 
 
 
-static void resolve_referenced_value(prelude_list_t *outlist, value_item_t *vitem, capture_string_t *capture)
+static void resolve_referenced_value(prelude_list_t *outlist,
+                                     value_item_reference_t *vitem, capture_string_t *capture)
 {
         unsigned int index;
          
@@ -395,28 +506,93 @@ static void resolve_referenced_value(prelude_list_t *outlist, value_item_t *vite
 
 
 
+static int resolve_referenced_context(prelude_list_t *outlist,
+                                      value_item_context_t *vitem,
+                                      pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
+{
+        pcre *regex;
+        pcre_context_t *ctx;
+        prelude_string_t *out;
+        int i, ret, error_offset;
+        const char *name, *err_ptr;
+        prelude_list_t str_list, ctx_list, *tmp, *bkp, *tmp1, *bkp1;
+
+        prelude_list_init(&str_list);
+        
+        ret = value_container_resolve_listed(&str_list, vitem->context, plugin, rule, capture);
+        if ( ret < 0 )
+                return -1;
+
+        prelude_list_for_each_safe(&str_list, tmp, bkp) {
+                
+                out = prelude_linked_object_get_object(tmp);                
+                prelude_string_cat(out, "$");
+                
+                regex = pcre_compile(prelude_string_get_string(out), 0, &err_ptr, &error_offset, NULL);
+                if ( ! regex ) {
+                        prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
+                        prelude_string_destroy(out);
+                        return -1;
+                }
+        
+                prelude_list_init(&ctx_list);
+                i = pcre_context_search_regex(&ctx_list, plugin, regex);
+                
+                pcre_free(regex);
+                prelude_string_destroy(out);
+                
+                prelude_list_for_each_safe(&ctx_list, tmp1, bkp1) {
+                        ctx = prelude_linked_object_get_object(tmp1);                        
+                        prelude_linked_object_del((prelude_linked_object_t *) ctx);
+                        
+                        prelude_string_new(&out);
+                        
+                        ret = pcre_context_get_value_as_string(ctx, out);                
+                        if ( ret < 0 ) {
+                                prelude_perror(ret, "no value");
+                                prelude_string_destroy(out);
+                                continue;
+                        }
+                        
+                        if ( i > 1 )
+                                prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) out);
+                        else {
+                                propagate_string(outlist, prelude_string_get_string(out));
+                                prelude_string_destroy(out);
+                        }
+                }
+        }
+
+        return 0;
+}
+
+
+
 int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *vcont,
-                                   const pcre_rule_t *rule, capture_string_t *capture)
+                                   pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
         prelude_list_t *tmp;
         value_item_t *vitem;
         
         prelude_list_for_each(&vcont->value_item_list, tmp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);
+
+                if ( vitem->type == VALUE_ITEM_REFERENCE )
+                        resolve_referenced_value(outlist, (value_item_reference_t *) vitem, capture);
+
+                else if ( vitem->type == VALUE_ITEM_CONTEXT )
+                        resolve_referenced_context(outlist, (value_item_context_t *) vitem, plugin, rule, capture);
                 
-                if ( vitem->refno != -1 )
-                        resolve_referenced_value(outlist, vitem, capture);
-                else
-                        propagate_string(outlist, vitem->value);
+                else if ( vitem->type == VALUE_ITEM_FIXED )
+                        propagate_string(outlist, ((value_item_fixed_t *) vitem)->value);
         }
-        
-        
+                
         return 0;
 }
 
 
 
-prelude_string_t *value_container_resolve(value_container_t *vcont,
+prelude_string_t *value_container_resolve(value_container_t *vcont, pcre_plugin_t *plugin,
                                           const pcre_rule_t *rule, capture_string_t *capture)
 {
         int ret;
@@ -425,7 +601,7 @@ prelude_string_t *value_container_resolve(value_container_t *vcont,
         
         prelude_list_init(&outlist);
 
-        ret = value_container_resolve_listed(&outlist, vcont, rule, capture);
+        ret = value_container_resolve_listed(&outlist, vcont, plugin, rule, capture);
         if ( ret < 0 )
                 return NULL;
         
@@ -435,7 +611,7 @@ prelude_string_t *value_container_resolve(value_container_t *vcont,
                 str = prelude_linked_object_get_object(tmp);
                 prelude_linked_object_del_init((prelude_linked_object_t *) str);
         }
-                
+        
         return str;
 }
 
@@ -460,7 +636,7 @@ int value_container_new(value_container_t **vcont, const char *str)
                 free(*vcont);
                 return ret;
         }
-
+        
         return 0;
 }
 
@@ -474,8 +650,11 @@ void value_container_destroy(value_container_t *vcont)
         prelude_list_for_each_safe(&vcont->value_item_list, tmp, bkp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);
 
-                if ( vitem->value )
-                        free(vitem->value);
+                if ( vitem->type == VALUE_ITEM_FIXED )
+                        free(((value_item_fixed_t *)vitem)->value);
+
+                else if ( vitem->type == VALUE_ITEM_CONTEXT )
+                        value_container_destroy(((value_item_context_t *) vitem)->context);
                 
                 prelude_list_del(&vitem->list);
                 free(vitem);
@@ -488,17 +667,24 @@ void value_container_destroy(value_container_t *vcont)
 
 void value_container_reset(value_container_t *vcont)
 {
+#if 0
         value_item_t *vitem;
         prelude_list_t *tmp;
         
         prelude_list_for_each(&vcont->value_item_list, tmp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);
 
-                if ( vitem->refno != -1 && vitem->value ) {
-                        free(vitem->value);
-                        vitem->value = NULL;
+                if ( vitem->type == VALUE_ITEM_FIXED ) {
+                        free(((value_item_fixed_t *)vitem)->value);
+                        ((value_item_fixed_t *)vitem)->value = NULL;
+                }
+
+                else if ( vitem->type == VALUE_ITEM_CONTEXT ) {
+                        free(((value_item_context_t *)vitem)->context);
+                        ((value_item_context_t *)vitem)->context = NULL;
                 }
         }
+#endif
 }
 
 

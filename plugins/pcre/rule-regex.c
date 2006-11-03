@@ -233,42 +233,9 @@ static int exec_regex(pcre_rule_t *rule, idmef_message_t *input, capture_string_
 }
 
 
-static void destroy_idmef_state(pcre_state_t *state)
-{
-        if ( state->idmef ) {
-                idmef_message_destroy(state->idmef);
-                state->idmef = NULL;
-        }
-}
-
-
-
-static int exec_rule_operation(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                               pcre_state_t *state, idmef_message_t *input, capture_string_t *capture)
-{
-        int ret;
-        pcre_operation_t *op;
-        prelude_list_t *tmp, context_result;
-        
-        prelude_list_for_each(&rule->operation_list, tmp) {
-                op = prelude_linked_object_get_object(tmp);
-
-                prelude_list_init(&context_result);
-                ret = op->op(plugin, rule, state, input, capture, op->extra, &context_result);
-
-                prelude_log_debug(4, "[op=%p] operation returned %d: %s.\n", op, ret,
-                                  (ret < 0) ? "abording" : "continuing");
-                if ( ret < 0 )
-                        return -1;
-        }
-
-        return 0;
-}
-
-
 
 static int match_rule_list(pcre_plugin_t *plugin,
-                           pcre_rule_container_t *rc, pcre_state_t *state,
+                           pcre_rule_container_t *rc,
                            idmef_message_t *input, pcre_match_flags_t *match_flags)
 {        
         prelude_list_t *tmp;
@@ -289,9 +256,8 @@ static int match_rule_list(pcre_plugin_t *plugin,
         prelude_list_for_each(&rule->rule_list, tmp) {
                 child = prelude_list_entry(tmp, pcre_rule_container_t, list);
                 
-                ret = match_rule_list(plugin, child, state, input, &gl);
+                ret = match_rule_list(plugin, child, input, &gl);
                 if ( ret < 0 && ! child->optional ) {
-                        destroy_idmef_state(state);
                         capture_string_destroy(capture);
                         return -1;
                 }
@@ -303,31 +269,16 @@ static int match_rule_list(pcre_plugin_t *plugin,
                 if ( gl & PCRE_MATCH_FLAGS_LAST )
                         break;
         }
-                
+        
         if ( optmatch < rule->min_optgoto_match ) {
-                destroy_idmef_state(state);
                 capture_string_destroy(capture);
                 return -1;
         }
 
-        ret = exec_rule_operation(plugin, rule, state, input, capture);
+        ret = pcre_operation_execute(plugin, rule, &rule->operation_list, input, capture);
         if ( ret < 0 ) {
-                destroy_idmef_state(state);
                 capture_string_destroy(capture);
                 return -1;
-        }
-                
-        if ( ! (rule->flags & PCRE_RULE_FLAGS_SILENT) && state->idmef ) {                
-                prelude_log_debug(4, "lml alert emit id=%d (last=%d)\n",
-                                  rule->id, rule->flags & PCRE_RULE_FLAGS_LAST);
-
-                correlation_alert_emit(state->idmef);
-                destroy_idmef_state(state);
-                
-                *match_flags |= PCRE_MATCH_FLAGS_ALERT;
-
-                if ( rule->flags & PCRE_RULE_FLAGS_LAST )
-                        *match_flags |= PCRE_MATCH_FLAGS_LAST;
         }
         
         capture_string_destroy(capture);
@@ -340,58 +291,46 @@ static int match_rule_list(pcre_plugin_t *plugin,
 int rule_regex_match(pcre_plugin_t *plugin, pcre_rule_container_t *root,
                      idmef_message_t *input, pcre_match_flags_t *match_flags)
 {
-        int ret;
-        pcre_state_t state;
-        
-        memset(&state, 0, sizeof(state));
-
-        ret = match_rule_list(plugin, root, &state, input, match_flags);
-        destroy_idmef_state(&state);
-        
-        return ret;
+        return match_rule_list(plugin, root, input, match_flags);
 }
 
 
 
-rule_regex_t *rule_regex_new(const char *path, const char *regex) 
+int rule_regex_new(rule_regex_t **n, const char *path, const char *regex) 
 {
         int ret;
         int err_offset;
         rule_regex_t *new;
         const char *err_ptr;
 
-        new = calloc(1, sizeof(*new));
-        if ( ! new ) {
-                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
-                return NULL;
-        }
+        *n = new = calloc(1, sizeof(*new));
+        if ( ! new )
+                return prelude_error_from_errno(errno);
+        
         prelude_list_init(&new->_list);
         
         ret = idmef_path_new(&new->path, "alert.%s", path);
         if ( ret < 0 ) {
-                prelude_perror(ret, "unable to create IDMEF path '%s'", path);
                 new->path = NULL;
                 rule_regex_destroy(new);
-                return NULL;
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "unable to create IDMEF path '%s'", path);
         }
         
         new->regex = pcre_compile(regex, 0, &err_ptr, &err_offset, NULL);
         if ( ! new->regex ) {
-                prelude_log(PRELUDE_LOG_WARN, "unable to compile regex: %s.\n", err_ptr);
                 rule_regex_destroy(new);
-                return NULL;
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "unable to compile regex: %s", err_ptr); 
         }
 
         new->regex_string = strdup(regex);
         if ( ! new->regex_string ) {
-                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
                 rule_regex_destroy(new);
-                return NULL;
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "memory exhausted.\n");
         }
 
         new->extra = pcre_study(new->regex, 0, &err_ptr);
         
-        return new;
+        return 0;
 }
 
 

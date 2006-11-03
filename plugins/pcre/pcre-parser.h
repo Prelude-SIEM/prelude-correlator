@@ -1,6 +1,6 @@
 /*****
 *
-* Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 PreludeIDS Technologies. All Rights Reserved.
+* Copyright (C) 2006 PreludeIDS Technologies. All Rights Reserved.
 * Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 *
 * This file is part of the Prelude-LML program.
@@ -21,10 +21,5 @@
 *
 *****/
 
-typedef struct rule_regex rule_regex_t;
+int pcre_parse(FILE *fd, const char *filename, unsigned int *line, char **operation, char **variable, char **value);
 
-void rule_regex_destroy(rule_regex_t *ptr);
-
-int rule_regex_new(rule_regex_t **new, const char *path, const char *regex);
-
-int rule_regex_match(pcre_plugin_t *plugin, pcre_rule_container_t *root, idmef_message_t *idmef_input, pcre_match_flags_t *match_flags);

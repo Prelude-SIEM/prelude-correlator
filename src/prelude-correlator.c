@@ -365,6 +365,7 @@ static void setup_signal(void)
 void correlation_alert_emit(idmef_message_t *idmef)
 {
         idmef_alert_t *alert;
+        idmef_analyzer_t *analyzer = NULL;
         
         alert = idmef_message_get_alert(idmef);
         if ( ! alert )
@@ -373,12 +374,17 @@ void correlation_alert_emit(idmef_message_t *idmef)
         idmef_alert_set_messageid(alert, NULL);
         
         if ( ! dry_run ) {
-                idmef_alert_set_analyzer(alert, idmef_analyzer_ref(prelude_client_get_analyzer(client)), IDMEF_LIST_APPEND);
+                analyzer = idmef_analyzer_ref(prelude_client_get_analyzer(client));
+                
+                idmef_alert_set_analyzer(alert, analyzer, IDMEF_LIST_APPEND);
                 prelude_client_send_idmef(client, idmef);
         }
         
         if ( print_output_fd )
                 idmef_message_print(idmef, print_output_fd);
+
+        if ( analyzer )
+                prelude_linked_object_del_init((prelude_linked_object_t *) analyzer);
 }
 
 

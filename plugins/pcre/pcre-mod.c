@@ -453,9 +453,9 @@ static int op_for(pcre_plugin_t *plugin, pcre_rule_t *rule,
         
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
-                pcre_context_set_value_from_string(ctx, prelude_string_get_string(str));
-                
                 prelude_log_debug(3, "iteration value='%s'\n", prelude_string_get_string(str));
+                
+                pcre_context_set_value_from_string(ctx, prelude_string_get_string(str));
                 prelude_string_destroy(str);
 
                 pcre_operation_execute(plugin, rule, &forcb->operation_list, input, capture);

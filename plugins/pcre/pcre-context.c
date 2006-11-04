@@ -345,9 +345,6 @@ const char *pcre_context_get_value_string(pcre_context_t *ctx)
 void pcre_context_set_value_string(pcre_context_t *ctx, const char *str)
 {
         context_change_type_if_needed(ctx, PCRE_CONTEXT_TYPE_STRING);
-
-        if ( ctx->value.string )
-                free(ctx->value.string);
         
         ctx->type = PCRE_CONTEXT_TYPE_STRING;
         ctx->value.string = strdup(str);

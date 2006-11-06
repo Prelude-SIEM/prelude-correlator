@@ -425,7 +425,6 @@ static inline void prelude_list_splice(prelude_list_t *head, prelude_list_t *add
 }
 
 
-
 static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
                                                         value_item_reference_t *vitem, capture_string_t *capture)
 {
@@ -511,10 +510,10 @@ static int resolve_referenced_context(prelude_list_t *outlist,
                                       pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
         pcre *regex;
+        const char *err_ptr;
         pcre_context_t *ctx;
         prelude_string_t *out;
         int i, ret, error_offset;
-        const char *name, *err_ptr;
         prelude_list_t str_list, ctx_list, *tmp, *bkp, *tmp1, *bkp1;
 
         prelude_list_init(&str_list);
@@ -547,11 +546,16 @@ static int resolve_referenced_context(prelude_list_t *outlist,
                         
                         prelude_string_new(&out);
                         
-                        ret = pcre_context_get_value_as_string(ctx, out);                
+                        ret = pcre_context_get_value_as_string(ctx, out);
                         if ( ret < 0 ) {
-                                prelude_perror(ret, "no value");
-                                prelude_string_destroy(out);
-                                continue;
+                                if ( pcre_context_get_type(ctx) == PCRE_CONTEXT_TYPE_IDMEF ) {
+                                        /* Special case, IDMEF is handled directly trhough pcre-context.c */
+                                        prelude_string_sprintf(out, "$%s", pcre_context_get_name(ctx));
+                                } else {
+                                        prelude_perror(ret, "no value");
+                                        prelude_string_destroy(out);
+                                        continue;
+                                }
                         }
                         
                         if ( i > 1 )

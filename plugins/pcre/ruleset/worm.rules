@@ -41,26 +41,25 @@ pattern = messageid: (\d+); \
 # Create context for classification combined with all the target.
 #
 new_context = WORM_HOST_$3_$5[*]; expire:300; threshold:5;
-reset_timer = WORM_HOST_$3_$4[*];
+reset_timer = $WORM_HOST_$3_$4[*];
 
 #
 # We are trying to see whether a previous target is now attacking other hosts
 # thus, we check whether a context exist with this classification combined to 
 # this source.
 #
-require_context = WORM_HOST_$3_$4[*];
+require_context = $WORM_HOST_$3_$4[*];
 
 $WORM_HOST_$3_$4[*] =                                         \
 	 source(>>) = source;                                 \
 	 target(>>) = target;                                 \
 	 correlation_alert.alertident(>>).alertident = $1;    \
-	 correlation_alert.alertident(-1).analyzerid = $2[-1];\
-	 additional_data(0).data = Test d'additional data venant d'un context: "$WORM2". voila c'est la fin; 
+	 correlation_alert.alertident(-1).analyzerid = $2[-1];
 
 #
 # Increase and check the context threshold. 
 #
-check_correlation = WORM_HOST_$3_$4[*];
+check_correlation = $WORM_HOST_$3_$4[*];
 
 #
 # If the correlation process matched, we can now setup remaining alert part,
@@ -73,4 +72,4 @@ $WORM_HOST_$3_$4[*] = \
          assessment.impact.description = $4 has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.;
 
 alert = $WORM_HOST_$3_$4[*];
-destroy_context = WORM_HOST_$3_$4[*];
+destroy_context = $WORM_HOST_$3_$4[*];

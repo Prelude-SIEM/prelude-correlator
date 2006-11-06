@@ -36,7 +36,7 @@ new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; \
 	      expire: 60; \
 	      threshold: 5;
 
-reset_timer = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+reset_timer = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 
 $BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
@@ -45,7 +45,7 @@ $BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
 	 correlation_alert.alertident(>>).alertident = $3;     \
          correlation_alert.alertident(-1).analyzerid = $4[-1]; \
 	 
-check_correlation = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+check_correlation = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 $BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
 	 classification.text = Brute force attack;                                                           \
@@ -55,7 +55,7 @@ $BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
 	 additional_data(>>).data = ignore_atomic_event;
 
 alert = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
-destroy_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+destroy_context = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
 
 
 
@@ -73,7 +73,7 @@ new_context = BRUTE_USER_$1[*]; \
 	      expire: 120; \
 	      threshold: 30;
 
-reset_timer = BRUTE_USER_$1[*];
+reset_timer = $BRUTE_USER_$1[*];
 
 $BRUTE_USER_$1[*] = \
 	 source(>>) = source;                                 \
@@ -81,7 +81,7 @@ $BRUTE_USER_$1[*] = \
      	 correlation_alert.alertident(>>).alertident = $2;    \
          correlation_alert.alertident(-1).analyzerid = $3[-1]
 
-check_correlation = BRUTE_USER_$1[*]
+check_correlation = $BRUTE_USER_$1[*]
 
 $BRUTE_USER_$1[*] = \
 	 classification.text = Brute force attack;        \
@@ -91,4 +91,4 @@ $BRUTE_USER_$1[*] = \
 	 additional_data(>>).data = ignore_atomic_event
 
 alert = $BRUTE_USER_$1[*];
-destroy_context = BRUTE_USER_$1[*]
+destroy_context = $BRUTE_USER_$1[*]

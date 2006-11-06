@@ -399,36 +399,63 @@ static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
 
 
 
-static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                 idmef_message_t *input, capture_string_t *capture, void *extra,
-                 prelude_list_t *context_result)
+static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                    idmef_message_t *input, capture_string_t *capture, struct if_cb *ifcb)
 {
         float val;
         pcre_context_t *ctx;
         prelude_bool_t ok = FALSE;
-        struct if_cb *ifcb = extra;
         
-        ctx = lookup_context(ifcb->vcont, plugin, rule, capture);
-        if ( ! ctx )
-                return -1;
+        if ( ifcb->op != 0 ) {
+                val = pcre_context_get_value_float(ctx);
+        
+                if ( ifcb->op & IF_OPERATOR_EQUAL && val == ifcb->value )
+                        ok = TRUE;
 
-        val = pcre_context_get_value_float(ctx);
+                else if ( ifcb->op & IF_OPERATOR_LOWER && val < ifcb->value )
+                        ok = TRUE;
+                
+                else if ( ifcb->op & IF_OPERATOR_GREATER && val > ifcb->value )
+                        ok = TRUE;
         
-        if ( ifcb->op & IF_OPERATOR_EQUAL && val == ifcb->value )
-                ok = TRUE;
+                if ( ! ok )
+                        return 0;
+        }
 
-        else if ( ifcb->op & IF_OPERATOR_LOWER && val < ifcb->value )
-                ok = TRUE;
-
-        else if ( ifcb->op & IF_OPERATOR_GREATER && val > ifcb->value )
-                ok = TRUE;
-        
-        if ( ! ok )
-                return -1;
-        
         return pcre_operation_execute(plugin, rule, &ifcb->operation_list, input, capture);
 }
 
+
+static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                 idmef_message_t *input, capture_string_t *capture, void *extra,
+                 prelude_list_t *context_result)
+{
+        int ret;
+        prelude_string_t *str;
+        struct if_cb *ifcb = extra;
+        pcre_context_t *ctx = NULL;
+        prelude_list_t list, *tmp, *bkp;
+        
+        prelude_list_init(&list);
+        
+        ret = value_container_resolve_listed(&list, ifcb->vcont, plugin, rule, capture);
+        if ( ret < 0 )
+                return 0;
+
+        prelude_list_for_each_safe(&list, tmp, bkp) {
+                str = prelude_linked_object_get_object(tmp);
+                
+                ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+                prelude_string_destroy(str);
+                
+                if ( ! ctx )
+                        continue;
+                
+                do_op_if(plugin, rule, input, capture, ifcb);
+        }
+                        
+        return 0;
+}
 
 
 static int op_for(pcre_plugin_t *plugin, pcre_rule_t *rule,
@@ -1494,7 +1521,7 @@ static int parse_if(FILE *fd, const char *filename, unsigned int *line,
                 { ">", IF_OPERATOR_GREATER                    },
         };
         
-        ifcb = malloc(sizeof(*ifcb));
+        ifcb = calloc(1, sizeof(*ifcb));
         if ( ! ifcb ) {
                 prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
                 return -1;
@@ -1519,13 +1546,18 @@ static int parse_if(FILE *fd, const char *filename, unsigned int *line,
                 if_cb_destroy(ifcb);
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid operator specified for 'if' command: '%s'", value);
         }
-        
-        value += strcspn(value, " ");
 
-        ifcb->value = strtod(value, &eptr);        
-        if ( eptr == value || (*eptr != ' ' && *eptr != '{') ) {
-                if_cb_destroy(ifcb);
-                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid value specified to 'if' command: '%s'", value);
+        /*
+         * If there is no value, we just check whether the specified context exist.
+         */
+        if ( *value != '{' ) {
+                value += strcspn(value, " ");
+
+                ifcb->value = strtod(value, &eptr);        
+                if ( eptr == value || (*eptr != ' ' && *eptr != '{') ) {
+                        if_cb_destroy(ifcb);
+                        return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid value specified to 'if' command: '%s'", value);
+                }
         }
         
         ret = parse_ruleset(&rule->rule_list, plugin, rule, &ifcb->operation_list, filename, line, fd);        

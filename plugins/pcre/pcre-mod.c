@@ -712,7 +712,10 @@ static int parse_require_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         value_container_t *vcont;
 
-        ret = value_container_new(&vcont, value);
+        if ( *value != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", value);
+        
+        ret = value_container_new(&vcont, value + 1);
         if ( ret < 0 )
                 return ret;
 
@@ -726,7 +729,10 @@ static int parse_check_correlation(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         value_container_t *vcont;
 
-        ret = value_container_new(&vcont, value);
+        if ( *value != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", value);
+        
+        ret = value_container_new(&vcont, value + 1);
         if ( ret < 0 )
                 return ret;
 
@@ -741,7 +747,10 @@ static int parse_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         value_container_t *vcont;
 
-        ret = value_container_new(&vcont, value);
+        if ( *value != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", value);
+        
+        ret = value_container_new(&vcont, value + 1);
         if ( ret < 0 )
                 return ret;
 
@@ -755,7 +764,10 @@ static int parse_not_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         value_container_t *vcont;
 
-        ret = value_container_new(&vcont, value);
+        if ( *value != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", value);
+        
+        ret = value_container_new(&vcont, value + 1);
         if ( ret < 0 )
                 return ret;
 
@@ -771,7 +783,10 @@ static int parse_destroy_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         value_container_t *vcont;
 
-        ret = value_container_new(&vcont, value);
+        if ( *value != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", value);
+        
+        ret = value_container_new(&vcont, value + 1);
         if ( ret < 0 )
                 return ret;
 
@@ -1102,7 +1117,7 @@ static int parse_schedule(pcre_plugin_t *plugin, pcre_rule_t *rule,
         if ( ! ptr )
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "entry is not complete");
 
-        if ( strtok(value, " ") )
+        if ( strtok(NULL, " ") )
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "entry with too much value");
         
         if ( prelude_list_is_empty(&plugin->schedule_list) ) {
@@ -1381,7 +1396,7 @@ static int parse_alert(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_list_t 
         if ( ret < 0 )
                 return ret;
 
-        ret = add_operation(&rule->operation_list, op_alert, (void *) value_container_destroy, vcont);
+        ret = add_operation(operation_list, op_alert, (void *) value_container_destroy, vcont);
         if ( ret < 0 ) {
                 value_container_destroy(vcont);
                 return -1;

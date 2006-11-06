@@ -5,7 +5,6 @@ noinst_HEADERS = capture-string.h pcre-mod.h rule-object.h rule-regex.h value-co
 
 pcre_la_SOURCES = 			\
 		capture-string.c 	\
-		context-save-restore.c	\
 		pcre-context.c		\
 		pcre-mod.c		\
 		pcre-parser.c		\

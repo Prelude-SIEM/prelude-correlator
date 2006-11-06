@@ -41,7 +41,6 @@
 #include "pcre-context.h"
 #include "rule-object.h"
 #include "rule-regex.h"
-#include "context-save-restore.h"
 
 
 #include "pcre-parser.h"
@@ -399,11 +398,10 @@ static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
 
 
 
-static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
+static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_context_t *ctx,
                     idmef_message_t *input, capture_string_t *capture, struct if_cb *ifcb)
 {
         float val;
-        pcre_context_t *ctx;
         prelude_bool_t ok = FALSE;
         
         if ( ifcb->op != 0 ) {
@@ -451,7 +449,7 @@ static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 if ( ! ctx )
                         continue;
                 
-                do_op_if(plugin, rule, input, capture, ifcb);
+                do_op_if(plugin, rule, ctx, input, capture, ifcb);
         }
                         
         return 0;
@@ -482,7 +480,7 @@ static int op_for(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 str = prelude_linked_object_get_object(tmp);
                 prelude_log_debug(3, "iteration value='%s'\n", prelude_string_get_string(str));
                 
-                pcre_context_set_value_from_string(ctx, prelude_string_get_string(str));
+                pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(str));
                 prelude_string_destroy(str);
 
                 pcre_operation_execute(plugin, rule, &forcb->operation_list, input, capture);
@@ -1254,7 +1252,7 @@ static int do_exec(prelude_string_t *out, const char *cmd)
 
 
 
-static int context_assign_preprocess(pcre_context_t *ctx, prelude_string_t *pstr)
+static int context_assign_preprocess(pcre_plugin_t *plugin, pcre_context_t *ctx, prelude_string_t *pstr)
 {
         int ret;
         char *str, *val, *tmp;
@@ -1278,7 +1276,7 @@ static int context_assign_preprocess(pcre_context_t *ctx, prelude_string_t *pstr
         free(tmp);
 
         if ( ! prelude_string_is_empty(pstr) )
-             return pcre_context_set_value_from_string(ctx, prelude_string_get_string(pstr));
+             return pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(pstr));
 
         return 0;
 }
@@ -1313,7 +1311,7 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
                 if ( ! str )
                         return -1;
                 
-                context_assign_preprocess(ctx, str);
+                context_assign_preprocess(plugin, ctx, str);
                 prelude_string_destroy(str);
         }
         
@@ -1476,7 +1474,7 @@ static int parse_global(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 return ret;
         }
         
-        return pcre_context_set_value_from_string(ctx, value);
+        return pcre_context_set_value_from_string(plugin, ctx, value);
 }
 
 
@@ -1542,7 +1540,7 @@ static int parse_if(FILE *fd, const char *filename, unsigned int *line,
                 }
         }
         
-        if ( i == sizeof(optbl) / sizeof(*optbl) ) {
+        if ( i == sizeof(optbl) / sizeof(*optbl) && *value != '{' ) {
                 if_cb_destroy(ifcb);
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid operator specified for 'if' command: '%s'", value);
         }
@@ -1992,13 +1990,12 @@ static int pcre_activate(prelude_option_t *opt, const char *optarg, prelude_stri
 
 static void pcre_destroy(prelude_plugin_instance_t *pi, prelude_string_t *err)
 {
-        pcre_context_t *ctx;
         struct schedule_cb *scb;
         prelude_list_t *tmp, *bkp;
         pcre_rule_container_t *rule;
         pcre_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(pi);
 
-        pcre_context_save_from_list(pi, plugin);
+        pcre_context_save(pi, plugin);
         
         prelude_list_for_each_safe(&plugin->rule_list, tmp, bkp) {
                 rule = prelude_list_entry(tmp, pcre_rule_container_t, list);

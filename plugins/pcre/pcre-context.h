@@ -99,6 +99,9 @@ pcre_context_type_t pcre_context_get_type(pcre_context_t *ctx);
 
 int pcre_context_get_value_as_string(pcre_context_t *ctx, prelude_string_t *out);
 
-int pcre_context_set_value_from_string(pcre_context_t *ctx, const char *str);
+int pcre_context_set_value_from_string(pcre_plugin_t *plugin, pcre_context_t *ctx, const char *str);
 
-void pcre_context_save_from_list(prelude_plugin_instance_t *pi, pcre_plugin_t *plugin);
+int pcre_context_save(prelude_plugin_instance_t *pi, pcre_plugin_t *plugin);
+
+unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin);
+

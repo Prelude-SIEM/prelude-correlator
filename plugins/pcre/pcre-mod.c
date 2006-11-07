@@ -60,6 +60,8 @@ struct pcre_plugin {
 
         prelude_list_t schedule_list;
         prelude_timer_t schedule_timer;
+
+        unsigned int restored_context_count;
 };
 
 
@@ -135,7 +137,6 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, pcre_rule_
 
 
 static prelude_correlator_plugin_t pcre_plugin;
-static unsigned int restored_context_count = 0;
 
 
 
@@ -1799,7 +1800,7 @@ static int set_pcre_ruleset(prelude_option_t *opt, const char *optarg, prelude_s
                 return -1;
 
         prelude_log(PRELUDE_LOG_INFO, "- pcre plugin loaded %d rules, restored %d context.\n",
-                    plugin->rulesnum, restored_context_count);
+                    plugin->rulesnum, plugin->restored_context_count);
                 
         return 0;
 }
@@ -1819,7 +1820,7 @@ static int pcre_activate(prelude_option_t *opt, const char *optarg, prelude_stri
         prelude_list_init(&new->schedule_list);
         prelude_plugin_instance_set_plugin_data(context, new);
         
-        restored_context_count = pcre_context_restore(context);
+        pcre_context_restore(context, &new->restored_context_count);
         
         return 0;
 }

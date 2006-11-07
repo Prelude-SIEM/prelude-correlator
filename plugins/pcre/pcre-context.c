@@ -828,7 +828,7 @@ int pcre_context_save(prelude_plugin_instance_t *pi, pcre_plugin_t *plugin)
 
 
 
-unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin)
+int pcre_context_restore(prelude_plugin_instance_t *plugin, unsigned int *restored_context_count)
 {
         int ret;
         FILE *fd;
@@ -836,7 +836,6 @@ unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin)
         prelude_msg_t *msg;
         pcre_context_t *ctx;
         char filename[PATH_MAX];
-        unsigned int restored_context_count = 0;
         
         ret = prelude_io_new(&io);
         if ( ret < 0 )
@@ -851,12 +850,13 @@ unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin)
                 
                 if ( errno == ENOENT )
                         return 0;
-                
-                prelude_log(PRELUDE_LOG_ERR, "error opening '%s' for reading: %s.\n", filename, strerror(errno));
+
+                prelude_log(PRELUDE_LOG_ERR, "could not open '%s' for reading: %s.\n", filename, strerror(errno));
                 return -1;
         }
-
+        
         prelude_io_set_file_io(io, fd);
+        *restored_context_count = 0;
 
         do {
                 msg = NULL;
@@ -878,11 +878,11 @@ unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin)
                         continue;
                 }
 
-                restored_context_count++;
+                (*restored_context_count)++;
         } while (TRUE);
         
         prelude_io_close(io);
         prelude_io_destroy(io);
                 
-        return restored_context_count;
+        return 0;
 }

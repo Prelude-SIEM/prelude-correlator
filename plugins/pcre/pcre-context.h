@@ -103,5 +103,5 @@ int pcre_context_set_value_from_string(pcre_plugin_t *plugin, pcre_context_t *ct
 
 int pcre_context_save(prelude_plugin_instance_t *pi, pcre_plugin_t *plugin);
 
-unsigned int pcre_context_restore(prelude_plugin_instance_t *plugin);
+int pcre_context_restore(prelude_plugin_instance_t *plugin, unsigned int *restored_count);
 

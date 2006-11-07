@@ -52,7 +52,8 @@ int pcre_LTX_correlation_plugin_init(prelude_plugin_entry_t *pe, void *data);
 struct pcre_plugin {
         int rulesnum;
         char *rulesetdir;
-        int last_rules_first;
+        
+        prelude_bool_t last_rules_first;
         prelude_bool_t dump_unmatched;
         
         prelude_list_t rule_list;
@@ -275,11 +276,12 @@ static int op_destroy_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 str = prelude_linked_object_get_object(tmp);
                 
                 ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+                prelude_string_destroy(str);
+                
                 if ( ! ctx )
                         continue;
                 
                 pcre_context_destroy(ctx);
-                prelude_string_destroy(str);
         }
 
         return 0;

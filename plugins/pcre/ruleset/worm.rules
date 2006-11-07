@@ -22,10 +22,6 @@
 #
 #####
 
-
-global $WORM = 0;
-
-
 # This rule looks for events against a host, records the messageid, then sets
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.

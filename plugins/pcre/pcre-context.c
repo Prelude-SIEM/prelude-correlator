@@ -230,10 +230,8 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         
         pcre_context_set_threshold(*ctx, (unsigned int) threshold);
 
-        if ( type == PCRE_CONTEXT_TYPE_IDMEF && settings->timeout > 0 ) {
-                printf("%d\n", settings->timeout);
+        if ( type == PCRE_CONTEXT_TYPE_IDMEF && settings->timeout > 0 )
                 compute_next_expire(pcre_context_get_timer(*ctx), time(NULL) - shutdown, elapsed);
-        }
         
         return ret;
 

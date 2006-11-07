@@ -270,11 +270,6 @@ static int match_rule_list(pcre_plugin_t *plugin,
                         break;
         }
         
-        if ( optmatch < rule->min_optgoto_match ) {
-                capture_string_destroy(capture);
-                return -1;
-        }
-
         ret = pcre_operation_execute(plugin, rule, &rule->operation_list, input, capture);
         if ( ret < 0 ) {
                 capture_string_destroy(capture);

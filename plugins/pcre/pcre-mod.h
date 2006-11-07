@@ -37,8 +37,7 @@ typedef struct pcre_context pcre_context_t;
 
 typedef enum {
         PCRE_RULE_FLAGS_LAST    = 0x01,
-        PCRE_RULE_FLAGS_CHAINED = 0x02,
-        PCRE_RULE_FLAGS_SILENT  = 0x04,
+        PCRE_RULE_FLAGS_SILENT  = 0x02,
 } pcre_rule_flags_t;
 
 
@@ -49,8 +48,6 @@ struct pcre_rule {
         /**/
         uint8_t revision;
         uint8_t refcount;
-        uint8_t min_optgoto_match;
-        uint8_t min_optregex_match;
         
         /**/
         pcre_rule_flags_t flags;

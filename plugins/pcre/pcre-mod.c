@@ -134,7 +134,6 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, pcre_rule_
 
 
 
-static PRELUDE_LIST(chained_rule_list);
 static prelude_correlator_plugin_t pcre_plugin;
 static unsigned int restored_context_count = 0;
 
@@ -590,10 +589,10 @@ static pcre_rule_container_t *create_rule_container(pcre_rule_t *rule)
 
 
 
-static int parse_rule_id(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_list_t *operation_list, const char *variable, const char *value) 
+static int parse_rule_id(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                         prelude_list_t *operation_list, const char *variable, const char *value) 
 {
         rule->id = (unsigned int) strtoul(value, NULL, 0);
-
         return 0;
 }
 
@@ -603,7 +602,6 @@ static int parse_rule_revision(pcre_plugin_t *plugin, pcre_rule_t *rule,
                                prelude_list_t *operation_list, const char *variable, const char *value) 
 {
         rule->revision = (unsigned int) strtoul(value, NULL, 0);
-
         return 0;
 }
 
@@ -628,83 +626,6 @@ static pcre_rule_container_t *search_rule(prelude_list_t *head, int id)
 }
 
 
-
-static int add_goto_single(pcre_plugin_t *plugin, pcre_rule_t *rule, int id, prelude_bool_t optional)
-{
-        pcre_rule_container_t *new, *cur;
-
-        cur = search_rule(&chained_rule_list, id);
-        if ( ! cur ) {
-                cur = search_rule(&plugin->rule_list, id);
-                if ( ! cur ) {
-                        prelude_log(PRELUDE_LOG_WARN, "could not find a rule with ID %d.\n", id);
-                        return -1;
-                }
-        }
-        
-        new = create_rule_container(cur->rule);
-        if ( ! new ) 
-                return -1;
-
-        if ( optional )
-                new->optional = TRUE;
-                
-        prelude_list_add_tail(&rule->rule_list, &new->list);
-
-        return 0;
-}
-
-
-static int add_goto(pcre_plugin_t *plugin, pcre_rule_t *rule, const char *idstr, prelude_bool_t optional)
-{
-        int ret, i, idmin = 0, idmax = 0;
-        
-        ret = sscanf(idstr, "%d-%d", &idmin, &idmax);
-        if ( ret < 1 ) {
-                prelude_log(PRELUDE_LOG_WARN, "could not parse goto value '%s'.\n", idstr);
-                return -1;
-        }
-
-        if ( ret == 1 )
-                idmax = idmin;
-                
-        for ( i = idmin; i <= idmax; i++ ) {
-                
-                ret = add_goto_single(plugin, rule, i, optional);
-                if ( ret < 0 )
-                        return -1;
-        }
-
-        return 0;
-}
-
-
-static int parse_rule_goto(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                           prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        return add_goto(plugin, rule, value, FALSE);
-}
-
-
-
-static int parse_rule_optgoto(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                              prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        return add_goto(plugin, rule, value, TRUE);
-}
-
-
-
-static int parse_rule_min_optgoto_match(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                                        prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        rule->min_optgoto_match = atoi(value);
-
-        return 0;
-}
-
-
-
 static int parse_rule_last(pcre_plugin_t *plugin, pcre_rule_t *rule,
                            prelude_list_t *operation_list, const char *variable, const char *value)
 {
@@ -713,20 +634,10 @@ static int parse_rule_last(pcre_plugin_t *plugin, pcre_rule_t *rule,
 }
 
 
-
-
 static int parse_rule_silent(pcre_plugin_t *plugin, pcre_rule_t *rule,
                              prelude_list_t *operation_list, const char *variable, const char *value)
 {        
         rule->flags |= PCRE_RULE_FLAGS_SILENT;
-        return 0;
-}
-
-
-static int parse_rule_chained(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                              prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        rule->flags |= PCRE_RULE_FLAGS_CHAINED;
         return 0;
 }
 
@@ -890,53 +801,6 @@ static int parse_add_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         return _parse_create_context(operation_list, value, PCRE_CONTEXT_SETTING_FLAGS_QUEUE);
 }
 
-
-static pcre_context_setting_t *get_last_parsed_context(pcre_rule_t *rule)
-{
-        prelude_list_t *tmp;
-        pcre_operation_t *op;
-        
-        prelude_list_for_each_reversed(&rule->operation_list, tmp) {
-                op = prelude_list_entry(tmp, pcre_operation_t, list);
-                return op->extra;
-        }
-
-        return NULL;
-}
-
-
-static int parse_threshold(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                           prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        pcre_context_setting_t *setting;
-
-        setting = get_last_parsed_context(rule);
-        if ( ! setting ) {
-                prelude_log(PRELUDE_LOG_WARN, "'threshold' set but no context specified.\n");
-                return -1;
-        }
-
-        setting->correlation_threshold = atoi(value);
-        return 0;
-}
-
-
-
-static int parse_window(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                        prelude_list_t *operation_list, const char *variable, const char *value)
-{
-        pcre_context_setting_t *setting;
-        
-        setting = get_last_parsed_context(rule);
-        if ( ! setting ) {
-                prelude_log(PRELUDE_LOG_WARN, "'window' set but no context specified.\n");
-                return -1;
-        }
-        
-        setting->correlation_window = atoi(value);
-
-        return 0;
-}
 
 
 static int parse_pattern(pcre_plugin_t *plugin, pcre_rule_t *rule,
@@ -1673,12 +1537,8 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
                 int (*func)(pcre_plugin_t *plugin, pcre_rule_t *rule,
                             prelude_list_t *operation_list, const char *variable, const char *value);
         } keywords[] = {
-                { "chained"             , TRUE, parse_rule_chained            },
-                { "goto"                , TRUE, parse_rule_goto               },
                 { "id"                  , TRUE, parse_rule_id                 },
                 { "last"                , TRUE, parse_rule_last               },
-                { "min-optgoto-match"   , TRUE, parse_rule_min_optgoto_match  },
-                { "optgoto"             , TRUE, parse_rule_optgoto            },
                 { "revision"            , TRUE, parse_rule_revision           },
                 { "silent"              , TRUE, parse_rule_silent             },
                 { "include"             , FALSE, parse_rule_included          },
@@ -1690,8 +1550,6 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
                 { "require_context"     , TRUE, parse_require_context         },
                 { "check_correlation"   , TRUE, parse_check_correlation       },
                 { "reset_timer"         , TRUE, parse_reset_timer             },
-                { "threshold"           , TRUE, parse_threshold               },
-                { "window"              , TRUE, parse_window                  },
                 { "pattern"             , TRUE, parse_pattern                 },
                 { "alert"               , TRUE, parse_alert                   },
                 { "global"              , FALSE, parse_global                 },
@@ -1795,10 +1653,7 @@ static int add_rule(pcre_plugin_t *plugin, prelude_list_t *head, pcre_rule_t *ru
                 return -1;
         }
 
-        if ( rule->flags & PCRE_RULE_FLAGS_CHAINED )
-                prelude_list_add(&chained_rule_list, &rc->list);
-        
-        else if ( plugin->last_rules_first && rule->flags & PCRE_RULE_FLAGS_LAST )
+        if ( plugin->last_rules_first && rule->flags & PCRE_RULE_FLAGS_LAST )
                 prelude_list_add(head, &rc->list);
         else
                 prelude_list_add_tail(head, &rc->list);
@@ -1909,20 +1764,6 @@ static int set_dump_unmatched(prelude_option_t *opt, const char *optarg, prelude
 }
 
 
-static void remove_top_chained(void)
-{
-        prelude_list_t *tmp, *bkp;
-        pcre_rule_container_t *rc;
-        
-        prelude_list_for_each_safe(&chained_rule_list, tmp, bkp) {
-                rc = prelude_list_entry(tmp, pcre_rule_container_t, list);
-
-                if ( rc->rule->flags & PCRE_RULE_FLAGS_CHAINED )
-                        free_rule_container(rc);
-        }
-}
-
-
 
 static int set_pcre_ruleset(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context) 
 {
@@ -1959,8 +1800,6 @@ static int set_pcre_ruleset(prelude_option_t *opt, const char *optarg, prelude_s
 
         prelude_log(PRELUDE_LOG_INFO, "- pcre plugin loaded %d rules, restored %d context.\n",
                     plugin->rulesnum, restored_context_count);
-
-        remove_top_chained();
                 
         return 0;
 }

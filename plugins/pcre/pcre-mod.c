@@ -87,11 +87,16 @@ typedef enum {
 
 struct if_cb {
         prelude_list_t list;
-        prelude_list_t operation_list;
-
-        value_container_t *vcont;
-        if_operator_type_t op;
-        float value;
+        
+        value_container_t *if_vcont;
+        if_operator_type_t if_op;
+        float if_value;
+        prelude_list_t if_operation_list;
+        
+        value_container_t *else_vcont;
+        if_operator_type_t else_op;
+        float else_value;        
+        prelude_list_t else_operation_list;
 };
 
 
@@ -400,29 +405,34 @@ static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
 
 
 
-static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, pcre_context_t *ctx,
-                    idmef_message_t *input, capture_string_t *capture, struct if_cb *ifcb)
+static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_string_t *str,
+                    idmef_message_t *input, capture_string_t *capture,
+                    int op, float value, prelude_list_t *operation_list)
 {
         float val;
         prelude_bool_t ok = FALSE;
         
-        if ( ifcb->op != 0 ) {
-                val = pcre_context_get_value_float(ctx);
+        if ( prelude_string_is_empty(str) )
+                return -1;
         
-                if ( ifcb->op & IF_OPERATOR_EQUAL && val == ifcb->value )
+        if ( op != 0 ) {
+                val = (float) strtod(prelude_string_get_string(str), NULL);
+        
+                if ( op & IF_OPERATOR_EQUAL && val == value )
                         ok = TRUE;
 
-                else if ( ifcb->op & IF_OPERATOR_LOWER && val < ifcb->value )
+                else if ( op & IF_OPERATOR_LOWER && val < value )
                         ok = TRUE;
                 
-                else if ( ifcb->op & IF_OPERATOR_GREATER && val > ifcb->value )
+                else if ( op & IF_OPERATOR_GREATER && val > value )
                         ok = TRUE;
         
                 if ( ! ok )
-                        return 0;
+                        return -1;
         }
 
-        return pcre_operation_execute(plugin, rule, &ifcb->operation_list, input, capture);
+        pcre_operation_execute(plugin, rule, operation_list, input, capture);
+        return 0;
 }
 
 
@@ -433,27 +443,47 @@ static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
         int ret;
         prelude_string_t *str;
         struct if_cb *ifcb = extra;
-        pcre_context_t *ctx = NULL;
+        prelude_bool_t do_else = TRUE;
         prelude_list_t list, *tmp, *bkp;
         
         prelude_list_init(&list);
         
-        ret = value_container_resolve_listed(&list, ifcb->vcont, plugin, rule, capture);
+        ret = value_container_resolve_listed(&list, ifcb->if_vcont, plugin, rule, capture);
         if ( ret < 0 )
                 return 0;
 
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
                 
-                ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+                ret = do_op_if(plugin, rule, str, input, capture, ifcb->if_op, ifcb->if_value, &ifcb->if_operation_list);
+
                 prelude_string_destroy(str);
-                
-                if ( ! ctx )
-                        continue;
-                
-                do_op_if(plugin, rule, ctx, input, capture, ifcb);
+                if ( ret == 0 )
+                        do_else = FALSE;
         }
-                        
+
+        if ( ! do_else )
+                return 0;
+        
+        if ( ifcb->else_vcont ) {                
+                ret = value_container_resolve_listed(&list, ifcb->else_vcont, plugin, rule, capture);
+                if ( ret < 0 )
+                        return 0;
+
+                prelude_list_for_each_safe(&list, tmp, bkp) {
+                        str = prelude_linked_object_get_object(tmp);
+                        printf("ELSE IF %s\n", prelude_string_get_string(str));
+
+                        do_op_if(plugin, rule, str, input, capture, ifcb->else_op, ifcb->else_value, &ifcb->else_operation_list);
+                        prelude_string_destroy(str);
+                }
+        }
+        
+        else if ( ! prelude_list_is_empty(&ifcb->else_operation_list) ) {
+                printf("ELSE\n");
+                do_op_if(plugin, rule, NULL, input, capture, ifcb->else_op, ifcb->else_value, &ifcb->else_operation_list);
+        }
+        
         return 0;
 }
 
@@ -480,6 +510,8 @@ static int op_for(pcre_plugin_t *plugin, pcre_rule_t *rule,
         
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
+                assert (! prelude_string_is_empty(str) );
+                                
                 prelude_log_debug(3, "iteration value='%s'\n", prelude_string_get_string(str));
                 
                 pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(str));
@@ -804,6 +836,19 @@ static int parse_add_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         return _parse_create_context(operation_list, value, PCRE_CONTEXT_SETTING_FLAGS_QUEUE);
 }
 
+
+static pcre_operation_t *get_last_operation(prelude_list_t *operation_list)
+{
+        prelude_list_t *tmp;
+        pcre_operation_t *op;
+        
+        prelude_list_for_each_reversed(operation_list, tmp) {
+                op = prelude_list_entry(tmp, pcre_operation_t, list);
+                return op;
+        }
+
+        return NULL;
+}
 
 
 static int parse_pattern(pcre_plugin_t *plugin, pcre_rule_t *rule,
@@ -1156,7 +1201,7 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
         int ret;
         pcre_context_t *ctx;
         prelude_string_t *str;
-        prelude_list_t list, *tmp, *bkp;
+        prelude_list_t list, list2, *tmp, *tmp2, *bkp, *bkp2;
         struct context_cb *cdata = extra;
         
         prelude_list_init(&list);
@@ -1167,19 +1212,25 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
 
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
-
+                                
                 ctx = pcre_context_search(plugin, prelude_string_get_string(str));
                 if ( ! ctx )
                         ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), NULL);
         
                 prelude_string_destroy(str);
-
-                str = value_container_resolve(cdata->right_value, plugin, rule, capture);
-                if ( ! str )
-                        return -1;
                 
-                context_assign_preprocess(plugin, ctx, str);
-                prelude_string_destroy(str);
+                prelude_list_init(&list2);
+
+                ret = value_container_resolve_listed(&list2, cdata->right_value, plugin, rule, capture);
+                if ( ret < 0 )
+                        return ret;
+
+                prelude_list_for_each_safe(&list2, tmp2, bkp2) {
+                        str = prelude_linked_object_get_object(tmp2);                        
+                        context_assign_preprocess(plugin, ctx, str);
+                        prelude_string_destroy(str);
+                }
+                
         }
         
         return 0;
@@ -1243,7 +1294,10 @@ static int parse_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,
         value_container_t *vcont;
         struct context_cb *cdata;
         
-        ret = value_container_new(&vcont, target);        
+        if ( *target != '$' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", target);
+        
+        ret = value_container_new(&vcont, target + 1);        
         if ( ret < 0 )
                 return ret;
 
@@ -1362,19 +1416,25 @@ static void free_operation(prelude_list_t *head)
 
 static void if_cb_destroy(struct if_cb *ifcb)
 {
-        free_operation(&ifcb->operation_list);
-        value_container_destroy(ifcb->vcont);
+        free_operation(&ifcb->if_operation_list);
+        free_operation(&ifcb->else_operation_list);
+
+        value_container_destroy(ifcb->if_vcont);
+
+        if ( ifcb->else_vcont )
+                value_container_destroy(ifcb->else_vcont);
+        
         free(ifcb);
 }
 
 
-static int parse_if(FILE *fd, const char *filename, unsigned int *line,
-                    pcre_plugin_t *plugin, pcre_rule_t *rule,
-                    prelude_list_t *operation_list, const char *variable, const char *value)
+
+static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
+                       pcre_plugin_t *plugin, pcre_rule_t *rule, const char *variable, const char *value,
+                       prelude_list_t *operation_list, value_container_t **vcont, if_operator_type_t *if_op, float *if_value)
 {
         int ret, i;
         char *eptr;
-        struct if_cb *ifcb;
         struct {
                 const char *operator;
                 if_operator_type_t type;
@@ -1385,58 +1445,99 @@ static int parse_if(FILE *fd, const char *filename, unsigned int *line,
                 { "<", IF_OPERATOR_LOWER                      },
                 { ">", IF_OPERATOR_GREATER                    },
         };
+                
+
+        if ( variable ) {
+                ret = value_container_new(vcont, variable);
+                if ( ret < 0 )
+                        return -1;
         
+                for ( i = 0; i < sizeof(optbl) / sizeof(*optbl); i++ ) {
+                        if ( strncmp(value, optbl[i].operator, strlen(optbl[i].operator)) == 0 ) {
+                                *if_op = optbl[i].type;
+                                break;
+                        }
+                }
+        
+                if ( i == sizeof(optbl) / sizeof(*optbl) && *value != '{' )
+                        return prelude_error_verbose(PRELUDE_ERROR_GENERIC,
+                                                     "Invalid operator specified for 'if' command: '%s'", value);
+                
+                /*
+                 * If there is no value, we just check whether the specified context exist.
+                 */
+                if ( *value != '{' ) {
+                        value += strcspn(value, " ");
+                        
+                        *if_value = strtod(value, &eptr);        
+                        if ( eptr == value || (*eptr != ' ' && *eptr != '{') )
+                                return prelude_error_verbose(PRELUDE_ERROR_GENERIC,
+                                                             "Invalid value specified to 'if' command: '%s'", value);
+                }
+        }
+        
+        ret = parse_ruleset(&rule->rule_list, plugin, rule, operation_list, filename, line, fd);        
+        if ( ret < 0 )
+                return ret;
+        
+        return 0;
+}
+
+
+static int parse_if(FILE *fd, const char *filename, unsigned int *line,
+                    pcre_plugin_t *plugin, pcre_rule_t *rule,
+                    prelude_list_t *operation_list, const char *variable, const char *value)
+{
+        int ret;
+        struct if_cb *ifcb;
+                
         ifcb = calloc(1, sizeof(*ifcb));
         if ( ! ifcb ) {
                 prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
                 return -1;
         }
- 
-        prelude_list_init(&ifcb->operation_list);
         
-        ret = value_container_new(&ifcb->vcont, variable);
+        prelude_list_init(&ifcb->if_operation_list);
+        prelude_list_init(&ifcb->else_operation_list);
+
+        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value,
+                          &ifcb->if_operation_list, &ifcb->if_vcont, &ifcb->if_op, &ifcb->if_value);
         if ( ret < 0 ) {
-                free(ifcb);
-                return -1;
-        }
-        
-        for ( i = 0; i < sizeof(optbl) / sizeof(*optbl); i++ ) {
-                if ( strncmp(value, optbl[i].operator, strlen(optbl[i].operator)) == 0 ) {
-                        ifcb->op = optbl[i].type;
-                        break;
-                }
-        }
-        
-        if ( i == sizeof(optbl) / sizeof(*optbl) && *value != '{' ) {
                 if_cb_destroy(ifcb);
-                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid operator specified for 'if' command: '%s'", value);
+                return ret;
         }
-
-        /*
-         * If there is no value, we just check whether the specified context exist.
-         */
-        if ( *value != '{' ) {
-                value += strcspn(value, " ");
-
-                ifcb->value = strtod(value, &eptr);        
-                if ( eptr == value || (*eptr != ' ' && *eptr != '{') ) {
-                        if_cb_destroy(ifcb);
-                        return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid value specified to 'if' command: '%s'", value);
-                }
-        }
-        
-        ret = parse_ruleset(&rule->rule_list, plugin, rule, &ifcb->operation_list, filename, line, fd);        
+                
+        ret = add_operation(operation_list, op_if, (void *) if_cb_destroy, ifcb);
         if ( ret < 0 ) {
                 if_cb_destroy(ifcb);
                 return ret;
         }
         
-        ret = add_operation(operation_list, op_if, (void *) if_cb_destroy, ifcb);
+        return 0;
+}
+
+
+static int parse_else(FILE *fd, const char *filename, unsigned int *line,
+                      pcre_plugin_t *plugin, pcre_rule_t *rule,
+                      prelude_list_t *operation_list, const char *variable, const char *value)
+{
+        int ret;
+        struct if_cb *ifcb;
+        pcre_operation_t *op;
+        
+        op = get_last_operation(operation_list);
+        if ( ! op || op->op != op_if )
+                return -1;
+        
+        ifcb = op->extra;
+
+        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value,
+                          &ifcb->else_operation_list, &ifcb->else_vcont, &ifcb->else_op, &ifcb->else_value);
         if ( ret < 0 ) {
                 if_cb_destroy(ifcb);
-                return -1;
+                return ret;
         }
-        
+                
         return 0;
 }
 
@@ -1465,7 +1566,7 @@ static int parse_for(FILE *fd, const char *filename, unsigned int *line,
 
         prelude_list_init(&forcb->operation_list);
 
-        forcb->var = strdup(variable);
+        forcb->var = strdup(variable + 1);
         if ( ! forcb->var ) {
                 free(forcb);
                 return prelude_error_from_errno(errno);
@@ -1562,7 +1663,7 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
         if ( ! operation ) {
                 ret = parse_context_assign(plugin, rule, operation_list, variable, value);                        
                 if ( ret < 0 )
-                        ret = prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context assignement error: %s.\n", prelude_strerror(ret));
+                        ret = prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context assignement error: %s", prelude_strerror(ret));
                 
                 return ret;
         }
@@ -1581,9 +1682,12 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
                 
                 return 1;
         }
-
+        
         if ( strcmp(operation, "if") == 0 )
                 return parse_if(fd, filename, line, plugin, rule, operation_list, variable, value);
+        
+        if ( strncmp(operation, "else", 4) == 0 )
+                return parse_else(fd, filename, line, plugin, rule, operation_list, variable, value);
 
         if ( strcmp(operation, "for") == 0 )
                 return parse_for(fd, filename, line, plugin, rule, operation_list, variable, value);
@@ -1738,7 +1842,7 @@ static void pcre_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
                 flags = 0;
                 ret = rule_regex_match(plugin, rc, idmef, &flags);
                 all_flags |= flags;
-                
+                                
                 if ( ret == 0 && (rc->rule->flags & PCRE_RULE_FLAGS_LAST || flags & PCRE_MATCH_FLAGS_LAST) )
                         break;
         }

@@ -567,7 +567,10 @@ static int resolve_referenced_context(prelude_list_t *outlist, value_item_contex
         prelude_list_for_each_safe(&str_list, tmp, bkp) {
                 
                 out = prelude_linked_object_get_object(tmp);
+
+                prelude_list_init(&ctx_list);
                 i = get_matching_context(plugin, &ctx_list, out);
+                
                 prelude_string_destroy(out);
 
                 if ( i < 0 )

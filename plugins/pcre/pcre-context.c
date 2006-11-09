@@ -608,7 +608,7 @@ int pcre_context_get_value_as_string(pcre_context_t *ctx, prelude_string_t *out)
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "IDMEF context '%s' can not be translated to string", ctx->name);
 
         if ( ctx->type == PCRE_CONTEXT_TYPE_FLOAT )
-                ret = prelude_string_sprintf(out, "%f", ctx->value.val);
+                ret = prelude_string_sprintf(out, "%g", ctx->value.val);
         else
                 ret = prelude_string_cat(out, ctx->value.string);
 
@@ -679,7 +679,7 @@ int pcre_context_set_value_from_string(pcre_plugin_t *plugin, pcre_context_t *ct
 
         ret = parse_float_value(str, &val);
         if ( ret == 0 ) {
-                prelude_log_debug(3, "[%s]: set value float: '%s' = %f.\n", ctx->name, str, val);
+                prelude_log_debug(3, "[%s]: set value float: '%s' = %g.\n", ctx->name, str, val);
                 pcre_context_set_value_float(ctx, val);
         }
 

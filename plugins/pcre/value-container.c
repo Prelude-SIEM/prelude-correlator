@@ -75,10 +75,12 @@ typedef struct {
 typedef struct {
         prelude_list_t list;
         prelude_value_item_type_t type;
+
+        int refno;
         
         prelude_bool_t multiple_value;
-        int listindex;
-        int refno;
+        value_container_t *list_index;
+        
 } value_item_reference_t;
 
 
@@ -113,8 +115,9 @@ static int add_context_value(value_container_t *vcont, const char *context)
 
 
 static int add_reference_value(value_container_t *vcont,
-                               unsigned int reference, unsigned int lindex, prelude_bool_t multiple)
+                               unsigned int reference, prelude_string_t *lindex, prelude_bool_t multiple)
 {
+        int ret;
         value_item_reference_t *vitem;
         
         if ( reference >= MAX_REFERENCE_PER_RULE ) {
@@ -127,9 +130,18 @@ static int add_reference_value(value_container_t *vcont,
                 prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
                 return -1;
         }
+
+        if ( ! lindex )
+                vitem->list_index = NULL;
+        else{
+                ret = value_container_new(&vitem->list_index, prelude_string_get_string(lindex));
+                if ( ret < 0 ) {
+                        free(vitem);
+                        return ret;
+                }
+        }
         
         vitem->refno = reference;
-        vitem->listindex = lindex;
         vitem->multiple_value = multiple;
         vitem->type = VALUE_ITEM_REFERENCE;
         
@@ -203,35 +215,35 @@ static int parse_context(const char **str, char **ctx)
 
 
 
-static int parse_variable(const char **str, int *reference, int *index, prelude_bool_t *multiple) 
+static int parse_variable(const char **str, int *reference, prelude_string_t **lindex, prelude_bool_t *multiple) 
 {
         char *eptr;
+
+        *lindex = NULL;
+        *multiple = FALSE;
         
         *reference = strtoul(*str, &eptr, 10);
-        if ( eptr == *str ) {
-                fprintf(stderr, "Invalid reference '%s'.\n", *str);
-                return -1;      
-        }
+        if ( eptr == *str )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Invalid reference '%s'", *str);
 
         *str = eptr;
         if ( *eptr != '[' )
                 return 0;
 
-        *index = strtol(++(*str), &eptr, 10);
-        if ( eptr == *str ) {
-                if ( **str != '*' ) {
-                        fprintf(stderr, "Invalid variable index '%c'.\n", **str);
-                        return -1;
-                }
-
+        if ( *++(*str) != '*' ) {
+                prelude_string_new(lindex);
+                while ( **str != ']' )
+                        prelude_string_ncat(*lindex, (*str)++, 1);
+        } else {
                 *multiple = TRUE;
-                eptr++;
+                (*str)++;
         }
-        
-        *str = eptr + 1;
-        if ( *eptr != ']' )
-                return -1;
+       
+        if ( **str != ']' )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "Missing closure bracket");
 
+        (*str)++;
+        
         return 0;
 }
 
@@ -254,7 +266,8 @@ static int add_fixed_value_if_needed(value_container_t *vcont, prelude_string_t 
 static int parse_value(value_container_t *vcont, const char *line)
 {
         prelude_string_t *buf;
-        int ret, reference = 0, lindex = 0;
+        int ret, reference = 0;
+        prelude_string_t *lindex;
         prelude_bool_t escaped = FALSE, multiple = FALSE;
         
         ret = prelude_string_new(&buf);
@@ -274,12 +287,18 @@ static int parse_value(value_container_t *vcont, const char *line)
                         line++;
                         
                         if ( isdigit(*line) ) {
+                                lindex = NULL;
+                                
                                 ret = parse_variable(&line, &reference, &lindex, &multiple);
                                 if ( ret < 0 )
                                         goto err;
 
                                 if ( add_reference_value(vcont, reference, lindex, multiple) < 0 )
                                         goto err;
+
+                                if ( lindex )
+                                        prelude_string_destroy(lindex);
+                                
                         } else {
                                 char *context;
                                 
@@ -337,21 +356,24 @@ static int propagate_string(prelude_list_t *outlist, const char *str)
 
 
 
-static int multidimensional_capture_with_index(prelude_list_t *outlist,
-                                               value_item_reference_t *vitem, capture_string_t *capture)
+static int multidimensional_capture_with_index(prelude_list_t *outlist, value_item_reference_t *vitem,
+                                               pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
-        int ret;
-        unsigned int index;
         prelude_string_t *str;
-
-        ret = prelude_string_new(&str);
-        if ( ret < 0 )
-                return ret;
+        unsigned int index;
+        int lindex;
         
-        index = capture_string_get_index(capture);
-        assert(index < vitem->listindex);
+        str = value_container_resolve(vitem->list_index, plugin, rule, capture);
+        if ( ! str )
+                return -1;
 
-        prelude_string_cat(str, capture_string_get_element(capture, vitem->listindex));
+        lindex = strtol(prelude_string_get_string(str), NULL, 10);
+                        
+        index = capture_string_get_index(capture);
+        assert(lindex < 0 || lindex < index);
+
+        prelude_string_clear(str);
+        prelude_string_cat(str, capture_string_get_element(capture, lindex));
         
         if ( ! prelude_string_is_empty(str) )
                 propagate_string(outlist, prelude_string_get_string(str));
@@ -476,8 +498,8 @@ static void multidimensional_capture_to_multiple_string(prelude_list_t *outlist,
 
 
 
-static void resolve_referenced_value(prelude_list_t *outlist,
-                                     value_item_reference_t *vitem, capture_string_t *capture)
+static void resolve_referenced_value(prelude_list_t *outlist, value_item_reference_t *vitem,
+                                     pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
         unsigned int index;
          
@@ -495,8 +517,8 @@ static void resolve_referenced_value(prelude_list_t *outlist,
                 if ( vitem->multiple_value )
                         multidimensional_capture_to_multiple_string(outlist, vitem, sub);
                 
-                else if ( vitem->listindex )
-                        multidimensional_capture_with_index(outlist, vitem, sub);
+                else if ( vitem->list_index )
+                        multidimensional_capture_with_index(outlist, vitem, plugin, rule, sub);
                 else
                         multidimensional_capture_to_flat_string(outlist, vitem, sub);
         } else
@@ -505,40 +527,51 @@ static void resolve_referenced_value(prelude_list_t *outlist,
 
 
 
-static int resolve_referenced_context(prelude_list_t *outlist,
-                                      value_item_context_t *vitem,
+static int get_matching_context(pcre_plugin_t *plugin, prelude_list_t *outlist, prelude_string_t *str)
+{
+        int ret;
+        pcre *regex;
+        int error_offset;
+        const char *err_ptr;
+        
+        prelude_string_cat(str, "$");
+                
+        regex = pcre_compile(prelude_string_get_string(str), 0, &err_ptr, &error_offset, NULL);
+        if ( ! regex ) {
+                prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
+                return -1;
+        }
+        
+        ret = pcre_context_search_regex(outlist, plugin, regex);
+        pcre_free(regex);
+
+        return ret;
+}
+
+
+
+static int resolve_referenced_context(prelude_list_t *outlist, value_item_context_t *vitem,
                                       pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
-        pcre *regex;
-        const char *err_ptr;
+        int i, ret, nth;
         pcre_context_t *ctx;
         prelude_string_t *out;
-        int i, ret, error_offset;
         prelude_list_t str_list, ctx_list, *tmp, *bkp, *tmp1, *bkp1;
 
         prelude_list_init(&str_list);
         
-        ret = value_container_resolve_listed(&str_list, vitem->context, plugin, rule, capture);
-        if ( ret < 0 )
+        nth = value_container_resolve_listed(&str_list, vitem->context, plugin, rule, capture);
+        if ( nth < 0 )
                 return -1;
 
         prelude_list_for_each_safe(&str_list, tmp, bkp) {
                 
-                out = prelude_linked_object_get_object(tmp);                
-                prelude_string_cat(out, "$");
-                
-                regex = pcre_compile(prelude_string_get_string(out), 0, &err_ptr, &error_offset, NULL);
-                if ( ! regex ) {
-                        prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
-                        prelude_string_destroy(out);
-                        return -1;
-                }
-        
-                prelude_list_init(&ctx_list);
-                i = pcre_context_search_regex(&ctx_list, plugin, regex);
-                
-                pcre_free(regex);
+                out = prelude_linked_object_get_object(tmp);
+                i = get_matching_context(plugin, &ctx_list, out);
                 prelude_string_destroy(out);
+
+                if ( i < 0 )
+                        continue;
                 
                 prelude_list_for_each_safe(&ctx_list, tmp1, bkp1) {
                         ctx = prelude_linked_object_get_object(tmp1);                        
@@ -558,7 +591,7 @@ static int resolve_referenced_context(prelude_list_t *outlist,
                                 }
                         }
                         
-                        if ( i > 1 )
+                        if ( i > 1 || nth > 1 )
                                 prelude_linked_object_add_tail(outlist, (prelude_linked_object_t *) out);
                         else {
                                 propagate_string(outlist, prelude_string_get_string(out));
@@ -575,6 +608,7 @@ static int resolve_referenced_context(prelude_list_t *outlist,
 int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *vcont,
                                    pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
+        int nth = 0;
         prelude_list_t *tmp;
         value_item_t *vitem;
         
@@ -582,7 +616,7 @@ int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *v
                 vitem = prelude_list_entry(tmp, value_item_t, list);
 
                 if ( vitem->type == VALUE_ITEM_REFERENCE )
-                        resolve_referenced_value(outlist, (value_item_reference_t *) vitem, capture);
+                        resolve_referenced_value(outlist, (value_item_reference_t *) vitem, plugin, rule, capture);
 
                 else if ( vitem->type == VALUE_ITEM_CONTEXT )
                         resolve_referenced_context(outlist, (value_item_context_t *) vitem, plugin, rule, capture);
@@ -590,8 +624,14 @@ int value_container_resolve_listed(prelude_list_t *outlist, value_container_t *v
                 else if ( vitem->type == VALUE_ITEM_FIXED )
                         propagate_string(outlist, ((value_item_fixed_t *) vitem)->value);
         }
+
+        /*
+         * FIXME.
+         */
+        prelude_list_for_each(outlist, tmp)
+                nth++;
                 
-        return 0;
+        return nth;
 }
 
 
@@ -604,7 +644,7 @@ prelude_string_t *value_container_resolve(value_container_t *vcont, pcre_plugin_
         prelude_list_t outlist, *tmp, *bkp;
         
         prelude_list_init(&outlist);
-
+        
         ret = value_container_resolve_listed(&outlist, vcont, plugin, rule, capture);
         if ( ret < 0 )
                 return NULL;
@@ -627,10 +667,8 @@ int value_container_new(value_container_t **vcont, const char *str)
         int ret;
         
         *vcont = malloc(sizeof(**vcont));
-        if ( ! *vcont ) {
-                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
-                return -1;
-        }
+        if ( ! *vcont )
+                return prelude_error_from_errno(errno);
 
         (*vcont)->data = NULL;
         prelude_list_init(&(*vcont)->value_item_list);
@@ -650,6 +688,9 @@ void value_container_destroy(value_container_t *vcont)
 {
         value_item_t *vitem;
         prelude_list_t *tmp, *bkp;
+
+        if ( ! vcont )
+                return;
         
         prelude_list_for_each_safe(&vcont->value_item_list, tmp, bkp) {
                 vitem = prelude_list_entry(tmp, value_item_t, list);
@@ -659,6 +700,9 @@ void value_container_destroy(value_container_t *vcont)
 
                 else if ( vitem->type == VALUE_ITEM_CONTEXT )
                         value_container_destroy(((value_item_context_t *) vitem)->context);
+
+                else if ( vitem->type == VALUE_ITEM_REFERENCE )
+                        value_container_destroy(((value_item_reference_t *) vitem)->list_index);
                 
                 prelude_list_del(&vitem->list);
                 free(vitem);

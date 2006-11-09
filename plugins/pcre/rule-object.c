@@ -132,8 +132,8 @@ static int match_iterate_cb(idmef_value_t *value, void *extra)
                 return idmef_value_iterate(value, match_iterate_cb, extra);
 
         if ( mcb->value )
-                ret = idmef_value_match(value, mcb->value, IDMEF_CRITERION_OPERATOR_EQUAL);        
-
+                ret = idmef_value_match(value, mcb->value, IDMEF_CRITERION_OPERATOR_EQUAL);
+        
         if ( ret == 0 ) {
                 ret = idmef_path_set(mcb->path, mcb->idmef, value);
                 if ( ret < 0 )
@@ -158,12 +158,32 @@ static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *
         ret = idmef_path_get(path, input, &value);
         if ( ret == 0 )
                 return 0;
-        
+             
         if ( ret < 0 ) {
                 prelude_perror(ret, "could not retrieve input path '%s'", idmef_path_get_name(path, -1));  
                 return -1;
         }
-        
+
+        /*
+         * In case the target path is a list with an undefined index, we can not
+         * copy the source list item one by one as each item would be subsequently
+         * overwritten.
+         *
+         * Since we don't need to check whether the item already exist in the target
+         * list in this case, we short circuit the check and directly overwrite the existing
+         * list.
+         */
+        ret = idmef_path_get_index(path, idmef_path_get_depth(path) - 1);        
+        if ( value && prelude_error_get_code(ret) == PRELUDE_ERROR_IDMEF_PATH_INDEX_UNDEFINED ) {
+                                
+                ret = idmef_path_set(path, output, value);
+                if ( ret < 0 )
+                        prelude_perror(ret, "could not set output path '%s'", idmef_path_get_name(path, -1));
+
+                idmef_value_destroy(value);
+                return ret;
+        }
+
         ret = idmef_path_get(path, output, &mcb.value);
         if ( ret < 0 ) {
                 prelude_perror(ret, "could not retrieve output path '%s'", idmef_path_get_name(path, -1));

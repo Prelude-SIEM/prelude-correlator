@@ -163,7 +163,7 @@ int pcre_parse(FILE *fd, const char *filename, unsigned int *line, char **operat
                         *operation = strdup(*operation);
 
                 if ( *variable )
-                        *variable = strdup(*variable + 1);
+                        *variable = strdup(*variable);
 
                 *value = strdup(*value);
                 return 1;

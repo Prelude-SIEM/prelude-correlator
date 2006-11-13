@@ -30,34 +30,30 @@ pattern = source(*).node.address(*).address: (.+); \
 	  messageid: (.+); \
 	  analyzer(*).analyzerid: (.*)
 
-new_context = SCAN_EVENTSCAN_$1[*]_$2[*]; \
-	      expire: 60; \
-              threshold: 30;
-
+new_context = SCAN_EVENTSCAN_$1[*]_$2[*]; expire: 60; threshold: 30;
 reset_timer = $SCAN_EVENTSCAN_$1[*]_$2[*];
 
-$SCAN_EVENTSCAN_$1[*]_$2[*] = \
-	 correlation_alert.alertident(>>).alertident=$3;     \
-         correlation_alert.alertident(-1).analyzerid=$4[-1]; \
-	 source(>>)=source;                                  \
-	 target(>>)=target;
+$SCAN_EVENTSCAN_$1[*]_$2[*] +=		              	      \
+	correlation_alert.alertident(>>).alertident = $3;     \
+    	correlation_alert.alertident(-1).analyzerid = $4[-1]; \
+	source(>>) = source;                                  \
+	target(>>) = target;
 
-check_correlation = $SCAN_EVENTSCAN_$1[*]_$2[*];
+for $source in $1 {
+	for $target in $2 {
+		check_correlation = $SCAN_EVENTSCAN_$(source)_$(target);
 
-$SCAN_EVENTSCAN_$1[*]_$2[*] = \
-	 source(>>)=source;                                  \
-	 target(>>)=target;                                  \
-	 correlation_alert.alertident(>>).alertident=$3;     \
-         correlation_alert.alertident(-1).analyzerid=$4[-1]; \
- 	 classification.text=Eventscan;                      \
-	 assessment.impact.severity=high;                    \
-	 assessment.impact.description=A single host has played many events against a single target.  This may be a general vulnerability scan.; \
-	 correlation_alert.name=Eventscan;                   \
-	 additional_data(>>).data=ignore_atomic_event
+		$SCAN_EVENTSCAN_$(source)_$(target) +=                      \
+	 		correlation_alert.name = Eventscan;                 \
+			classification.text = Eventscan;                    \
+	 		assessment.impact.severity = high;                  \
+	 		assessment.impact.description=A single host has played many events against a single target.  This may be a general vulnerability scan.; \
+	 		additional_data(>>).data=ignore_atomic_event
 
-alert = $SCAN_EVENTSCAN_$1[*]_$2[*]
-destroy_context = $SCAN_EVENTSCAN_$1[*]_$2[*]
-
+		alert = $SCAN_EVENTSCAN_$(source)_$(target)
+		destroy_context = $SCAN_EVENTSCAN_$(target)_$(source)
+	}
+}
 
 
 #
@@ -69,31 +65,28 @@ pattern = classification.text: (.+); \
           messageid: (.+); \
           analyzer(*).analyzerid: (.*)
 
-new_context = SCAN_EVENTSWEEP_$1_$2[*]; \
-	      expire: 60; \
-	      threshold: 30
-
+new_context = SCAN_EVENTSWEEP_$1_$2[*]; expire: 60; threshold: 30
 reset_timer = $SCAN_EVENTSWEEP_$1_$2[*];
 
-$SCAN_EVENTSWEEP_$1_$2[*] = \
-	 source(>>)=source; \
-         target(>>)=target; \
-	 correlation_alert.alertident(>>).alertident=$3; \
-         correlation_alert.alertident(-1).analyzerid=$4[-1]
+$SCAN_EVENTSWEEP_$1_$2[*] +=                                  \
+	 source(>>) = source;                                 \
+         target(>>) = target;                                 \
+	 correlation_alert.alertident(>>).alertident = $3;    \
+         correlation_alert.alertident(-1).analyzerid = $4[-1]
 
-check_correlation = $SCAN_EVENTSWEEP_$1_$2[*];
+for $source in $2 {
+	check_correlation = $SCAN_EVENTSWEEP_$1_$(source);
 
-$SCAN_EVENTSWEEP_$1_$2[*] = \
-	 source(>>)=source;                \
-	 target(>>)=target;                \
-	 classification.text=Eventsweep;   \
-         assessment.impact.severity=high;  \
-         assessment.impact.description=A single host has played the same event against multiple targets.  This may be a network scan for a specific vulnerability.; \
-         correlation_alert.name=Eventsweep; \
-	 additional_data(>>).data=ignore_atomic_event
+	$SCAN_EVENTSWEEP_$1_$(source) +=				\
+         correlation_alert.name = Eventsweep;                           \
+	 classification.text = Eventsweep;                              \
+         assessment.impact.severity = high;                             \
+         assessment.impact.description = A single host has played the same event against multiple targets.  This may be a network scan for a specific vulnerability.; \
+	 additional_data(>>).data = ignore_atomic_event
 
-alert = $SCAN_EVENTSWEEP_$1_$2[*]
-destroy_context = $SCAN_EVENTSWEEP_$1_$2[*]
+	alert = $SCAN_EVENTSWEEP_$1_$(source)
+	destroy_context = $SCAN_EVENTSWEEP_$1_$(source)
+}
 
 
 
@@ -106,28 +99,25 @@ pattern = source(*).node.address(*).address: (.+); \
           messageid: (.+);                         \
           analyzer(*).analyzerid: (.*)
 
-new_context = SCAN_EVENTSTORM_$1[*]; \
-	      expire: 120; \
-	      threshold: 150
-
+new_context = SCAN_EVENTSTORM_$1[*]; expire: 120; threshold: 150
 reset_timer = $SCAN_EVENTSTORM_$1[*];
 
-$SCAN_EVENTSTORM_$1[*] = \
-	 source(>>)=source;                                \
-         target(>>)=target;                                \
-         correlation_alert.alertident(>>).alertident=$2;   \
-         correlation_alert.alertident(-1).analyzerid=$3[-1]
+$SCAN_EVENTSTORM_$1[*] += 				     \
+	 source(>>) = source;                                \
+         target(>>) = target;                                \
+         correlation_alert.alertident(>>).alertident = $2;   \
+         correlation_alert.alertident(-1).analyzerid = $3[-1]
 
-check_correlation = $SCAN_EVENTSTORM_$1[*];
+for $source in $1 {
+	check_correlation = $SCAN_EVENTSTORM_$(source);
 
-$SCAN_EVENTSTORM_$1[*] = \
-	 source(>>)=source;                 \
-         target(>>)=target;                 \
-         classification.text=Eventstorm;    \
-         assessment.impact.severity=high;   \
-         assessment.impact.description=A single host is producing an unusual amount of traffic.; \
-         correlation_alert.name=Eventstorm; \
-         additional_data(>>).data=ignore_atomic_event;
+	$SCAN_EVENTSTORM_$(source) +=         \
+         correlation_alert.name = Eventstorm; \
+         classification.text = Eventstorm;    \
+         assessment.impact.severity = high;   \
+         assessment.impact.description = A single host is producing an unusual amount of traffic.; \
+         additional_data(>>).data = ignore_atomic_event;
 
-alert = $SCAN_EVENTSTORM_$1[*]
-destroy_context = $SCAN_EVENTSTORM_$1[*]
+	alert = $SCAN_EVENTSTORM_$1[*]
+	destroy_context = $SCAN_EVENTSTORM_$1[*]
+}

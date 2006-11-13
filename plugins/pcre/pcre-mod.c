@@ -73,8 +73,11 @@ struct action_cb {
 
 
 struct context_cb {
+        prelude_bool_t addition;
+        
         value_container_t *left_value;
         value_container_t *right_value;
+        rule_object_list_t *rule_object_list;
 };
 
 
@@ -169,30 +172,47 @@ static int add_operation(prelude_list_t *head, int (*op_cb)(pcre_plugin_t *plugi
 
 
 static pcre_context_t *lookup_context(value_container_t *vcont, pcre_plugin_t *plugin,
-                                      pcre_rule_t *rule, capture_string_t *capture)
+                                       pcre_rule_t *rule, capture_string_t *capture)
+{
+        prelude_string_t *str;
+        pcre_context_t *ctx = NULL;
+        
+        str = value_container_resolve(vcont, plugin, rule, capture);
+        if ( ! str )
+                return NULL;
+
+        prelude_string_destroy(str);
+        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+
+        return ctx;
+}
+
+
+
+static int foreach_value(value_container_t *vcont, pcre_plugin_t *plugin,
+                         pcre_rule_t *rule, capture_string_t *capture, void *extra,
+                         int (*cb)(pcre_plugin_t *plugin, prelude_string_t *str, void *extra)) 
 {
         int ret;
         prelude_string_t *str;
         prelude_list_t list, *tmp, *bkp;
-        pcre_context_t *ctx = NULL;
-
+        
         prelude_list_init(&list);
         
         ret = value_container_resolve_listed(&list, vcont, plugin, rule, capture);
         if ( ret < 0 )
-                return NULL;
-
+                return ret;
+        
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
-                
-                if ( ! ctx ) 
-                        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
 
+                if ( ret >= 0 )
+                        ret = cb(plugin, str, extra);
+                
                 prelude_string_destroy(str);
-        
         }
-                        
-        return ctx;
+
+        return ret;
 }
 
 
@@ -239,12 +259,19 @@ static int op_check_req_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
         pcre_context_t *ctx;
 
         prelude_log_debug(4, "checking required context.\n");
-        
-        ctx = lookup_context(extra, plugin, rule, capture);                
-        if ( ! ctx )                
-                return -1;
+        ctx = lookup_context(extra, plugin, rule, capture);
 
-        return 0;
+        return ctx ? 0 : -1;
+}
+
+
+static int not_context_cb(pcre_plugin_t *plugin, prelude_string_t *str, void *extra)
+{
+        pcre_context_t *ctx;
+        
+        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+
+        return ctx ? -1 : 0;
 }
 
 
@@ -253,11 +280,7 @@ static int op_check_not_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
                                 prelude_list_t *context_result)
 {
         prelude_log_debug(4, "checking not context.\n");
-        
-        if ( lookup_context(extra, plugin, rule, capture) )
-                return -1;
-        
-        return 0;
+        return foreach_value(extra, plugin, rule, capture, NULL, not_context_cb);
 }
 
 
@@ -293,48 +316,6 @@ static int op_destroy_context(pcre_plugin_t *plugin, pcre_rule_t *rule,
 }
 
 
-
-static int op_action_list(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                          idmef_message_t *input, capture_string_t *capture, void *extra,
-                          prelude_list_t *context_result)
-{
-        int ret;
-        prelude_string_t *str;
-        idmef_message_t *idmef;
-        pcre_context_t *ctx = NULL;
-        prelude_list_t list, *tmp, *bkp;
-        struct action_cb *action = extra;
-
-        prelude_list_init(&list);
-        
-        ret = value_container_resolve_listed(&list, action->target_context, plugin, rule, capture);
-        if ( ret < 0 )
-                return -1;
-
-        prelude_list_for_each_safe(&list, tmp, bkp) {
-                str = prelude_linked_object_get_object(tmp);
-                
-                ctx = pcre_context_search(plugin, prelude_string_get_string(str));
-                if ( ! ctx )
-                        ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), NULL);
-
-                prelude_log_debug(3, "[%s]: running action list.\n", prelude_string_get_string(str));
-                
-                idmef = pcre_context_get_value_idmef(ctx);
-
-                ret = rule_object_build_message(plugin, rule, action->object_list, &idmef, input, capture);
-                if ( ret == 0 )
-                        pcre_context_set_value_idmef(ctx, idmef);
-                
-                prelude_string_destroy(str);
-        
-        }
-                        
-        return 0;
-}
-
-
-
 static int op_alert(pcre_plugin_t *plugin, pcre_rule_t *rule,
                     idmef_message_t *input, capture_string_t *capture, void *extra,
                     prelude_list_t *context_result)
@@ -349,14 +330,20 @@ static int op_alert(pcre_plugin_t *plugin, pcre_rule_t *rule,
         ret = value_container_resolve_listed(&list, extra, plugin, rule, capture);        
         if ( ret < 0 )
                 return -1;
-
+        
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
-                
-                ctx = pcre_context_search(plugin, prelude_string_get_string(str));                
-                if ( ctx && pcre_context_get_value_idmef(ctx) ) {
-                        prelude_log_debug(3, "[%s]: emit alert.\n", pcre_context_get_name(ctx));
-                        correlation_alert_emit(pcre_context_get_value_idmef(ctx));
+
+                ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+                if ( ! ctx )
+                        prelude_log(PRELUDE_LOG_ERR, "alert on non existant context '%s'.\n", prelude_string_get_string(str));
+                else {
+                        if ( ! pcre_context_get_value_idmef(ctx) )
+                                prelude_log(PRELUDE_LOG_ERR, "'%s' context contain no idmef value.\n", prelude_string_get_string(str));
+                        else {
+                                prelude_log_debug(3, "[%s]: emit alert.\n", pcre_context_get_name(ctx));
+                                correlation_alert_emit(pcre_context_get_value_idmef(ctx));
+                        }
                 }
                 
                 prelude_string_destroy(str);
@@ -367,18 +354,17 @@ static int op_alert(pcre_plugin_t *plugin, pcre_rule_t *rule,
 }
 
 
-
 static int op_check_correlation(pcre_plugin_t *plugin, pcre_rule_t *rule,
-                                idmef_message_t *input, capture_string_t *capture, void *extra,
-                                prelude_list_t *context_result)
+                                idmef_message_t *input, capture_string_t *capture,
+                                void *extra, prelude_list_t *context_result)
 {
         int ret;
         pcre_context_t *ctx;
         
         ctx = lookup_context(extra, plugin, rule, capture);
-        if ( ! ctx )
+        if ( ! ctx ) 
                 return -1;
-                        
+        
         ret = pcre_context_check_correlation(ctx);
         if ( ret < 0 )
                 return -1;
@@ -388,19 +374,23 @@ static int op_check_correlation(pcre_plugin_t *plugin, pcre_rule_t *rule,
 
 
 
+static int timer_reset_cb(pcre_plugin_t *plugin, prelude_string_t *str, void *extra)
+{
+        pcre_context_t *ctx;
+        
+        ctx = pcre_context_search(plugin, prelude_string_get_string(str));
+        if ( ctx )
+                pcre_context_reset_timer(ctx);
+
+        return 0;
+}
+
+
 static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
                           idmef_message_t *input, capture_string_t *capture, void *extra,
                           prelude_list_t *context_result)
 {
-        pcre_context_t *ctx;
-        
-        ctx = lookup_context(extra, plugin, rule, capture);
-        if ( ! ctx )
-                return -1;
-
-        pcre_context_reset_timer(ctx);
-                
-        return 0;
+        return foreach_value(extra, plugin, rule, capture, NULL, timer_reset_cb);
 }
 
 
@@ -510,10 +500,8 @@ static int op_for(pcre_plugin_t *plugin, pcre_rule_t *rule,
         
         prelude_list_for_each_safe(&list, tmp, bkp) {
                 str = prelude_linked_object_get_object(tmp);
-                assert (! prelude_string_is_empty(str) );
-                                
-                prelude_log_debug(3, "iteration value='%s'\n", prelude_string_get_string(str));
-                
+                assert(! prelude_string_is_empty(str));                
+
                 pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(str));
                 prelude_string_destroy(str);
 
@@ -544,10 +532,10 @@ static int parse_key_and_value(char *input, char **key, char **value)
                 input++;
         
         if ( *input == '\0' )
-                return 0;
+                return -1;
         
         *key = input;
-
+        
         /*
          * search first '=' in the input,
          * corresponding to the key = value separator.
@@ -1071,38 +1059,6 @@ static int parse_schedule(pcre_plugin_t *plugin, pcre_rule_t *rule,
 }
 
 
-static int action_parse(struct rule_object_list *object_list, const char *arg)
-{
-        int ret;
-        char *key, *value;
-        
-        do {
-                ret = parse_multiple_key_and_value(&arg, &key, &value);                
-                if ( ret != 1 )
-                        return ret;
-                
-                ret = rule_object_add(object_list, key, value); 
-                if ( ret < 0 )
-                        return ret;
-        } while ( 1 );
-
-        return 0;  
-}
-
-
-
-static void action_cb_destroy(void *data)
-{
-        struct action_cb *action = data;
-        
-        rule_object_list_destroy(action->object_list);
-        value_container_destroy(action->target_context);
-
-        free(action);
-}
-
-
-
 static int check_func(char **input, const char *fname, char **value)
 {
         int ret;
@@ -1201,6 +1157,7 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
         int ret;
         pcre_context_t *ctx;
         prelude_string_t *str;
+        idmef_message_t *idmef;
         prelude_list_t list, list2, *tmp, *tmp2, *bkp, *bkp2;
         struct context_cb *cdata = extra;
         
@@ -1221,14 +1178,36 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
                 
                 prelude_list_init(&list2);
 
-                ret = value_container_resolve_listed(&list2, cdata->right_value, plugin, rule, capture);
-                if ( ret < 0 )
-                        return ret;
+                idmef = NULL;
+                if ( cdata->right_value ) {                        
+                        ret = value_container_resolve_listed(&list2, cdata->right_value, plugin, rule, capture);
+                        if ( ret < 0 )
+                                return ret;
 
-                prelude_list_for_each_safe(&list2, tmp2, bkp2) {
-                        str = prelude_linked_object_get_object(tmp2);                        
-                        context_assign_preprocess(plugin, ctx, str);
-                        prelude_string_destroy(str);
+                        prelude_list_for_each_safe(&list2, tmp2, bkp2) {
+                                str = prelude_linked_object_get_object(tmp2);
+                                
+                                context_assign_preprocess(plugin, ctx, str);
+                                prelude_string_destroy(str);
+                        }
+
+                        /*
+                         * if there was assignement, keep the old IDMEF value to merge with optional obj list
+                         */
+                        if ( pcre_context_get_type(ctx) == PCRE_CONTEXT_TYPE_IDMEF && ret ) 
+                                idmef = pcre_context_get_value_idmef(ctx);
+                }
+                
+                if ( cdata->rule_object_list ) {
+                        if ( cdata->addition )
+                                idmef = pcre_context_get_value_idmef(ctx);
+                        
+                        prelude_log_debug(3, "[%s]: running IDMEF assignement list (%s).\n",
+                                          pcre_context_get_name(ctx), idmef ? "addition current" : "overwrite current");
+                        
+                        ret = rule_object_build_message(plugin, rule, cdata->rule_object_list, &idmef, input, capture);
+                        if ( ret == 0 )
+                                pcre_context_set_value_idmef(ctx, idmef);
                 }
                 
         }
@@ -1240,88 +1219,119 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
 static void context_assign_destroy(void *data)
 {
         struct context_cb *cdata = data;
-
+        
         value_container_destroy(cdata->left_value);
-        value_container_destroy(cdata->right_value);
+
+        if ( cdata->right_value )
+                value_container_destroy(cdata->right_value);
+
+        if ( cdata->rule_object_list )
+                rule_object_list_destroy(cdata->rule_object_list);
 
         free(cdata);
 }
 
 
 
-static int parse_idmef_object_list(prelude_list_t *operation_list, value_container_t *vcont, pcre_rule_t *rule, const char *value)
+static int idmef_parse(struct context_cb *cdata, const char *arg, char **rem)
 {
         int ret;
-        struct action_cb *action;
-        struct rule_object_list *object_list;
+        char *key, *value, *ptr, *ptr2;
+        prelude_string_t *remain;
 
-        action = malloc(sizeof(*action));
-        if ( ! action )
-                return prelude_error_from_errno(errno);
-        
-        object_list = rule_object_list_new();
-        if ( ! object_list ) {
-                free(action);
-                return prelude_error_from_errno(errno);
+        prelude_string_new(&remain);
+
+        if ( *arg == '+' && *(arg + 1) == '=' ) {
+                cdata->addition = TRUE;
+                arg += 2;
+                while ( isspace(*arg) ) arg++;
         }
         
-        ret = action_parse(object_list, value);
-        if ( ret < 0 ) {
-                free(action);
-                rule_object_list_destroy(object_list);
-                return ret;
-        }
+        do {                
+                ret = parse_multiple_key_and_value(&arg, &key, &value);
+                if ( ret != 1 )
+                        break;
+                
+                ptr2 = ptr = strrchr(key, '+');
+                if ( ptr ) {
+                        while ( ptr2 != key && isspace(*(ptr2 - 1)) )
+                                ptr2--;
+                        
+                        prelude_string_ncat(remain, key, ptr2 - key);
 
-        action->target_context = vcont;
-        action->object_list = object_list;
-        
-        ret = add_operation(operation_list, op_action_list, (void *) action_cb_destroy, action);
-        if ( ret < 0 ) {
-                free(action);
-                rule_object_list_destroy(object_list);
-                return ret;
-        }
+                        ptr++;
+                        while ( isspace(*ptr) )
+                                ptr++;
+                        
+                        key = ptr;
+                }
 
+                
+                ret = rule_object_add(cdata->rule_object_list, key, value); 
+                if ( ret < 0 )
+                        break;
+        } while ( 1 );
+
+        if ( ret >= 0 )
+                prelude_string_get_string_released(remain, rem);
+
+        prelude_string_destroy(remain);
         return ret;
 }
-
 
 
 static int parse_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,
                                 prelude_list_t *operation_list, const char *target, const char *arg)
 {
         int ret;
-        value_container_t *vcont;
+        char *remain = NULL;
         struct context_cb *cdata;
         
         if ( *target != '$' )
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context miss prefix: '%s'", target);
-        
-        ret = value_container_new(&vcont, target + 1);        
-        if ( ret < 0 )
-                return ret;
 
-        if ( strchr(arg, '=') ) {
-                ret = parse_idmef_object_list(operation_list, vcont, rule, arg);
-                if ( ret < 0 )
-                        value_container_destroy(vcont);
-                
+        cdata = calloc(1, sizeof(*cdata));
+        if ( ! cdata )
+                return prelude_error_from_errno(errno);
+        
+        ret = value_container_new(&cdata->left_value, target + 1);        
+        if ( ret < 0 ) {
+                free(cdata);
                 return ret;
         }
 
-        cdata = malloc(sizeof(*cdata));
-        cdata->left_value = vcont;
+        printf("\n");
         
-        ret = value_container_new(&cdata->right_value, arg);
-        if ( ret < 0 ) {
-                value_container_destroy(vcont);
-                return ret;
+        if ( strchr(arg, '=') ) {
+                cdata->rule_object_list = rule_object_list_new();
+                if ( ! cdata->rule_object_list ) {
+                        context_assign_destroy(cdata);
+                        return prelude_error_from_errno(errno);
+                }
+
+                ret = idmef_parse(cdata, arg, &remain);
+                if ( ret < 0 ) {
+                        context_assign_destroy(cdata);
+                        return ret;
+                }
+                
+                arg = remain;
+        }
+
+        if ( arg ) {                
+                ret = value_container_new(&cdata->right_value, arg);
+                if ( remain )
+                        free(remain);
+        
+                if ( ret < 0 ) {
+                        context_assign_destroy(cdata);
+                        return ret;
+                }
         }
         
         ret = add_operation(operation_list, op_context_assign, (void *) context_assign_destroy, cdata);
         if ( ret < 0 ) {
-                value_container_destroy(vcont);
-                value_container_destroy(cdata->right_value);
+                context_assign_destroy(cdata);
                 return ret;
         }
         
@@ -1661,6 +1671,9 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
         };
 
         if ( ! operation ) {
+                if ( ! rule )
+                        return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "rule should start with the 'pattern' keyword");
+                 
                 ret = parse_context_assign(plugin, rule, operation_list, variable, value);                        
                 if ( ret < 0 )
                         ret = prelude_error_verbose(PRELUDE_ERROR_GENERIC, "context assignement error: %s", prelude_strerror(ret));
@@ -1814,7 +1827,7 @@ static int parse_ruleset(prelude_list_t *head, pcre_plugin_t *plugin, pcre_rule_
                 ret = parse_rule_operation(fd, filename, line, plugin, rule, operation_list, operation, variable, value);
                 if ( ret < 0 ) {       
                         prelude_log(PRELUDE_LOG_WARN, "%s:%u: operation '%s': %s.\n",
-                                    filename, *line, operation, prelude_strerror(ret));
+                                    filename, *line, operation ? operation : "assign", prelude_strerror(ret));
                         return ret;
                 }
 

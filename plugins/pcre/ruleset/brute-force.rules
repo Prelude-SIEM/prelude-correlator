@@ -32,30 +32,32 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication; \
 	  messageid: (.+);                                 \
 	  analyzer(*).analyzerid: (.*);
 
-new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; \
-	      expire: 60; \
-	      threshold: 5;
 
-reset_timer = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+new_context = BRUTE_SOURCE_TARGET_$1[*]_$2[*]; expire: 60; threshold: 5;
+reset_timer = $BRUTE_SOURCE_TARGET_$1[*]_$2[*]
 
+$BRUTE_SOURCE_TARGET_$1[*]_$2[*] +=		      	      \
+	source(>>) = source;                                  \
+   	target(>>) = target;                                  \
+	correlation_alert.alertident(>>).alertident = $3;     \
+        correlation_alert.alertident(-1).analyzerid = $4[-1];
 
-$BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
-	 source(>>) = source;                                  \
-         target(>>) = target;                                  \
-	 correlation_alert.alertident(>>).alertident = $3;     \
-         correlation_alert.alertident(-1).analyzerid = $4[-1]; \
-	 
-check_correlation = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+for $source in $1 {
+	for $target in $2 {
+		check_correlation = $BRUTE_SOURCE_TARGET_$(source)_$(target)
 
-$BRUTE_SOURCE_TARGET_$1[*]_$2[*] = \
-	 classification.text = Brute force attack;                                                           \
-	 correlation_alert.name = Multiple failed login;                                                     \ 
-	 assessment.impact.severity = high;                                                                  \
-	 assessment.impact.description = Multiple failed attempts have been made to login to a user account; \
-	 additional_data(>>).data = ignore_atomic_event;
+		$BRUTE_SOURCE_TARGET_$(source)_$(target) +=		      \
+			classification.text = Brute force attack;             \
+	 		correlation_alert.name = Multiple failed login;       \ 
+	 		assessment.impact.severity = high;                    \
+	 		assessment.impact.description = Multiple failed attempts have been made to login to a user account; \
+	 		additional_data(>>).data = ignore_atomic_event;
 
-alert = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
-destroy_context = $BRUTE_SOURCE_TARGET_$1[*]_$2[*];
+		alert = $BRUTE_SOURCE_TARGET_$(source)_$(target)
+		destroy_context = $BRUTE_SOURCE_TARGET_$(source)_$(target)
+	}
+}
+
 
 
 
@@ -69,26 +71,25 @@ pattern = classification.text: [Ll]ogin|[Aa]uthentication;   \
           messageid: (.+);                                   \
           analyzer(*).analyzerid: (.*)
 
-new_context = BRUTE_USER_$1[*]; \
-	      expire: 120; \
-	      threshold: 30;
-
+new_context = BRUTE_USER_$1[*]; expire: 120; threshold: 30;
 reset_timer = $BRUTE_USER_$1[*];
 
-$BRUTE_USER_$1[*] = \
+$BRUTE_USER_$1[*] +=                                          \
 	 source(>>) = source;                                 \
 	 target(>>) = target;                                 \
      	 correlation_alert.alertident(>>).alertident = $2;    \
          correlation_alert.alertident(-1).analyzerid = $3[-1]
 
-check_correlation = $BRUTE_USER_$1[*]
+for $user in $1 {
+	check_correlation = $(BRUTE_USER_$(user))
 
-$BRUTE_USER_$1[*] = \
+	$BRUTE_USER_$(user) += 				  \
 	 classification.text = Brute force attack;        \
          correlation_alert.name = Multiple failed login;  \         
 	 assessment.impact.severity = high;               \
          assessment.impact.description = Multiple failed attempts have been made to login to a user account; \
 	 additional_data(>>).data = ignore_atomic_event
 
-alert = $BRUTE_USER_$1[*];
-destroy_context = $BRUTE_USER_$1[*]
+	alert = $BRUTE_USER_$(user);
+	destroy_context = $BRUTE_USER_$(user)
+}

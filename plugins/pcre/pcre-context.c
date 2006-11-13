@@ -455,10 +455,22 @@ static int parse_float_value(const char *str, float *out)
 }
 
 
+
+static const char *context_type_to_string(pcre_context_type_t type)
+{
+        const char *tbl[] = { "unknown", "float", "string", "idmef" };
+
+        if ( type >= sizeof(tbl) / sizeof(*tbl) )
+                return "invalid";
+
+        return tbl[type];
+}
+
+
+
 static void context_change_type_if_needed(pcre_context_t *ctx, pcre_context_type_t ntype)
 {
         const char *type1, *type2;
-        const char *tbl[] = { "unknown", "float", "string", "idmef" };
         
         if ( ctx->type == PCRE_CONTEXT_TYPE_UNKNOWN )
                 return;
@@ -467,10 +479,10 @@ static void context_change_type_if_needed(pcre_context_t *ctx, pcre_context_type
 
         if ( ctx->type == ntype )
                 return;
-        
-        type1 = (ctx->type < sizeof(tbl) / sizeof(*tbl)) ? tbl[ctx->type] : "invalid";
-        type2 = (ntype < sizeof(tbl) / sizeof(*tbl)) ? tbl[ntype] : "invalid";
-        
+
+        type1 = context_type_to_string(ctx->type);
+        type2 = context_type_to_string(ntype);
+                
         prelude_log(PRELUDE_LOG_ERR, "[%s]: WARNING type changing from '%s' to '%s'.\n", ctx->name, type1, type2);
 }
 
@@ -619,6 +631,10 @@ int pcre_context_get_value_as_string(pcre_context_t *ctx, prelude_string_t *out)
 
 idmef_message_t *pcre_context_get_value_idmef(pcre_context_t *ctx)
 {
+        if ( ctx->type != PCRE_CONTEXT_TYPE_IDMEF ) {
+                prelude_log(PRELUDE_LOG_ERR, "[%s]: context type '%s' is not IDMEF.\n", ctx->name, context_type_to_string(ctx->type));
+        }
+        
         assert(ctx->type == PCRE_CONTEXT_TYPE_UNKNOWN || ctx->type == PCRE_CONTEXT_TYPE_IDMEF);
         return ctx->value.idmef;
 }
@@ -728,11 +744,19 @@ pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name)
 
 
 
-int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, const pcre *regex)
+int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, const char *subject)
 {
-        int ret, i = 0;
+        pcre *regex;
+        int ret, i = 0, error_offset;
         pcre_context_t *ctx;
         prelude_list_t *tmp;
+        const char *err_ptr;
+        
+        regex = pcre_compile(subject, 0, &err_ptr, &error_offset, NULL);
+        if ( ! regex ) {
+                prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
+                return -1;
+        }
         
         prelude_list_for_each(pcre_plugin_get_context_list(plugin), tmp) {
                 ctx = prelude_list_entry(tmp, pcre_context_t, intlist);
@@ -743,6 +767,8 @@ int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, co
                         prelude_linked_object_add(outlist, (prelude_linked_object_t *) ctx);
                 }
         }
+
+        pcre_free(regex);
         
         return i;
 }

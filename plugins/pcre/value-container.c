@@ -527,29 +527,6 @@ static void resolve_referenced_value(prelude_list_t *outlist, value_item_referen
 
 
 
-static int get_matching_context(pcre_plugin_t *plugin, prelude_list_t *outlist, prelude_string_t *str)
-{
-        int ret;
-        pcre *regex;
-        int error_offset;
-        const char *err_ptr;
-        
-        prelude_string_cat(str, "$");
-                
-        regex = pcre_compile(prelude_string_get_string(str), 0, &err_ptr, &error_offset, NULL);
-        if ( ! regex ) {
-                prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
-                return -1;
-        }
-        
-        ret = pcre_context_search_regex(outlist, plugin, regex);
-        pcre_free(regex);
-
-        return ret;
-}
-
-
-
 static int resolve_referenced_context(prelude_list_t *outlist, value_item_context_t *vitem,
                                       pcre_plugin_t *plugin, const pcre_rule_t *rule, capture_string_t *capture)
 {
@@ -558,6 +535,7 @@ static int resolve_referenced_context(prelude_list_t *outlist, value_item_contex
         prelude_string_t *out;
         prelude_list_t str_list, ctx_list, *tmp, *bkp, *tmp1, *bkp1;
 
+        
         prelude_list_init(&str_list);
         
         nth = value_container_resolve_listed(&str_list, vitem->context, plugin, rule, capture);
@@ -567,9 +545,9 @@ static int resolve_referenced_context(prelude_list_t *outlist, value_item_contex
         prelude_list_for_each_safe(&str_list, tmp, bkp) {
                 
                 out = prelude_linked_object_get_object(tmp);
-
+                
                 prelude_list_init(&ctx_list);
-                i = get_matching_context(plugin, &ctx_list, out);
+                i = pcre_context_search_regex(&ctx_list, plugin, prelude_string_get_string(out));
                 
                 prelude_string_destroy(out);
 

@@ -58,7 +58,7 @@ typedef enum {
 } pcre_context_type_t;
 
 
-int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, const pcre *regex);
+int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, const char *subject);
 
 pcre_context_t *pcre_context_search(pcre_plugin_t *plugin, const char *name);
 

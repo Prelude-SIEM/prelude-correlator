@@ -751,8 +751,11 @@ int pcre_context_search_regex(prelude_list_t *outlist, pcre_plugin_t *plugin, co
         pcre_context_t *ctx;
         prelude_list_t *tmp;
         const char *err_ptr;
+        char buf[strlen(subject) + 2];
+
+        snprintf(buf, sizeof(buf), "%s$", subject);
         
-        regex = pcre_compile(subject, 0, &err_ptr, &error_offset, NULL);
+        regex = pcre_compile(buf, PCRE_ANCHORED, &err_ptr, &error_offset, NULL);
         if ( ! regex ) {
                 prelude_log(PRELUDE_LOG_ERR, "unable to compile regex: %s.\n", err_ptr);
                 return -1;

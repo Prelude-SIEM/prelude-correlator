@@ -32,7 +32,7 @@ typedef enum {
 
 
 typedef struct {        
-        int timeout;
+        int32_t timeout;
         prelude_bool_t need_destroy;
         
         value_container_t *vcont;

@@ -27,7 +27,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <pcre.h>
 #include <netdb.h>
 #include <assert.h>
@@ -104,7 +103,7 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         float float_val = 0;
         idmef_message_t *idmef = NULL;
         pcre_context_setting_t *settings;
-        const char *name, *string_val = NULL;
+        const char *name = NULL, *string_val = NULL;
         uint32_t threshold = 0, elapsed = 0, shutdown = 0;
         pcre_context_type_t type = PCRE_CONTEXT_TYPE_UNKNOWN;
         
@@ -133,7 +132,7 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                         break;
                         
                 case CONTEXT_SETTINGS_TAG_TIMEOUT:
-                        ret = prelude_extract_uint32_safe(&(settings->timeout), buf, len);
+                        ret = prelude_extract_int32_safe(&(settings->timeout), buf, len);
                         if ( ret < 0 )
                                 goto err;
                         
@@ -213,6 +212,11 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                 }
         }
 
+        if ( ! name ) {
+                free(settings);
+                return -1;
+        }
+        
         ret = pcre_context_new(ctx, plugin, name, settings);
         if ( ret < 0 ) {
                 free(settings);
@@ -631,9 +635,9 @@ int pcre_context_get_value_as_string(pcre_context_t *ctx, prelude_string_t *out)
 
 idmef_message_t *pcre_context_get_value_idmef(pcre_context_t *ctx)
 {
-        if ( ctx->type != PCRE_CONTEXT_TYPE_IDMEF ) {
-                prelude_log(PRELUDE_LOG_ERR, "[%s]: context type '%s' is not IDMEF.\n", ctx->name, context_type_to_string(ctx->type));
-        }
+        if ( ctx->type != PCRE_CONTEXT_TYPE_IDMEF && ctx->type != PCRE_CONTEXT_TYPE_UNKNOWN )
+                prelude_log(PRELUDE_LOG_ERR, "[%s]: context type '%s' is not IDMEF.\n",
+                            ctx->name, context_type_to_string(ctx->type));
         
         assert(ctx->type == PCRE_CONTEXT_TYPE_UNKNOWN || ctx->type == PCRE_CONTEXT_TYPE_IDMEF);
         return ctx->value.idmef;

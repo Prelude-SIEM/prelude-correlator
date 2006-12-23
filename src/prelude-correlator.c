@@ -65,7 +65,7 @@ static void print_stats(const char *prefix, struct timeval *end)
 
 
 
-static void sig_handler(int signum)
+static RETSIGTYPE sig_handler(int signum)
 {
         got_signal = signum;      
 }

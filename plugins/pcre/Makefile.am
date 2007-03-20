@@ -1,7 +1,7 @@
 SUBDIRS = ruleset
-AM_CPPFLAGS = @LIBPRELUDE_CFLAGS@ @PCRE_CFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/src/include 
+AM_CPPFLAGS = @LIBPRELUDE_CFLAGS@ @PCRE_CFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/src/include -I$(top_srcdir)/libmissing
 
-noinst_HEADERS = capture-string.h pcre-mod.h rule-object.h rule-regex.h value-container.h
+noinst_HEADERS = capture-string.h pcre-context.h pcre-mod.h pcre-parser.h rule-object.h rule-regex.h value-container.h
 
 pcre_la_SOURCES = 			\
 		capture-string.c 	\

@@ -1,5 +1,5 @@
-ACLOCAL_AMFLAGS = -I m4 
-SUBDIRS = plugins src
+ACLOCAL_AMFLAGS = -I m4 -I libmissing/m4
+SUBDIRS = libmissing src
 EXTRA_DIST = AUTHORS COPYING HACKING.README INSTALL NEWS README prelude-correlator.conf
 
 

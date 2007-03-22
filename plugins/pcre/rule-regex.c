@@ -28,7 +28,6 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <pcre.h>
-#include <netdb.h>
 #include <assert.h>
 
 #include <libprelude/idmef.h>

@@ -30,8 +30,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <pcre.h>
-#include <netdb.h>
 #include <assert.h>
+#include <signal.h>
 
 #include <libprelude/prelude-log.h>
 
@@ -448,6 +448,7 @@ static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 return 0;
         
         if ( ifcb->else_vcont ) {
+                
                 ret = value_container_resolve_listed(&list, ifcb->else_vcont, plugin, rule, capture);
                 if ( ret < 0 )
                         return 0;
@@ -1440,7 +1441,7 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
                 { "<=", IF_OPERATOR_LOWER|IF_OPERATOR_EQUAL   },
                 { ">=", IF_OPERATOR_GREATER|IF_OPERATOR_EQUAL },
                 { "<", IF_OPERATOR_LOWER                      },
-                { ">", IF_OPERATOR_GREATER                    },
+                { ">", IF_OPERATOR_GREATER                    }
         };
                 
         if ( variable ) {
@@ -1849,6 +1850,11 @@ static void pcre_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
 }
 
 
+static void pcre_signal(prelude_plugin_instance_t *pi, int signo)
+{
+        if ( signo == SIGQUIT )
+                pcre_context_print_all(prelude_plugin_instance_get_plugin_data(pi));
+}
 
 
 static int set_last_first(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
@@ -2030,8 +2036,10 @@ int pcre_LTX_correlation_plugin_init(prelude_plugin_entry_t *pe, void *root_optl
         pcre_plugin.run = pcre_run;
         prelude_plugin_set_name(&pcre_plugin, "pcre");
         prelude_plugin_set_destroy_func(&pcre_plugin, pcre_destroy);
-        
         prelude_plugin_entry_set_plugin(pe, (void *) &pcre_plugin);
+        
+        correlation_plugin_set_signal_func(&pcre_plugin, pcre_signal);
+        correlation_plugin_register_signal(&pcre_plugin, SIGQUIT);
         
         return 0;
 }

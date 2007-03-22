@@ -28,12 +28,12 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <pcre.h>
-#include <netdb.h>
 #include <assert.h>
 
 #include <libprelude/prelude.h>
 #include <libprelude/prelude-log.h>
 #include <libprelude/prelude-extract.h>
+#include <libprelude/idmef-message-print.h>
 
 #include "prelude-correlator.h"
 #include "pcre-mod.h"
@@ -79,6 +79,7 @@ struct pcre_context {
                 float val;
         } value;
 };
+
 
 
 static void compute_next_expire(prelude_timer_t *timer, unsigned long offtime, unsigned long elapsed)
@@ -234,7 +235,7 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         
         pcre_context_set_threshold(*ctx, (unsigned int) threshold);
 
-        if ( type == PCRE_CONTEXT_TYPE_IDMEF && settings->timeout > 0 )
+        if ( settings->timeout > 0 )
                 compute_next_expire(pcre_context_get_timer(*ctx), time(NULL) - shutdown, elapsed);
         
         return ret;
@@ -867,7 +868,7 @@ int pcre_context_restore(prelude_plugin_instance_t *plugin, unsigned int *restor
         prelude_msg_t *msg;
         pcre_context_t *ctx;
         char filename[PATH_MAX];
-        
+               
         ret = prelude_io_new(&io);
         if ( ret < 0 )
                 return ret;
@@ -916,4 +917,62 @@ int pcre_context_restore(prelude_plugin_instance_t *plugin, unsigned int *restor
         prelude_io_destroy(io);
                 
         return 0;
+}
+
+
+void pcre_context_print(const pcre_context_t *context)
+{
+        /*
+         * This function is used to dump currently available context as well
+         * as their value. It is triggered via a signal. We use fprintf() in
+         * place of prelude_log() since the later buffer is too small to handle
+         * IDMEF value.
+         */
+        switch (context->type) {
+                case PCRE_CONTEXT_TYPE_UNKNOWN:
+                        fprintf(stderr, "[%s]: type=unknown threshold=%d.\n", 
+                                context->name, context->threshold);
+                        break;
+                        
+                case PCRE_CONTEXT_TYPE_FLOAT:
+                        fprintf(stderr, "[%s]: type=float value=%f threshold=%d.\n", 
+                                context->name, context->value.val, context->threshold);
+                        break;
+                        
+                case PCRE_CONTEXT_TYPE_STRING:
+                        fprintf(stderr, "[%s]: type=string value=%s threshold=%d.\n", 
+                                context->name, context->value.string, context->threshold);
+                        break;
+                        
+                case PCRE_CONTEXT_TYPE_IDMEF: {
+                        int ret;
+                        prelude_io_t *io;
+                        
+                        ret = prelude_io_new(&io);
+                        if ( ret < 0 )
+                                return;
+                                
+                        prelude_io_set_buffer_io(io);
+                        idmef_message_print(context->value.idmef, io);
+                        
+                        fprintf(stderr, "[%s]: type=idmef value=%p threshold=%d:\n%s\n", 
+                                context->name, context->value.idmef, context->threshold, (const char *) prelude_io_get_fdptr(io));
+                        
+                        prelude_io_destroy(io);
+                        break;
+                }
+        }
+}
+
+
+
+void pcre_context_print_all(pcre_plugin_t *plugin)
+{
+        pcre_context_t *ctx;
+        prelude_list_t *tmp;
+        
+        prelude_list_for_each(pcre_plugin_get_context_list(plugin), tmp) {
+                ctx = prelude_list_entry(tmp, pcre_context_t, intlist);
+                pcre_context_print(ctx);
+        }
 }

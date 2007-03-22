@@ -67,6 +67,10 @@ int pcre_context_new(pcre_context_t **out, pcre_plugin_t *plugin,
 
 void pcre_context_destroy(pcre_context_t *ctx);
 
+void pcre_context_print(const pcre_context_t *ctx);
+
+void pcre_context_print_all(pcre_plugin_t *plugin);
+
 const char *pcre_context_get_name(pcre_context_t *ctx);
 
 prelude_timer_t *pcre_context_get_timer(pcre_context_t *ctx);

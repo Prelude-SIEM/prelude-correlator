@@ -84,7 +84,7 @@ static int set_print_input(prelude_option_t *opt, const char *optarg, prelude_st
 {
         int ret;
         FILE *fd;
-        
+
         ret = prelude_io_new(&print_input_fd);
         if ( ret < 0 ) {
                 prelude_perror(ret, "error creating descriptor");
@@ -101,7 +101,7 @@ static int set_print_input(prelude_option_t *opt, const char *optarg, prelude_st
                 }
         }
         
-        prelude_io_set_file_io(print_input_fd, stdout);
+        prelude_io_set_file_io(print_input_fd, fd);
 
         return 0;
 }
@@ -112,7 +112,7 @@ static int set_print_output(prelude_option_t *opt, const char *optarg, prelude_s
 {
         int ret;
         FILE *fd;
-        
+
         ret = prelude_io_new(&print_output_fd);
         if ( ret < 0 ) {
                 prelude_perror(ret, "error creating descriptor");
@@ -129,7 +129,7 @@ static int set_print_output(prelude_option_t *opt, const char *optarg, prelude_s
                 }
         }
         
-        prelude_io_set_file_io(print_output_fd, stdout);
+        prelude_io_set_file_io(print_output_fd, fd);
 
         return 0;
 }
@@ -228,7 +228,7 @@ static const char *get_restart_string(void)
 }
 
 
-static void handle_sigquit(void)
+static void handle_sigusr1(void)
 {
         struct timeval end;
         
@@ -263,15 +263,24 @@ static void handle_signal_if_needed(void)
         signo = got_signal;
         got_signal = 0;
 
+        correlation_plugins_signal(signo);
+        
         if ( signo == SIGHUP ) {
                 prelude_log(PRELUDE_LOG_WARN, "signal %d received, restarting (%s).\n", signo, get_restart_string());
                 handle_sighup();
         }
         
-        if ( signo == SIGQUIT || signo == SIGUSR1 ) {
-                handle_sigquit();
+        if ( signo == SIGUSR1 ) {
+                handle_sigusr1();
                 return;
         }
+        
+        /*
+         * Check whether this is a signal we registered. If it is not,
+         * return: this is a signal handled through a plugin.
+         */
+        if ( signo != SIGTERM && signo != SIGINT && signo != SIGABRT )
+                return;
         
         prelude_log(PRELUDE_LOG_WARN, "signal %d received, terminating prelude-correlator.\n", signo);
         
@@ -352,10 +361,8 @@ static void setup_signal(void)
 
         sigaction(SIGTERM, &action, NULL);
         sigaction(SIGINT, &action, NULL);
-        sigaction(SIGQUIT, &action, NULL);
         sigaction(SIGABRT, &action, NULL);
         sigaction(SIGUSR1, &action, NULL);
-        sigaction(SIGQUIT, &action, NULL);
         sigaction(SIGHUP, &action, NULL);
 }
 
@@ -386,6 +393,32 @@ void correlation_alert_emit(idmef_message_t *idmef)
         if ( analyzer )
                 prelude_linked_object_del_init((prelude_linked_object_t *) analyzer);
 }
+
+
+void correlation_plugin_set_signal_func(prelude_correlator_plugin_t *plugin, void (*cb)(prelude_plugin_instance_t *plugin, int signo))
+{
+        plugin->got_signal = cb;
+}
+
+
+void correlation_plugin_register_signal(prelude_correlator_plugin_t *plugin, int signo)
+{
+        struct sigaction action;
+        
+        /*
+         * setup signal handling
+         */
+        action.sa_flags = 0;
+        sigemptyset(&action.sa_mask);
+        action.sa_handler = sig_handler;
+        
+#ifdef SA_INTERRUPT
+        action.sa_flags |= SA_INTERRUPT;
+#endif
+
+        sigaction(signo, &action, NULL);
+}
+
 
 
 

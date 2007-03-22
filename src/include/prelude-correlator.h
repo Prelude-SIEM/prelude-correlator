@@ -29,8 +29,12 @@
 typedef struct {
         PRELUDE_PLUGIN_GENERIC;
         void (*run)(prelude_plugin_instance_t *pi, idmef_message_t *idmef);
+        void (*got_signal)(prelude_plugin_instance_t *pi, int signo);
 } prelude_correlator_plugin_t;
 
+void correlation_plugin_set_signal_func(prelude_correlator_plugin_t *plugin, void (*cb)(prelude_plugin_instance_t *pi, int signo));
+
+void correlation_plugin_register_signal(prelude_correlator_plugin_t *plugin, int signo);
 
 void correlation_alert_emit(idmef_message_t *idmef);
 

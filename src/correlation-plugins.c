@@ -73,6 +73,19 @@ void correlation_plugins_run(idmef_message_t *idmef)
 }
 
 
+void correlation_plugins_signal(int signo)
+{
+        prelude_list_t *tmp;
+        prelude_plugin_instance_t *pi;
+        
+        prelude_list_for_each(&correlation_plugins_instance, tmp) {
+                pi = prelude_linked_object_get_object(tmp);
+                
+                if ( ((prelude_correlator_plugin_t *) prelude_plugin_instance_get_plugin(pi))->got_signal )
+                        prelude_plugin_run(pi, prelude_correlator_plugin_t, got_signal, pi, signo);
+        }
+}
+
 
 void correlation_plugins_destroy(void)
 {
@@ -87,7 +100,6 @@ void correlation_plugins_destroy(void)
                 pl->destroy(pi, NULL);
         }
 }
-
 
 
 int correlation_plugins_init(void *data)

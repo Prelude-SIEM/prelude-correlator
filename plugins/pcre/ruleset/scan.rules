@@ -44,14 +44,13 @@ for $source in $1 {
 		check_correlation = $SCAN_EVENTSCAN_$(source)_$(target);
 
 		$SCAN_EVENTSCAN_$(source)_$(target) +=                      \
-	 		correlation_alert.name = Eventscan;                 \
+	 		correlation_alert.name = A single host has played many events against a single target. This may be a vulnerability scan; \
 			classification.text = Eventscan;                    \
 	 		assessment.impact.severity = high;                  \
-	 		assessment.impact.description=A single host has played many events against a single target.  This may be a general vulnerability scan.; \
 	 		additional_data(>>).data=ignore_atomic_event
 
 		alert = $SCAN_EVENTSCAN_$(source)_$(target)
-		destroy_context = $SCAN_EVENTSCAN_$(target)_$(source)
+		destroy_context = $SCAN_EVENTSCAN_$(source)_$(target)
 	}
 }
 
@@ -78,10 +77,9 @@ for $source in $2 {
 	check_correlation = $SCAN_EVENTSWEEP_$1_$(source);
 
 	$SCAN_EVENTSWEEP_$1_$(source) +=				\
-         correlation_alert.name = Eventsweep;                           \
+         correlation_alert.name = A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability;                           \
 	 classification.text = Eventsweep;                              \
          assessment.impact.severity = high;                             \
-         assessment.impact.description = A single host has played the same event against multiple targets.  This may be a network scan for a specific vulnerability.; \
 	 additional_data(>>).data = ignore_atomic_event
 
 	alert = $SCAN_EVENTSWEEP_$1_$(source)
@@ -112,12 +110,11 @@ for $source in $1 {
 	check_correlation = $SCAN_EVENTSTORM_$(source);
 
 	$SCAN_EVENTSTORM_$(source) +=         \
-         correlation_alert.name = Eventstorm; \
+         correlation_alert.name = A single host is producing an unusual amount of events; \
          classification.text = Eventstorm;    \
          assessment.impact.severity = high;   \
-         assessment.impact.description = A single host is producing an unusual amount of traffic.; \
          additional_data(>>).data = ignore_atomic_event;
 
-	alert = $SCAN_EVENTSTORM_$1[*]
-	destroy_context = $SCAN_EVENTSTORM_$1[*]
+	alert = $SCAN_EVENTSTORM_$(source)
+	destroy_context = $SCAN_EVENTSTORM_$(source)
 }

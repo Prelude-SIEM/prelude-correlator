@@ -958,6 +958,7 @@ void pcre_context_print(const pcre_context_t *context)
                         fprintf(stderr, "[%s]: type=idmef value=%p threshold=%d:\n%s\n", 
                                 context->name, context->value.idmef, context->threshold, (const char *) prelude_io_get_fdptr(io));
                         
+                        prelude_io_close(io);
                         prelude_io_destroy(io);
                         break;
                 }

@@ -774,7 +774,7 @@ static int _parse_create_context(prelude_list_t *operation_list, const char *arg
                 
                 else if ( strcmp(key, "expire") == 0 )
                         pcs->timeout = atoi(value);
-                
+                                
                 else {
                         pcre_context_setting_destroy(pcs);
                         prelude_log(PRELUDE_LOG_WARN, "Unknown context creation argument: '%s'.\n", key);
@@ -1134,7 +1134,7 @@ static int context_assign_preprocess(pcre_plugin_t *plugin, pcre_context_t *ctx,
         free(tmp);
 
         if ( ! prelude_string_is_empty(pstr) )
-             return pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(pstr));
+                return pcre_context_set_value_from_string(plugin, ctx, prelude_string_get_string(pstr));
 
         return 0;
 }
@@ -1166,10 +1166,10 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
         
                 prelude_string_destroy(str);
                 
-                prelude_list_init(&list2);
-
                 idmef = NULL;
-                if ( cdata->right_value ) {                        
+                if ( cdata->right_value ) {  
+                        prelude_list_init(&list2);
+                                              
                         ret = value_container_resolve_listed(&list2, cdata->right_value, plugin, rule, capture);
                         if ( ret < 0 )
                                 return ret;
@@ -1189,7 +1189,7 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
                 }
                 
                 if ( cdata->rule_object_list ) {
-                        if ( cdata->addition )
+                        if ( cdata->addition && pcre_context_get_type(ctx) == PCRE_CONTEXT_TYPE_IDMEF )
                                 idmef = pcre_context_get_value_idmef(ctx);
                         
                         prelude_log_debug(3, "[%s]: running IDMEF assignement list (%s).\n",
@@ -1433,6 +1433,7 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
 {
         int ret, i;
         char *eptr;
+        size_t len;
         struct {
                 const char *operator;
                 if_operator_type_t type;
@@ -1443,15 +1444,18 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
                 { "<", IF_OPERATOR_LOWER                      },
                 { ">", IF_OPERATOR_GREATER                    }
         };
-                
+     
         if ( variable ) {
                 ret = value_container_new(vcont, variable);
                 if ( ret < 0 )
                         return -1;
         
                 for ( i = 0; i < sizeof(optbl) / sizeof(*optbl); i++ ) {
-                        if ( strncmp(value, optbl[i].operator, strlen(optbl[i].operator)) == 0 ) {
+                        len = strlen(optbl[i].operator);
+                        
+                        if ( strncmp(value, optbl[i].operator, len) == 0 ) {
                                 *if_op = optbl[i].type;
+                                value += len;
                                 break;
                         }
                 }
@@ -1570,10 +1574,11 @@ static int parse_for(FILE *fd, const char *filename, unsigned int *line,
                 return prelude_error_from_errno(errno);
         }
 
-        ptr = strstr(value, "$");
+        ptr = strstr(value, "in ");
         if ( ! ptr )
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "invalid format for 'for' operation");
-
+        ptr += 3;
+        
         eptr = strchr(ptr, ' ');
         if ( eptr )
                 *eptr = 0;

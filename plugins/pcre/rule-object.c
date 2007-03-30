@@ -149,104 +149,58 @@ static int match_iterate_cb(idmef_value_t *value, void *extra)
 }
 
 
-static int path_cmp_value(const idmef_path_t *path, idmef_message_t *input, idmef_message_t *output)
+
+static int prepare_message_for_compare(idmef_message_t *input)
 {
-        int ret1, ret2;
-        idmef_value_t *value1, *value2;
+        idmef_alert_t *alert;
+        idmef_service_t *service;
+        idmef_source_t *source = NULL;
+        idmef_target_t *target = NULL;
+                
+        alert = idmef_message_get_alert(input);
+        if ( ! alert )
+                return -1;
         
-        ret1 = idmef_path_get(path, output, &value1);                
-        if ( ret1 < 0 )
-                return ret1;
-
-        ret2 = idmef_path_get(path, input, &value2);
-        if ( ret2 < 0 ) {
-                if ( ret1 > 0 )
-                        idmef_value_destroy(value1);
-                return ret2;
-        }
-
-        if ( ret1 == 0 && ret2 == 0 )
-                return 1;
+        while ( (source = idmef_alert_get_next_source(alert, source)) ) {
                 
-        else if ( ret1 == 0 ) {
-                idmef_value_destroy(value2);
-                return 0;
-        }
-
-        else if ( ret2 == 0 ) {
-                idmef_value_destroy(value1);
-                return 0;
-        }
+                service = idmef_source_get_service(source);
+                if ( ! service )
+                        continue;
                 
-        ret1 = idmef_value_match(value1, value2, IDMEF_CRITERION_OPERATOR_EQUAL);
-             
-        idmef_value_destroy(value1);
-        idmef_value_destroy(value2);
-
-        return ret1;
+                idmef_service_unset_port(service);
+                idmef_service_set_portlist(service, NULL);
+        }
+        
+        while ( (target = idmef_alert_get_next_target(alert, target)) ) {
+                
+                service = idmef_target_get_service(target);
+                if ( ! service )
+                        continue;
+                
+                idmef_service_unset_port(service);
+                idmef_service_set_portlist(service, NULL);
+        }
+        
+        return 0;
 }
-
-
-
-static int message_compare(const idmef_path_t *path, idmef_message_t *input, idmef_message_t *output)
-{
-        int i = 0, ret;
-        const char *name;
-        idmef_path_t *child;
-        idmef_class_id_t cid;
-        idmef_value_type_id_t vtype;
-        
-        cid = idmef_path_get_class(path, -1);
-        
-        while ( 1 ) {
-                name = idmef_class_get_child_name(cid, i);
-                if ( ! name )
-                        break;
-                
-                vtype = idmef_class_get_child_value_type(cid, i);
-                i++;
-
-                ret = idmef_path_new(&child, "%s.%s", idmef_path_get_name(path, -1), name);
-                if ( ret < 0 ) {
-                        if ( prelude_error_get_code(ret) == PRELUDE_ERROR_IDMEF_PATH_DEPTH ||
-                             prelude_error_get_code(ret) == PRELUDE_ERROR_IDMEF_PATH_LENGTH )
-                                return 0;
-                                        
-                        return ret;
-                }
-                
-                if ( vtype != IDMEF_VALUE_TYPE_CLASS ) {
-                        if ( strcmp(name, "port") == 0 || strcmp(name, "portlist") == 0 ) {
-                                idmef_path_destroy(child);
-                                continue;
-                        }
-                        
-                        ret = path_cmp_value(child, input, output);                                                
-                        idmef_path_destroy(child);
-                        
-                        if ( ret <= 0 )
-                                return ret;
-                }
-                
-                else if ( vtype == IDMEF_VALUE_TYPE_CLASS ) {
-                        ret = message_compare(child, input, output);
-                        idmef_path_destroy(child);
-                        
-                        if ( ret < 0 )
-                                return ret;
-                }
-        }
-        
-        return 1;
-}
-
 
 
 static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *input, idmef_message_t *output)
 {
         int ret;
+        match_cb_t mcb;
         idmef_value_t *value = NULL;
 
+        mcb.path = path;
+        mcb.value = NULL;
+        mcb.idmef = output;
+
+        ret = prepare_message_for_compare(input);
+        if ( ret < 0 ) {
+                idmef_value_destroy(value);
+                return ret;
+        }
+                        
         ret = idmef_path_get(path, input, &value);
         if ( ret == 0 )
                 return 0;
@@ -266,7 +220,7 @@ static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *
          * list.
          */
         ret = idmef_path_get_index(path, idmef_path_get_depth(path) - 1);        
-        if ( prelude_error_get_code(ret) == PRELUDE_ERROR_IDMEF_PATH_INDEX_UNDEFINED ) {
+        if ( value && prelude_error_get_code(ret) == PRELUDE_ERROR_IDMEF_PATH_INDEX_UNDEFINED ) {
                                 
                 ret = idmef_path_set(path, output, value);
                 if ( ret < 0 )
@@ -275,21 +229,23 @@ static int copy_idmef_path_if_needed(const idmef_path_t *path, idmef_message_t *
                 idmef_value_destroy(value);
                 return ret;
         }
-
-        ret = message_compare(path, input, output);
-        if ( ret == 0 ) {
-                ret = idmef_path_set(path, output, value);
-                if ( ret < 0 )
-                        prelude_perror(ret, "could not set output path '%s'", idmef_path_get_name(path, -1));    
-        }
-                
-        idmef_value_destroy(value);
         
+        ret = idmef_path_get(path, output, &mcb.value);
         if ( ret < 0 ) {
-                prelude_perror(ret, "couldn't compare path '%s'", idmef_path_get_name(path, -1)); 
+                prelude_perror(ret, "could not retrieve output path '%s'", idmef_path_get_name(path, -1));
+                idmef_value_destroy(value);
                 return -1;
         }
+
+        if ( ret == 0 )
+                mcb.value = NULL;
         
+        ret = idmef_value_iterate(value, match_iterate_cb, &mcb);
+
+        idmef_value_destroy(value);
+        if ( mcb.value )
+                idmef_value_destroy(mcb.value);
+
         return ret;
 }
 

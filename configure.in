@@ -55,7 +55,7 @@ dnl **************************************************
 dnl * Check for libprelude                           *
 dnl **************************************************
 
-AM_PATH_LIBPRELUDE(0.9.11, libprelude=yes, libprelude=no)
+AM_PATH_LIBPRELUDE(0.9.13.2, libprelude=yes, libprelude=no)
 if test x$libprelude != xyes; then
 	AC_MSG_ERROR(libprelude is required in order to build prelude-correlator.)
 fi

@@ -465,10 +465,10 @@ int main(int argc, char **argv)
         idmef_analyzer_set_model(analyzer, str);
         
         prelude_string_new_constant(&str, ANALYZER_CLASS);
-        idmef_analyzer_set_model(analyzer, str);
+        idmef_analyzer_set_class(analyzer, str);
         
         prelude_string_new_constant(&str, VERSION);
-        idmef_analyzer_set_model(analyzer, str);
+        idmef_analyzer_set_version(analyzer, str);
         
         ret = prelude_client_start(client);
         if ( ret < 0 ) {

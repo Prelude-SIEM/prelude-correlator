@@ -90,8 +90,6 @@ static int add_context_value(value_container_t *vcont, const char *context)
         int ret;
         value_container_t *sub;
         value_item_context_t *vitem;
-
-        printf("add ctx value %s\n", context);
         
         ret = value_container_new(&sub, context);
         if ( ret < 0 )

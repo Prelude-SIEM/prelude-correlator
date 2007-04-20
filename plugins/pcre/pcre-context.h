@@ -22,6 +22,7 @@
 *****/
 
 #include <pcre.h>
+#include <libprelude/prelude.h>
 
 typedef enum {
         PCRE_CONTEXT_SETTING_FLAGS_OVERWRITE     = 0x01,
@@ -40,6 +41,8 @@ typedef struct {
         
         unsigned int correlation_window;
         unsigned int correlation_threshold;
+        
+        idmef_path_t *unique_path;
 } pcre_context_setting_t;
 
 

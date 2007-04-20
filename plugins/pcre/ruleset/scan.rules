@@ -64,7 +64,7 @@ pattern = classification.text: (.+); \
           messageid: (.+); \
           analyzer(*).analyzerid: (.*)
 
-new_context = SCAN_EVENTSWEEP_$1_$2[*]; expire: 60; threshold: 30
+new_context = SCAN_EVENTSWEEP_$1_$2[*]; expire: 60; threshold: 30; unique: alert.target.node.address.address;
 reset_timer = $SCAN_EVENTSWEEP_$1_$2[*];
 
 $SCAN_EVENTSWEEP_$1_$2[*] +=                                  \

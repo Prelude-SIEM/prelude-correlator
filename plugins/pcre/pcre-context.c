@@ -42,21 +42,21 @@
 #include "rule-regex.h"
 
 
-
-#define CONTEXT_TAG_NAME                           0
-#define CONTEXT_TAG_THRESHOLD                      1
-
 #define CONTEXT_SETTINGS_TAG_TIMEOUT               2
 #define CONTEXT_SETTINGS_TAG_FLAGS                 3
 #define CONTEXT_SETTINGS_TAG_CORRELATION_WINDOW    4
 #define CONTEXT_SETTINGS_TAG_CORRELATION_THRESHOLD 5
+#define CONTEXT_SETTINGS_TAG_UNIQUE_PATH          11
 
 #define CONTEXT_TIMER_TAG_ELAPSED                  6
 #define CONTEXT_TIMER_TAG_SHUTDOWN                 7
 
+#define CONTEXT_TAG_NAME                           0
+#define CONTEXT_TAG_THRESHOLD                      1
 #define CONTEXT_TAG_VALUE_IDMEF                    8
 #define CONTEXT_TAG_VALUE_STRING                   9
 #define CONTEXT_TAG_VALUE_FLOAT                   10
+#define CONTEXT_TAG_UNIQUE_COUNT                  12
 
 
 
@@ -71,7 +71,8 @@ struct pcre_context {
         pcre_context_setting_t *setting;
 
         unsigned int threshold;
-
+        unsigned int unique_count;
+        
         pcre_context_type_t type;
         union {
                 char *string;
@@ -104,8 +105,8 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         float float_val = 0;
         idmef_message_t *idmef = NULL;
         pcre_context_setting_t *settings;
-        const char *name = NULL, *string_val = NULL;
-        uint32_t threshold = 0, elapsed = 0, shutdown = 0;
+        const char *name = NULL, *string_val = NULL, *unique_path = NULL;
+        uint32_t threshold = 0, elapsed = 0, shutdown = 0, unique_count = 0;
         pcre_context_type_t type = PCRE_CONTEXT_TYPE_UNKNOWN;
         
         settings = calloc(1, sizeof(*settings));
@@ -131,9 +132,16 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                                 goto err;
 
                         break;
+
+                case CONTEXT_TAG_UNIQUE_COUNT:
+                        ret = prelude_extract_uint32_safe(&unique_count, buf, len);
+                        if ( ret < 0 )
+                                goto err;
+
+                        break;
                         
                 case CONTEXT_SETTINGS_TAG_TIMEOUT:
-                        ret = prelude_extract_int32_safe(&(settings->timeout), buf, len);
+                        ret = prelude_extract_int32_safe(&settings->timeout, buf, len);
                         if ( ret < 0 )
                                 goto err;
                         
@@ -160,6 +168,13 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                         
                         break;
 
+                case CONTEXT_SETTINGS_TAG_UNIQUE_PATH:
+                        ret = prelude_extract_characters_safe(&unique_path, buf, len);
+                        if ( ret < 0 )
+                                goto err;
+                                
+                        break;
+                        
                 case CONTEXT_TIMER_TAG_ELAPSED:
                         ret = prelude_extract_uint32_safe(&elapsed, buf, len);
                         if ( ret < 0 )
@@ -173,8 +188,7 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                                 goto err;
                         
                         break;
-
-                        
+                
                 case CONTEXT_TAG_VALUE_FLOAT:
                         ret = prelude_extract_float_safe(&float_val, buf, len);
                         if ( ret < 0 )
@@ -223,16 +237,22 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
                 free(settings);
                 return ret;
         }
-        
-        if ( type == PCRE_CONTEXT_TYPE_IDMEF )
-                pcre_context_set_value_idmef(*ctx, idmef);
 
+        if ( unique_path )
+                ret = idmef_path_new(&settings->unique_path, unique_path);
+                
+        if ( type == PCRE_CONTEXT_TYPE_IDMEF ) {
+                printf("set value idmef for %s\n", name);
+                pcre_context_set_value_idmef(*ctx, idmef);
+        }
+        
         else if ( type == PCRE_CONTEXT_TYPE_FLOAT )
                 pcre_context_set_value_float(*ctx, float_val);
         
         else if ( type == PCRE_CONTEXT_TYPE_STRING )
                 pcre_context_set_value_string(*ctx, string_val);
         
+        (*ctx)->unique_count = unique_count;
         pcre_context_set_threshold(*ctx, (unsigned int) threshold);
 
         if ( settings->timeout > 0 )
@@ -251,6 +271,7 @@ static int write_context_settings(pcre_context_setting_t *settings, prelude_msgb
 {
         int ret;
         uint32_t value;
+        const char *str;
 
         if ( ! settings )
                 return 0;
@@ -274,6 +295,14 @@ static int write_context_settings(pcre_context_setting_t *settings, prelude_msgb
         ret = prelude_msgbuf_set(msgbuf, CONTEXT_SETTINGS_TAG_CORRELATION_THRESHOLD, sizeof(value), &value);
         if ( ret < 0 )
                 return ret;
+
+        if ( settings->unique_path ) {
+                str = idmef_path_get_name(settings->unique_path, -1);
+
+                ret = prelude_msgbuf_set(msgbuf, CONTEXT_SETTINGS_TAG_UNIQUE_PATH, strlen(str) + 1, str);
+                if ( ret < 0 )
+                        return ret;
+        }
         
         return 0;
 }
@@ -299,6 +328,11 @@ static int write_context(pcre_context_t *context, prelude_msgbuf_t *msgbuf)
         if ( ret < 0 )
                 return ret;
 
+        value = (uint32_t) htonl(context->unique_count);
+        ret = prelude_msgbuf_set(msgbuf, CONTEXT_TAG_UNIQUE_COUNT, sizeof(value), &value);
+        if ( ret < 0 )
+                return ret;
+        
         value = (uint32_t) htonl(now - timer->start_time);
         ret = prelude_msgbuf_set(msgbuf, CONTEXT_TIMER_TAG_ELAPSED, sizeof(value), &value);
         if ( ret < 0 )
@@ -537,6 +571,39 @@ const char *pcre_context_get_name(pcre_context_t *ctx)
 }
 
 
+int pcre_context_check_unique_count(pcre_context_t *ctx, idmef_message_t *input)
+{
+        int ret;
+        idmef_value_t *inv, *outv;
+        
+        if ( ! ctx->setting || ! ctx->setting->unique_path || ctx->type != PCRE_CONTEXT_TYPE_IDMEF ) {
+                ret = 0;
+                goto out;
+        }
+        
+        ret = idmef_path_get(ctx->setting->unique_path, input, &inv);
+        if ( ret <= 0 )
+                goto out;
+        
+        ret = idmef_path_get(ctx->setting->unique_path, ctx->value.idmef, &outv);
+        if ( ret <= 0 ) {
+                idmef_value_destroy(inv);
+                goto out;
+        }
+        
+        ret = idmef_value_match(inv, outv, IDMEF_CRITERION_OPERATOR_EQUAL);
+        idmef_value_destroy(inv);
+        idmef_value_destroy(outv);
+              
+    out:
+        if ( ret == 0 ) 
+                ctx->unique_count++;
+                
+        return ret;
+}
+
+
+
 int pcre_context_check_correlation(pcre_context_t *ctx)
 {
         pcre_context_setting_t *setting = ctx->setting;
@@ -552,9 +619,13 @@ int pcre_context_check_correlation(pcre_context_t *ctx)
                 prelude_timer_reset(&ctx->timer);
         }
         
-        if ( setting->correlation_threshold && ++ctx->threshold != setting->correlation_threshold )
-                return -1;
-
+        if ( setting->correlation_threshold ) {
+                if ( setting->unique_path )
+                        return (ctx->unique_count == setting->correlation_threshold) ? 0 : -1;
+                else 
+                        return (++ctx->threshold == setting->correlation_threshold) ? 0 : -1;
+        }
+        
         return 0;
 }
 
@@ -788,6 +859,9 @@ void pcre_context_setting_destroy(pcre_context_setting_t *settings)
         if ( settings->vcont )
                 value_container_destroy(settings->vcont);
 
+        if ( settings->unique_path )
+                idmef_path_destroy(settings->unique_path);
+                
         free(settings);
 }
 
@@ -918,6 +992,7 @@ int pcre_context_restore(prelude_plugin_instance_t *plugin, unsigned int *restor
                 
         return 0;
 }
+
 
 
 void pcre_context_print(const pcre_context_t *context)

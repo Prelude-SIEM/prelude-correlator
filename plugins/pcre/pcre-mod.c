@@ -774,8 +774,17 @@ static int _parse_create_context(prelude_list_t *operation_list, const char *arg
                 
                 else if ( strcmp(key, "expire") == 0 )
                         pcs->timeout = atoi(value);
-                                
-                else {
+
+                else if ( strcmp(key, "unique") == 0 ) {
+                        ret = idmef_path_new_fast(&pcs->unique_path, value);
+                        if ( ret < 0 ) {
+                                prelude_log(PRELUDE_LOG_WARN, "Could not create unique path '%s': %s.\n", value, prelude_strerror(ret));
+                                pcre_context_setting_destroy(pcs);
+                                return ret;
+                        }
+                        
+                        printf("unique = %p\n", pcs->unique_path);
+                } else {
                         pcre_context_setting_destroy(pcs);
                         prelude_log(PRELUDE_LOG_WARN, "Unknown context creation argument: '%s'.\n", key);
                         return -1;
@@ -1141,7 +1150,7 @@ static int context_assign_preprocess(pcre_plugin_t *plugin, pcre_context_t *ctx,
 
 
 
-static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_message_t *input,
+static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule, idmef_message_t *input,
                              capture_string_t *capture, void *extra, prelude_list_t *context_result)
 {
         int ret;
@@ -1163,9 +1172,9 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
                 ctx = pcre_context_search(plugin, prelude_string_get_string(str));
                 if ( ! ctx )
                         ret = pcre_context_new(&ctx, plugin, prelude_string_get_string(str), NULL);
-        
-                prelude_string_destroy(str);
                 
+                prelude_string_destroy(str);
+                                
                 idmef = NULL;
                 if ( cdata->right_value ) {  
                         prelude_list_init(&list2);
@@ -1191,15 +1200,18 @@ static int op_context_assign(pcre_plugin_t *plugin, pcre_rule_t *rule,idmef_mess
                 if ( cdata->rule_object_list ) {
                         if ( cdata->addition && pcre_context_get_type(ctx) == PCRE_CONTEXT_TYPE_IDMEF )
                                 idmef = pcre_context_get_value_idmef(ctx);
-                        
+                                                
+                        ret = pcre_context_check_unique_count(ctx, input);
+                        if ( ret < 0 || ret > 0 )
+                                continue;
+                                
                         prelude_log_debug(3, "[%s]: running IDMEF assignement list (%s).\n",
                                           pcre_context_get_name(ctx), idmef ? "addition current" : "overwrite current");
-                        
+
                         ret = rule_object_build_message(plugin, rule, cdata->rule_object_list, &idmef, input, capture);
                         if ( ret == 0 )
                                 pcre_context_set_value_idmef(ctx, idmef);
-                }
-                
+                }                
         }
         
         return 0;

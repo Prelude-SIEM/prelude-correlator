@@ -782,8 +782,6 @@ static int _parse_create_context(prelude_list_t *operation_list, const char *arg
                                 pcre_context_setting_destroy(pcs);
                                 return ret;
                         }
-                        
-                        printf("unique = %p\n", pcs->unique_path);
                 } else {
                         pcre_context_setting_destroy(pcs);
                         prelude_log(PRELUDE_LOG_WARN, "Unknown context creation argument: '%s'.\n", key);

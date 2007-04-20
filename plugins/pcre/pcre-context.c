@@ -241,10 +241,8 @@ static int read_context(pcre_context_t **ctx, pcre_plugin_t *plugin, prelude_msg
         if ( unique_path )
                 ret = idmef_path_new(&settings->unique_path, unique_path);
                 
-        if ( type == PCRE_CONTEXT_TYPE_IDMEF ) {
-                printf("set value idmef for %s\n", name);
+        if ( type == PCRE_CONTEXT_TYPE_IDMEF ) 
                 pcre_context_set_value_idmef(*ctx, idmef);
-        }
         
         else if ( type == PCRE_CONTEXT_TYPE_FLOAT )
                 pcre_context_set_value_float(*ctx, float_val);

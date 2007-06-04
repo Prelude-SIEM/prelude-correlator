@@ -1,4 +1,5 @@
 ruleset_DATA = 	brute-force.rules \
+		business-hour.rules \
 		firewall.rules \
 		pcre.rules \
 		scan.rules \

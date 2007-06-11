@@ -285,6 +285,8 @@ static void handle_signal_if_needed(void)
         prelude_log(PRELUDE_LOG_WARN, "signal %d received, terminating prelude-correlator.\n", signo);
         
         correlation_plugins_destroy();
+        prelude_deinit();
+        
         exit(1);
 }
 

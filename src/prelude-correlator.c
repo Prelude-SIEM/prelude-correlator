@@ -6,7 +6,7 @@
 * This file is part of the Prelude-LML program.
 *
 * This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by 
+* it under the terms of the GNU General Public License as published by
 * the Free Software Foundation; either version 2, or (at your option)
 * any later version.
 *
@@ -58,7 +58,7 @@ static void print_stats(const char *prefix, struct timeval *end)
         double tdiv;
 
         tdiv = (end->tv_sec + (double) end->tv_usec / 1000000) - (start.tv_sec + (double) start.tv_usec / 1000000);
-                
+
         prelude_log(PRELUDE_LOG_WARN, "%s%lu message processed in %.2f seconds (%.2f EPS), %lu alert emited.\n",
                     prefix, message_processed, tdiv, message_processed / tdiv, alert_count);
 }
@@ -67,7 +67,7 @@ static void print_stats(const char *prefix, struct timeval *end)
 
 static RETSIGTYPE sig_handler(int signum)
 {
-        got_signal = signum;      
+        got_signal = signum;
 }
 
 
@@ -100,7 +100,7 @@ static int set_print_input(prelude_option_t *opt, const char *optarg, prelude_st
                         return -1;
                 }
         }
-        
+
         prelude_io_set_file_io(print_input_fd, fd);
 
         return 0;
@@ -128,7 +128,7 @@ static int set_print_output(prelude_option_t *opt, const char *optarg, prelude_s
                         return -1;
                 }
         }
-        
+
         prelude_io_set_file_io(print_output_fd, fd);
 
         return 0;
@@ -163,7 +163,7 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
         int ret;
         prelude_string_t *err;
         prelude_option_t *opt;
-        
+
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 'h', "help",
                            "Print this help", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_print_help, NULL);
@@ -172,15 +172,15 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
                            "Configuration file to use", PRELUDE_OPTION_ARGUMENT_REQUIRED,
                            set_conf_file, NULL);
         prelude_option_set_priority(opt, PRELUDE_OPTION_PRIORITY_IMMEDIATE);
-        
+
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "dry-run",
                            "No report to the specified Manager will occur.", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_dry_run, NULL);
-        
+
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "print-input",
                            "Dump alert input from manager to the specified file", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_print_input, NULL);
-        
+
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "print-output",
                            "Dump alert output to the specified file", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_print_output, NULL);
@@ -193,15 +193,15 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
         if ( ret < 0 ) {
                 if ( prelude_error_get_code(ret) == PRELUDE_ERROR_EOF )
                         return -1;
-                
+
                 if ( err )
                         prelude_log(PRELUDE_LOG_WARN, "%s.\n", prelude_string_get_string(err));
                 else
                         prelude_perror(ret, "error processing options");
-                
+
                 return -1;
         }
-        
+
         return 0;
 }
 
@@ -212,15 +212,15 @@ static const char *get_restart_string(void)
         int ret;
         size_t i;
         prelude_string_t *buf;
-        
+
         ret = prelude_string_new(&buf);
         if ( ret < 0 )
                 return global_argv[0];
-        
+
         for ( i = 0; global_argv[i] != NULL; i++ ) {
                 if ( ! prelude_string_is_empty(buf) )
                         prelude_string_cat(buf, " ");
-                        
+
                 prelude_string_cat(buf, global_argv[i]);
         }
 
@@ -231,14 +231,14 @@ static const char *get_restart_string(void)
 static void handle_sigusr1(void)
 {
         struct timeval end;
-        
+
         gettimeofday(&end, NULL);
         print_stats("statistics signal received: ", &end);
 }
 
 
 
-static void handle_sighup(void) 
+static void handle_sighup(void)
 {
         int ret;
 
@@ -256,7 +256,7 @@ static void handle_sighup(void)
 static void handle_signal_if_needed(void)
 {
         int signo;
-        
+
         if ( ! got_signal )
                 return;
 
@@ -264,29 +264,29 @@ static void handle_signal_if_needed(void)
         got_signal = 0;
 
         correlation_plugins_signal(signo);
-        
+
         if ( signo == SIGHUP ) {
                 prelude_log(PRELUDE_LOG_WARN, "signal %d received, restarting (%s).\n", signo, get_restart_string());
                 handle_sighup();
         }
-        
+
         if ( signo == SIGUSR1 ) {
                 handle_sigusr1();
                 return;
         }
-        
+
         /*
          * Check whether this is a signal we registered. If it is not,
          * return: this is a signal handled through a plugin.
          */
         if ( signo != SIGTERM && signo != SIGINT && signo != SIGABRT )
                 return;
-        
+
         prelude_log(PRELUDE_LOG_WARN, "signal %d received, terminating prelude-correlator.\n", signo);
-        
+
         correlation_plugins_destroy();
         prelude_deinit();
-        
+
         exit(1);
 }
 
@@ -298,21 +298,21 @@ static int poll_manager(prelude_connection_pool_t *pool)
         prelude_msg_t *msg;
         idmef_message_t *idmef;
         prelude_connection_t *conn;
-        
+
         do {
                 msg = NULL;
-                
+
                 ret = prelude_connection_pool_recv(pool, 1, &conn, &msg);
                 prelude_timer_wake_up();
                 handle_signal_if_needed();
 
                 if ( ret == 0 )
                         continue;
-                
+
                 if ( ret < 0 ) {
                         if ( prelude_error_get_code(ret) != PRELUDE_ERROR_EINTR )
                                 prelude_perror(ret, "error polling connection pool");
-                        
+
                         continue;
                 }
 
@@ -322,20 +322,20 @@ static int poll_manager(prelude_connection_pool_t *pool)
                         prelude_perror(ret, "error creating IDMEF object");
                         continue;
                 }
-                
+
                 ret = idmef_message_read(idmef, msg);
                 if ( ret < 0 ) {
                         prelude_msg_destroy(msg);
-                        idmef_message_destroy(idmef);                        
+                        idmef_message_destroy(idmef);
                         prelude_perror(ret, "error reading prelude message");
                         continue;
                 }
-                
+
                 if ( print_input_fd )
                         idmef_message_print(idmef, print_input_fd);
 
                 correlation_plugins_run(idmef);
-                
+
                 idmef_message_destroy(idmef);
                 prelude_msg_destroy(msg);
 
@@ -349,14 +349,14 @@ static int poll_manager(prelude_connection_pool_t *pool)
 static void setup_signal(void)
 {
         struct sigaction action;
-        
+
         /*
          * setup signal handling
          */
         action.sa_flags = 0;
         sigemptyset(&action.sa_mask);
         action.sa_handler = sig_handler;
-        
+
 #ifdef SA_INTERRUPT
         action.sa_flags |= SA_INTERRUPT;
 #endif
@@ -375,20 +375,20 @@ void correlation_alert_emit(idmef_message_t *idmef)
 {
         idmef_alert_t *alert;
         idmef_analyzer_t *analyzer = NULL;
-        
+
         alert = idmef_message_get_alert(idmef);
         if ( ! alert )
                 return;
 
         idmef_alert_set_messageid(alert, NULL);
-        
+
         if ( ! dry_run ) {
                 analyzer = idmef_analyzer_ref(prelude_client_get_analyzer(client));
-                
+
                 idmef_alert_set_analyzer(alert, analyzer, IDMEF_LIST_APPEND);
                 prelude_client_send_idmef(client, idmef);
         }
-        
+
         if ( print_output_fd )
                 idmef_message_print(idmef, print_output_fd);
 
@@ -406,14 +406,14 @@ void correlation_plugin_set_signal_func(prelude_correlator_plugin_t *plugin, voi
 void correlation_plugin_register_signal(prelude_correlator_plugin_t *plugin, int signo)
 {
         struct sigaction action;
-        
+
         /*
          * setup signal handling
          */
         action.sa_flags = 0;
         sigemptyset(&action.sa_mask);
         action.sa_handler = sig_handler;
-        
+
 #ifdef SA_INTERRUPT
         action.sa_flags |= SA_INTERRUPT;
 #endif
@@ -443,11 +443,11 @@ int main(int argc, char **argv)
         ret = prelude_option_new_root(&root_option);
         if ( ret < 0 )
                 return -1;
-        
+
         ret = correlation_plugins_init(root_option);
         if ( ret < 0 )
                 return -1;
-        
+
         ret = init_options(root_option, argc, argv);
         if ( ret < 0 )
                 return -1;
@@ -460,24 +460,24 @@ int main(int argc, char **argv)
 
         prelude_client_set_required_permission(client, PRELUDE_CONNECTION_PERMISSION_IDMEF_READ|
                                                PRELUDE_CONNECTION_PERMISSION_IDMEF_WRITE);
-        
+
         analyzer = prelude_client_get_analyzer(client);
-        
+
         prelude_string_new_constant(&str, ANALYZER_MODEL);
         idmef_analyzer_set_model(analyzer, str);
-        
+
         prelude_string_new_constant(&str, ANALYZER_CLASS);
         idmef_analyzer_set_class(analyzer, str);
-        
+
         prelude_string_new_constant(&str, VERSION);
         idmef_analyzer_set_version(analyzer, str);
-        
+
         ret = prelude_client_start(client);
         if ( ret < 0 ) {
                 prelude_perror(ret, "error starting prelude client");
                 return -1;
         }
-        
+
         gettimeofday(&start, NULL);
         return poll_manager(prelude_client_get_connection_pool(client));
 }

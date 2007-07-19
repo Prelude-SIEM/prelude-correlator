@@ -6,7 +6,7 @@
 * This file is part of the Prelude-LML program.
 *
 * This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by 
+* it under the terms of the GNU General Public License as published by
 * the Free Software Foundation; either version 2, or (at your option)
 * any later version.
 *
@@ -32,16 +32,16 @@ typedef enum {
 } pcre_context_setting_flags_t;
 
 
-typedef struct {        
+typedef struct {
         int32_t timeout;
         prelude_bool_t need_destroy;
-        
+
         value_container_t *vcont;
         pcre_context_setting_flags_t flags;
-        
+
         unsigned int correlation_window;
         unsigned int correlation_threshold;
-        
+
         idmef_path_t *unique_path;
 } pcre_context_setting_t;
 
@@ -85,6 +85,8 @@ unsigned int pcre_context_get_threshold(pcre_context_t *ctx);
 pcre_context_setting_t *pcre_context_get_setting(pcre_context_t *ctx);
 
 int pcre_context_check_correlation(pcre_context_t *ctx);
+
+int pcre_context_check_unique_count(pcre_context_t *ctx, idmef_message_t *input);
 
 void pcre_context_set_value_idmef(pcre_context_t *ctx, idmef_message_t *idmef);
 

@@ -85,6 +85,7 @@ typedef enum {
         IF_OPERATOR_EQUAL   = 0x01,
         IF_OPERATOR_LOWER   = 0x02,
         IF_OPERATOR_GREATER = 0x04,
+        IF_OPERATOR_NOT     = 0x08,
 } if_operator_type_t;
 
 
@@ -402,7 +403,7 @@ static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_string_t *
                 else if ( op & IF_OPERATOR_GREATER && val > value )
                         ok = TRUE;
 
-                if ( ! ok )
+                if ( ! ok && ! op & IF_OPERATOR_NOT )
                         return -1;
         }
 
@@ -1449,6 +1450,7 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
                 if_operator_type_t type;
         } optbl[] = {
                 { "==", IF_OPERATOR_EQUAL                     },
+                { "!=", IF_OPERATOR_EQUAL|IF_OPERATOR_NOT     },
                 { "<=", IF_OPERATOR_LOWER|IF_OPERATOR_EQUAL   },
                 { ">=", IF_OPERATOR_GREATER|IF_OPERATOR_EQUAL },
                 { "<", IF_OPERATOR_LOWER                      },

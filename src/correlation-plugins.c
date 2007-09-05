@@ -6,7 +6,7 @@
 * This file is part of the Prelude-LML program.
 *
 * This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by 
+* it under the terms of the GNU General Public License as published by
 * the Free Software Foundation; either version 2, or (at your option)
 * any later version.
 *
@@ -38,7 +38,7 @@ static PRELUDE_LIST(correlation_plugins_instance);
 static int subscribe(prelude_plugin_instance_t *pi)
 {
         prelude_plugin_generic_t *plugin = prelude_plugin_instance_get_plugin(pi);
-        
+
         prelude_log(PRELUDE_LOG_INFO, "- Subscribing plugin %s[%s]\n",
                     plugin->name, prelude_plugin_instance_get_name(pi));
 
@@ -52,10 +52,10 @@ static int subscribe(prelude_plugin_instance_t *pi)
 static void unsubscribe(prelude_plugin_instance_t *pi)
 {
         prelude_plugin_generic_t *plugin = prelude_plugin_instance_get_plugin(pi);
-        
+
         prelude_log(PRELUDE_LOG_INFO, "- Unsubscribing plugin %s[%s]\n",
                     plugin->name, prelude_plugin_instance_get_name(pi));
-        
+
         prelude_linked_object_del((prelude_linked_object_t *) pi);
 }
 
@@ -65,9 +65,9 @@ void correlation_plugins_run(idmef_message_t *idmef)
 {
         prelude_list_t *tmp;
         prelude_plugin_instance_t *pi;
-        
+
         prelude_list_for_each(&correlation_plugins_instance, tmp) {
-                pi = prelude_linked_object_get_object(tmp); 
+                pi = prelude_linked_object_get_object(tmp);
                 prelude_plugin_run(pi, prelude_correlator_plugin_t, run, pi, idmef);
         }
 }
@@ -77,10 +77,10 @@ void correlation_plugins_signal(int signo)
 {
         prelude_list_t *tmp;
         prelude_plugin_instance_t *pi;
-        
+
         prelude_list_for_each(&correlation_plugins_instance, tmp) {
                 pi = prelude_linked_object_get_object(tmp);
-                
+
                 if ( ((prelude_correlator_plugin_t *) prelude_plugin_instance_get_plugin(pi))->got_signal )
                         prelude_plugin_run(pi, prelude_correlator_plugin_t, got_signal, pi, signo);
         }
@@ -92,7 +92,7 @@ void correlation_plugins_destroy(void)
         prelude_list_t *tmp;
         prelude_plugin_generic_t *pl;
         prelude_plugin_instance_t *pi;
-        
+
         prelude_list_for_each(&correlation_plugins_instance, tmp) {
                 pi = prelude_linked_object_get_object(tmp);
                 pl = prelude_plugin_instance_get_plugin(pi);
@@ -115,6 +115,6 @@ int correlation_plugins_init(void *data)
 
         if ( ret == 0 )
                 prelude_log(PRELUDE_LOG_WARN, "* Warning: No correlation plugin loaded from '%s'.\n", CORRELATION_PLUGIN_DIR);
-                
+
         return ret;
 }

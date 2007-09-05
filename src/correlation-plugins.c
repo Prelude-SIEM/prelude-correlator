@@ -39,8 +39,8 @@ static int subscribe(prelude_plugin_instance_t *pi)
 {
         prelude_plugin_generic_t *plugin = prelude_plugin_instance_get_plugin(pi);
 
-        prelude_log(PRELUDE_LOG_INFO, "- Subscribing plugin %s[%s]\n",
-                    plugin->name, prelude_plugin_instance_get_name(pi));
+        prelude_log_debug(1, "- Subscribing plugin %s[%s]\n",
+                          plugin->name, prelude_plugin_instance_get_name(pi));
 
         prelude_linked_object_add(&correlation_plugins_instance, (prelude_linked_object_t *) pi);
 
@@ -53,8 +53,8 @@ static void unsubscribe(prelude_plugin_instance_t *pi)
 {
         prelude_plugin_generic_t *plugin = prelude_plugin_instance_get_plugin(pi);
 
-        prelude_log(PRELUDE_LOG_INFO, "- Unsubscribing plugin %s[%s]\n",
-                    plugin->name, prelude_plugin_instance_get_name(pi));
+        prelude_log_debug(1, "- Unsubscribing plugin %s[%s]\n",
+                          plugin->name, prelude_plugin_instance_get_name(pi));
 
         prelude_linked_object_del((prelude_linked_object_t *) pi);
 }
@@ -89,15 +89,12 @@ void correlation_plugins_signal(int signo)
 
 void correlation_plugins_destroy(void)
 {
-        prelude_list_t *tmp;
-        prelude_plugin_generic_t *pl;
+        prelude_list_t *tmp, *bkp;
         prelude_plugin_instance_t *pi;
 
-        prelude_list_for_each(&correlation_plugins_instance, tmp) {
+        prelude_list_for_each_safe(&correlation_plugins_instance, tmp, bkp) {
                 pi = prelude_linked_object_get_object(tmp);
-                pl = prelude_plugin_instance_get_plugin(pi);
-
-                pl->destroy(pi, NULL);
+                prelude_plugin_instance_unsubscribe(pi);
         }
 }
 

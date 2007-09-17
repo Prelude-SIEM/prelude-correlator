@@ -403,7 +403,7 @@ static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_string_t *
                 else if ( op & IF_OPERATOR_GREATER && val > value )
                         ok = TRUE;
 
-                if ( ! ok && ! op & IF_OPERATOR_NOT )
+                if ( ! ok && ! (op & IF_OPERATOR_NOT) ) 
                         return -1;
         }
 

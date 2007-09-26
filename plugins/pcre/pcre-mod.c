@@ -82,25 +82,23 @@ struct context_cb {
 
 
 typedef enum {
-        IF_OPERATOR_EQUAL   = 0x01,
-        IF_OPERATOR_LOWER   = 0x02,
-        IF_OPERATOR_GREATER = 0x04,
-        IF_OPERATOR_NOT     = 0x08,
+        IF_OPERATOR_EQUAL   = 0x01, /* integer, string, idmef */
+        IF_OPERATOR_LOWER   = 0x02, /* integer */
+        IF_OPERATOR_GREATER = 0x04, /* integer */
+        IF_OPERATOR_NOT     = 0x08, /* any */
+        IF_OPERATOR_IN      = 0x10  /* idmef */
 } if_operator_type_t;
 
 
 struct if_cb {
         prelude_list_t list;
 
-        value_container_t *if_vcont;
+        value_container_t *left;
         if_operator_type_t if_op;
-        float if_value;
+        value_container_t *right;
         prelude_list_t if_operation_list;
 
-        value_container_t *else_vcont;
-        if_operator_type_t else_op;
-        float else_value;
-        prelude_list_t else_operation_list;
+        struct if_cb *next;
 };
 
 
@@ -329,7 +327,9 @@ static int op_alert(pcre_plugin_t *plugin, pcre_rule_t *rule,
                 if ( ! ctx )
                         prelude_log(PRELUDE_LOG_ERR, "alert on non existant context '%s'.\n", prelude_string_get_string(str));
                 else {
-                        if ( ! pcre_context_get_value_idmef(ctx) )
+                        if ( pcre_context_get_type(ctx) != PCRE_CONTEXT_TYPE_IDMEF )
+                                prelude_log(PRELUDE_LOG_ERR, "'%s' context isn't an IDMEF container.\n", prelude_string_get_string(str));
+                        else if ( ! pcre_context_get_value_idmef(ctx) )
                                 prelude_log(PRELUDE_LOG_ERR, "'%s' context contain no idmef value.\n", prelude_string_get_string(str));
                         else {
                                 prelude_log_debug(3, "[%s]: emit alert.\n", pcre_context_get_name(ctx));
@@ -381,34 +381,99 @@ static int op_reset_timer(pcre_plugin_t *plugin, pcre_rule_t *rule,
 
 
 
-static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule, prelude_string_t *str,
-                    idmef_message_t *input, capture_string_t *capture,
-                    int op, float value, prelude_list_t *operation_list)
+static int cmp_float(prelude_string_t *lefts, prelude_string_t *rights, int op)
 {
-        float val;
         prelude_bool_t ok = FALSE;
+        float left, right;
 
-        if ( prelude_string_is_empty(str) )
+        left  = (float) strtod(prelude_string_get_string(lefts), NULL);
+        right = (float) strtod(prelude_string_get_string(rights), NULL);
+
+        if ( op & IF_OPERATOR_EQUAL && left == right )
+                ok = TRUE;
+
+        else if ( op & IF_OPERATOR_LOWER && left < right )
+                ok = TRUE;
+
+        else if ( op & IF_OPERATOR_GREATER && left > right )
+                ok = TRUE;
+
+        return (ok == TRUE) ? 0 : -1;
+}
+
+
+static int cmp_string(prelude_string_t *lefts, prelude_string_t *rights, int op)
+{
+        const char *ls, *lr;
+
+        ls = prelude_string_get_string(lefts);
+        lr = prelude_string_get_string(rights);
+
+        if ( op & IF_OPERATOR_EQUAL )
+                return (strcmp(ls, lr) == 0) ? 0 : -1;
+
+        else if ( op & IF_OPERATOR_IN )
+                return ( strstr(lr, ls) ) ? 0 : -1;
+
+        else
                 return -1;
+}
 
-        if ( op != 0 ) {
-                val = (float) strtod(prelude_string_get_string(str), NULL);
 
-                if ( op & IF_OPERATOR_EQUAL && val == value )
-                        ok = TRUE;
 
-                else if ( op & IF_OPERATOR_LOWER && val < value )
-                        ok = TRUE;
+static int cmp_idmef(idmef_message_t *left, idmef_message_t *right)
+{
+}
 
-                else if ( op & IF_OPERATOR_GREATER && val > value )
-                        ok = TRUE;
 
-                if ( ! ok && ! (op & IF_OPERATOR_NOT) ) 
-                        return -1;
+static int do_op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
+                    struct if_cb *ifcb,
+                    idmef_message_t *input, capture_string_t *capture)
+{
+        int ret, rval = -1;
+        prelude_string_t *str, *str2;
+        prelude_list_t list, list2, *tmp, *tmp2, *bkp, *bkp2;
+
+        if ( ! ifcb->left && ! ifcb->right )
+                return 0; /* else */
+
+        prelude_list_init(&list);
+        prelude_list_init(&list2);
+
+        ret = value_container_resolve_listed(&list, ifcb->left, plugin, rule, capture);
+        if ( ret < 0 )
+                return 0;
+
+        if ( ifcb->right ) {
+                ret = value_container_resolve_listed(&list2, ifcb->right, plugin, rule, capture);
+                if ( ret < 0 )
+                        return 0;
         }
 
-        pcre_operation_execute(plugin, rule, operation_list, input, capture);
-        return 0;
+        prelude_list_for_each_safe(&list, tmp, bkp) {
+                str = prelude_linked_object_get_object(tmp);
+
+                if ( ! ifcb->right )
+                        rval = 0;
+
+                prelude_list_for_each_safe(&list2, tmp2, bkp2) {
+                        str2 = prelude_linked_object_get_object(tmp2);
+
+                        if ( rval < 0 ) {
+                                ret = cmp_float(str, str2, ifcb->if_op);
+                                if ( (ret == 0 && ! (ifcb->if_op & IF_OPERATOR_NOT)) ||
+                                     (ret < 0 && (ifcb->if_op & IF_OPERATOR_NOT)) ) {
+                                        rval = 0;
+                                }
+                        }
+
+                        prelude_string_destroy(str2);
+                }
+
+                prelude_string_destroy(str);
+        }
+
+        return rval;
 }
 
 
@@ -417,53 +482,17 @@ static int op_if(pcre_plugin_t *plugin, pcre_rule_t *rule,
                  prelude_list_t *context_result)
 {
         int ret;
-        prelude_string_t *str;
         struct if_cb *ifcb = extra;
-        prelude_bool_t do_else = TRUE;
-        prelude_list_t list, *tmp, *bkp;
 
-        prelude_list_init(&list);
-
-        if ( ifcb->if_vcont ) {
-                ret = value_container_resolve_listed(&list, ifcb->if_vcont, plugin, rule, capture);
-                if ( ret < 0 )
-                        return 0;
-
-                prelude_list_for_each_safe(&list, tmp, bkp) {
-                        str = prelude_linked_object_get_object(tmp);
-
-                        ret = do_op_if(plugin, rule, str, input, capture, ifcb->if_op, ifcb->if_value, &ifcb->if_operation_list);
-
-                        prelude_string_destroy(str);
-                        if ( ret == 0 )
-                                do_else = FALSE;
+        do {
+                ret = do_op_if(plugin, rule, ifcb, input, capture);
+                if ( ret == 0 ) {
+                        pcre_operation_execute(plugin, rule, &ifcb->if_operation_list, input, capture);
+                        break;
                 }
-        }
 
-        else if ( ifcb->if_value ) {
-                pcre_operation_execute(plugin, rule, &ifcb->if_operation_list, input, capture);
-                do_else = FALSE;
-        }
-
-        if ( ! do_else )
-                return 0;
-
-        if ( ifcb->else_vcont ) {
-
-                ret = value_container_resolve_listed(&list, ifcb->else_vcont, plugin, rule, capture);
-                if ( ret < 0 )
-                        return 0;
-
-                prelude_list_for_each_safe(&list, tmp, bkp) {
-                        str = prelude_linked_object_get_object(tmp);
-
-                        do_op_if(plugin, rule, str, input, capture, ifcb->else_op, ifcb->else_value, &ifcb->else_operation_list);
-                        prelude_string_destroy(str);
-                }
-        }
-
-        else if ( ! prelude_list_is_empty(&ifcb->else_operation_list) )
-                do_op_if(plugin, rule, NULL, input, capture, ifcb->else_op, ifcb->else_value, &ifcb->else_operation_list);
+                ifcb = ifcb->next;
+        } while ( ifcb );
 
         return 0;
 }
@@ -1426,12 +1455,12 @@ static void free_operation(prelude_list_t *head)
 static void if_cb_destroy(struct if_cb *ifcb)
 {
         free_operation(&ifcb->if_operation_list);
-        free_operation(&ifcb->else_operation_list);
 
-        value_container_destroy(ifcb->if_vcont);
+        value_container_destroy(ifcb->left);
+        value_container_destroy(ifcb->right);
 
-        if ( ifcb->else_vcont )
-                value_container_destroy(ifcb->else_vcont);
+        if ( ifcb->next )
+                if_cb_destroy(ifcb->next);
 
         free(ifcb);
 }
@@ -1440,10 +1469,9 @@ static void if_cb_destroy(struct if_cb *ifcb)
 
 static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
                        pcre_plugin_t *plugin, pcre_rule_t *rule, const char *variable, const char *value,
-                       prelude_list_t *operation_list, value_container_t **vcont, if_operator_type_t *if_op, float *if_value)
+                       struct if_cb *ifcb)
 {
         int ret, i;
-        char *eptr;
         size_t len;
         struct {
                 const char *operator;
@@ -1458,7 +1486,7 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
         };
 
         if ( variable ) {
-                ret = value_container_new(vcont, variable);
+                ret = value_container_new(&ifcb->left, variable);
                 if ( ret < 0 )
                         return -1;
 
@@ -1466,7 +1494,7 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
                         len = strlen(optbl[i].operator);
 
                         if ( strncmp(value, optbl[i].operator, len) == 0 ) {
-                                *if_op = optbl[i].type;
+                                ifcb->if_op = optbl[i].type;
                                 value += len;
                                 break;
                         }
@@ -1481,16 +1509,18 @@ static int do_parse_if(FILE *fd, const char *filename, unsigned int *line,
          * If there is no value, we just check whether the specified context exist.
          */
         if ( *value != '{' ) {
+                char *end;
                 value += strspn(value, " ");
+                end = value + strcspn(value, "{ ");
+                *end = 0;
 
-                *if_value = strtod(value, &eptr);
-
-                if ( eptr == value || (*eptr != ' ' && *eptr != '{') )
+                ret = value_container_new(&ifcb->right, value);
+                if ( ret < 0 )
                         return prelude_error_verbose(PRELUDE_ERROR_GENERIC,
                                                      "Invalid value specified to 'if' command: '%s'", value);
         }
 
-        ret = parse_ruleset(&rule->rule_list, plugin, rule, operation_list, filename, line, fd);
+        ret = parse_ruleset(&rule->rule_list, plugin, rule, &ifcb->if_operation_list, filename, line, fd);
         if ( ret < 0 )
                 return ret;
 
@@ -1512,10 +1542,8 @@ static int parse_if(FILE *fd, const char *filename, unsigned int *line,
         }
 
         prelude_list_init(&ifcb->if_operation_list);
-        prelude_list_init(&ifcb->else_operation_list);
 
-        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value,
-                          &ifcb->if_operation_list, &ifcb->if_vcont, &ifcb->if_op, &ifcb->if_value);
+        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value, ifcb);
         if ( ret < 0 ) {
                 if_cb_destroy(ifcb);
                 return ret;
@@ -1536,21 +1564,32 @@ static int parse_else(FILE *fd, const char *filename, unsigned int *line,
                       prelude_list_t *operation_list, const char *variable, const char *value)
 {
         int ret;
-        struct if_cb *ifcb;
+        struct if_cb *last, *ifcb;
         pcre_operation_t *op;
 
         op = get_last_operation(operation_list);
         if ( ! op || op->op != op_if )
                 return -1;
 
-        ifcb = op->extra;
+        last = op->extra;
+        while ( last->next )
+                last = last->next;
 
-        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value,
-                          &ifcb->else_operation_list, &ifcb->else_vcont, &ifcb->else_op, &ifcb->else_value);
+        ifcb = calloc(1, sizeof(*ifcb));
+        if ( ! ifcb ) {
+                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
+                return -1;
+        }
+
+        prelude_list_init(&ifcb->if_operation_list);
+
+        ret = do_parse_if(fd, filename, line, plugin, rule, variable, value, ifcb);
         if ( ret < 0 ) {
                 if_cb_destroy(ifcb);
                 return ret;
         }
+
+        last->next = ifcb;
 
         return 0;
 }
@@ -1704,7 +1743,7 @@ static int parse_rule_operation(FILE *fd, const char *filename, unsigned int *li
         if ( strcmp(operation, "if") == 0 )
                 return parse_if(fd, filename, line, plugin, rule, operation_list, variable, value);
 
-        if ( strncmp(operation, "else", 4) == 0 )
+        if ( strncmp(operation, "else", 4) == 0 || strncmp(operation, "elif", 4) == 0 )
                 return parse_else(fd, filename, line, plugin, rule, operation_list, variable, value);
 
         if ( strcmp(operation, "for") == 0 )

@@ -28,6 +28,7 @@
 
 #include <libprelude/prelude.h>
 #include <libprelude/prelude-log.h>
+#include <libprelude/daemonize.h>
 #include <libprelude/idmef-message-print.h>
 
 #include "prelude-correlator.h"
@@ -51,6 +52,8 @@ static prelude_bool_t dry_run = FALSE;
 static prelude_client_t *client = NULL;
 static prelude_io_t *print_input_fd = NULL;
 static prelude_io_t *print_output_fd = NULL;
+static char *pidfile = NULL;
+
 
 
 static void print_stats(const char *prefix, struct timeval *end)
@@ -134,7 +137,25 @@ static int set_print_output(prelude_option_t *opt, const char *optarg, prelude_s
         return 0;
 }
 
+static int set_pidfile(prelude_option_t *opt, const char *arg, prelude_string_t *err, void *context)
+{
+        pidfile = strdup(arg);
+        if ( ! pidfile )
+                return prelude_error_from_errno(errno);
 
+        return 0;
+}
+
+static int set_daemon_mode(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
+{
+        prelude_daemonize(pidfile);
+        if ( pidfile )
+                free(pidfile);
+
+        prelude_log_set_flags(prelude_log_get_flags()|PRELUDE_LOG_FLAGS_QUIET|PRELUDE_LOG_FLAGS_SYSLOG);
+
+        return 0;
+}
 
 static int set_debug_level(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
 {
@@ -176,6 +197,16 @@ static int init_options(prelude_option_t *ropt, int argc, char **argv)
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "dry-run",
                            "No report to the specified Manager will occur.", PRELUDE_OPTION_ARGUMENT_OPTIONAL,
                            set_dry_run, NULL);
+
+        prelude_option_add(ropt, &opt, PRELUDE_OPTION_TYPE_CLI|PRELUDE_OPTION_TYPE_CFG, 'd', "daemon",
+                           "Run in daemon mode", PRELUDE_OPTION_ARGUMENT_NONE,
+                           set_daemon_mode, NULL);
+        prelude_option_set_priority(opt, PRELUDE_OPTION_PRIORITY_FIRST);
+
+        prelude_option_add(ropt, &opt, PRELUDE_OPTION_TYPE_CLI|PRELUDE_OPTION_TYPE_CFG, 'P', "pidfile",
+                           "Write Prelude Correlator PID to specified file",
+                           PRELUDE_OPTION_ARGUMENT_REQUIRED, set_pidfile, NULL);
+        prelude_option_set_priority(opt, PRELUDE_OPTION_PRIORITY_IMMEDIATE);
 
         prelude_option_add(ropt, NULL, PRELUDE_OPTION_TYPE_CLI, 0, "print-input",
                            "Dump alert input from manager to the specified file", PRELUDE_OPTION_ARGUMENT_OPTIONAL,

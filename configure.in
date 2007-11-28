@@ -68,7 +68,7 @@ dnl **************************************************
 AC_PATH_PROG(PCRE_CONFIG, pcre-config, no)
 
 if test x$PCRE_CONFIG = xno; then
-   AC_MSG_ERROR(PCRE 4.1 or higher is required to build Prelude-LML. Get it from http://www.pcre.org .)
+   AC_MSG_ERROR(PCRE 4.1 or higher is required to build Prelude-Correlator. Get it from http://www.pcre.org .)
 fi
 
 PCRE_LIBS=`$PCRE_CONFIG --libs`
@@ -81,7 +81,7 @@ CPPFLAGS_bkp=$CPPFLAGS
 CPPFLAGS="$CPPFLAGS $PCRE_CFLAGS"
 
 AC_CHECK_LIB(pcre, pcre_get_named_substring, , 
- AC_MSG_ERROR(PCRE 4.1 or higher is required to build Prelude-LML. Get it from http://www.pcre.org .)
+ AC_MSG_ERROR(PCRE 4.1 or higher is required to build Prelude-Correlator. Get it from http://www.pcre.org .)
 )
 
 LIBS=$LIBS_bkp

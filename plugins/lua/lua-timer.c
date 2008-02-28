@@ -64,7 +64,7 @@ static void timer_cb(void *data)
                 prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(timer->lstate, -1));
 
 
-        lua_gc(timer->lstate, LUA_GCCOLLECT, 0);
+        //lua_gc(timer->lstate, LUA_GCCOLLECT, 0);
 
         timer->is_active = FALSE;
         prelude_timer_destroy(&timer->timer);

@@ -53,7 +53,12 @@ Context = class(function(ctx, name, options)
                     ctx._idmef = IDMEF.new()
                     ctx._expire = options["expire"]
                     ctx._threshold = options["threshold"]
+                    ctx._alert_on_expire = false
                     __C[name] = ctx
+
+                    if options["alert_on_expire"] then
+                        ctx._alert_on_expire = true
+                    end
 
                     if ctx._expire ~= nil then
                         ctx._timer = Timer.new(name)
@@ -64,6 +69,11 @@ Context = class(function(ctx, name, options)
 
 function _del_context_(name)
         c = Context.get(name)
+
+        if c._alert_on_expire then
+            c:alert()
+        end
+
         c:del()
 end
 
@@ -83,7 +93,9 @@ function Context:CheckAndDecThreshold()
 end
 
 function Context:set(path, value)
-    return self._idmef:set(path, value)
+    if value ~= nil then
+        return self._idmef:set(path, value)
+    end
 end
 
 function Context:alert()
@@ -105,3 +117,17 @@ function Context.update(name, options)
 
         return elem
 end
+
+
+
+function dump(depth, result)
+   for i,v in pairs(result) do
+        if type(v) == "table" then
+                for x=0,depth-1 do io.write("\t") end io.write(i, " table") print(":")
+                dump(depth + 1, v)
+        else
+                for x=0,depth-1 do io.write("\t") end print(i, v)
+        end
+   end
+end
+

@@ -1,22 +1,11 @@
-function dump(depth, result)
-   for i,v in pairs(result) do
-        if type(v) == "table" then
-                for x=0,depth-1 do io.write("\t") end io.write(i, " table") print(":")
-                dump(depth + 1, v)
-        else
-                for x=0,depth-1 do io.write("\t") end print(i, v)
-        end
-   end
-end
-
-
 result = match("alert.source(*).node.address(*).address", "(.+)",
                "alert.target(*).node.address(*).address", "(.+)",
-   --            "alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-   --            "alert.assessment.impact.completion", "failed",
+               "alert.classification.text", "[Ll]ogin|[Aa]uthentication",
+               "alert.assessment.impact.completion", "failed",
                "alert.messageid", "(.+)",
                "alert.analyzer(*).analyzerid", "(.*)");
 
+if result ~= nil then
 for k, s in ipairs(result[1]) do
 for k2, source in ipairs(s) do
     for i, t in ipairs(result[2]) do for i2, target in ipairs(t) do
@@ -38,7 +27,7 @@ for k2, source in ipairs(s) do
         end
     end end
 end end
-
+end
 
 -- Detect brute force attempt by user
 -- This rule looks for all classifications that match login or authentication
@@ -50,7 +39,7 @@ result = match("classification.text", "[Ll]ogin|[Aa]uthentication",
                "messageid", "(.+)",
                "analyzer(*).analyzerid", "(.*)");
 
-if #result > 0 then
+if result ~= nil then
 for k, target in ipairs(result[1]) do for i, user in ipairs(target) do
     ctx = ctx.update("BRUTE_U_" .. user, { expire = 120, threshold = 2 })
     ctx:Set("alert.source(>>)", INPUT:Get("alert.source"))

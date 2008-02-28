@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -103,9 +104,9 @@ static int __lua_match(lua_State *lstate)
 
                 ret = match_idmef_path(lstate, current, path, expr, str, &idx);
                 if ( ret < 0 ) {
-                        ret = 1;
-                        lua_pop(lstate, lua_gettop(lstate));
-                        lua_newtable(lstate);
+                        ret = 0;
+                        //lua_pop(lstate, lua_gettop(lstate));
+                        //lua_newtable(lstate);
                         break;
                 }
 
@@ -146,42 +147,6 @@ static void lua_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
 
         lua_gc(plugin->lstate, LUA_GCCOLLECT, 0);
 }
-
-#include <dirent.h>
-
-static int incomplete (lua_State *L, int status) {
-  if (status == LUA_ERRSYNTAX) {
-printf("HERE\n");
-    size_t lmsg;
-    const char *msg = lua_tolstring(L, -1, &lmsg);
-    const char *tp = msg + lmsg - (sizeof(LUA_QL("<eof>")) - 1);
-    if (strstr(msg, LUA_QL("<eof>")) == tp) {
-      lua_pop(L, 1);
-      return 1;
-    }
-  }
-  return 0;  /* else... */
-}
-#if 0
-static int loadline (lua_State *L) {
-  int status;
-  lua_settop(L, 0);
-  if (!pushline(L, 1))
-    return -1;  /* no input */
-  for (;;) {  /* repeat until gets a complete line */
-    status = luaL_loadbuffer(L, lua_tostring(L, 1), lua_strlen(L, 1), "=stdin");
-    if (!incomplete(L, status)) break;  /* cannot try to add lines? */
-    if (!pushline(L, 0))  /* no more input? */
-      return -1;
-    lua_pushliteral(L, "\n");  /* add a new line... */
-    lua_insert(L, -2);  /* ...between the two lines */
-    lua_concat(L, 3);  /* join them */
-  }
-  lua_saveline(L, 1);
-  lua_remove(L, 1);  /* remove line */
-  return status;
-}
-#endif
 
 
 static int file_read(const char *filename, prelude_string_t *out)

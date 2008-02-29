@@ -128,14 +128,24 @@ function Context.update(name, options)
 end
 
 
-function dump(depth, result)
+function _dump(depth, result)
    for i,v in pairs(result) do
         if type(v) == "table" then
                 for x=0,depth-1 do io.write("\t") end io.write(i, " table") print(":")
-                dump(depth + 1, v)
+                _dump(depth + 1, v)
         else
+                if not v then v = "<nil>" end
                 for x=0,depth-1 do io.write("\t") end print(i, v)
         end
    end
 end
 
+function tabledump(result)
+    print "***********************"
+    if result then
+        _dump(0, result)
+    else
+        print("table is nil")
+    end
+    print "***********************"
+end

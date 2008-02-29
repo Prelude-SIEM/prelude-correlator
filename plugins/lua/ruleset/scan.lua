@@ -22,12 +22,13 @@
 -- Detect Eventscan:
 -- Playing multiple events from a single host against another single host
 
-source = match("alert.source(*).node.address(*).address", "(.+)")
-target = match("alert.target(*).node.address(*).address", "(.+)")
+
+source = INPUT:match("alert.source(*).node.address(*).address", "(.+)")
+target = INPUT:match("alert.target(*).node.address(*).address", "(.+)")
 
 if source and target then
-    for i, s in ipairs(source[1]) do for i, saddr in ipairs(s) do
-        for i, t in ipairs(target[1]) do for i, daddr in ipairs(t) do
+    for i, saddr in ipairs(source) do
+        for i, daddr in ipairs(target) do
             ctx = Context.update("SCAN_EVENTSCAN_" .. saddr .. daddr, { expire = 60, threshold = 30 })
 
             ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
@@ -43,8 +44,8 @@ if source and target then
                 ctx:alert()
                 ctx:del()
             end
-        end end
-    end end
+        end
+    end
 end
 
 
@@ -55,7 +56,7 @@ end
 classification = INPUT:get("alert.classification.text")
 
 if source and classification then
-    for i, s in ipairs(source[1]) do for i, saddr in ipairs(s) do
+    for i, saddr in ipairs(source) do
         ctx = Context.update("SCAN_EVENTSWEEP_" .. classification .. saddr, { expire = 60, threshold = 30 })
 
         -- unique (partial implementation)
@@ -75,7 +76,7 @@ if source and classification then
             ctx:del()
         end
             -- end -- unique
-    end end
+    end
 end
 
 
@@ -84,7 +85,7 @@ end
 -- Detect Eventstorm:
 -- Playing excessive events by a single host
 if source then
-    for i, s in ipairs(source[1]) do for i, saddr in ipairs(s) do
+    for i, saddr in ipairs(source) do
         ctx = Context.update("SCAN_EVENTSTORM_" .. saddr, { expire = 120, threshold = 150 })
 
         ctx:set("alert.source(>>)", INPUT:get("alert.source"))
@@ -99,5 +100,5 @@ if source then
             ctx:alert()
             ctx:del()
         end
-    end end
+    end
 end

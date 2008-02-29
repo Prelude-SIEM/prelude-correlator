@@ -77,48 +77,6 @@ static int timeval_subtract (struct timeval *result, struct timeval *x, struct t
        return x->tv_sec < y->tv_sec;
      }
 
-
-
-static idmef_message_t *current;
-
-
-static int __lua_match(lua_State *lstate)
-{
-        int i, ret, top;
-        unsigned int idx = 1;
-        const char *path, *expr;
-        prelude_string_t *str;
-
-        ret = prelude_string_new(&str);
-        if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "Match(): error creating string object.\n");
-                return -1;
-        }
-
-        top = lua_gettop(lstate);
-        lua_newtable(lstate);
-
-        for ( i = 1; i <= top; i += 2 ) {
-                path = lua_tostring(lstate, i);
-                expr = lua_tostring(lstate, i + 1);
-
-                ret = match_idmef_path(lstate, current, path, expr, str, &idx);
-                if ( ret < 0 ) {
-                        ret = 0;
-                        //lua_pop(lstate, lua_gettop(lstate));
-                        //lua_newtable(lstate);
-                        break;
-                }
-
-                prelude_string_clear(str);
-                ret = 1;
-        }
-
-        prelude_string_destroy(str);
-        return ret;
-}
-
-
 static void lua_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
 {
         int ret;
@@ -127,8 +85,6 @@ static void lua_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
 
         if ( idmef_message_get_type(idmef) != IDMEF_MESSAGE_TYPE_ALERT )
                 return;
-
-        current = idmef;
 
         gettimeofday(&ts, NULL);
 
@@ -207,9 +163,6 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                 prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(plugin->lstate, -1));
                 return -1;
         }
-
-        lua_pushcfunction(plugin->lstate, __lua_match);
-        lua_setglobal(plugin->lstate, "match");
 
         return 0;
 }

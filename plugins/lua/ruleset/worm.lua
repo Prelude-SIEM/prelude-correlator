@@ -26,38 +26,37 @@
 
 classification = INPUT:get("alert.classification.text")
 
-result = match("source(*).node.address(*).address", "(.+)",
-               "target(*).node.address(*).address", "(.+)");
+result = INPUT:match("source(*).node.address(*).address", "(.+)",
+                     "target(*).node.address(*).address", "(.+)");
 
 if result and classification then
 -- Create context for classification combined with all the target.
 
-for i, target in ipairs(result[1]) do for i, taddr in ipairs(target) do
-    ctx = Context.update("WORM_HOST_" .. classification .. taddr, { expire = 300, threshold = 5 })
-end end
+    for i, target in ipairs(result[1]) do
+        ctx = Context.update("WORM_HOST_" .. classification .. target, { expire = 300, threshold = 5 })
+    end
 
-for i, source in ipairs(result[2]) do for i, saddr in ipairs(source) do
-    -- We are trying to see whether a previous target is now attacking other hosts
-    -- thus, we check whether a context exist with this classification combined to
-    -- this source.
+    for i, source in ipairs(result[2]) do
+        -- We are trying to see whether a previous target is now attacking other hosts
+        -- thus, we check whether a context exist with this classification combined to
+        -- this source.
 
-    ctx = Context.get("WORM_HOST_" .. classification .. source)
-    if ctx then
-        ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-        ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-        ctx:set("alert.correlation_alert.alertident(>>).alertident", IDMEF:get("alert.messageid"))
-        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", IDMEF:get("alert.analyzer(-1).analyzerid"))
+        ctx = Context.get("WORM_HOST_" .. classification .. source)
+        if ctx then
+            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
 
-        -- Increase and check the context threshold.
-        if ctx:CheckAndDecThreshold() then
-            ctx:set("alert.classification.text", "Possible Worm Activity")
-            ctx:set("alert.correlation_alert.name", "Source host repeating actions taken against it recently")
-            ctx:set("alert.assessment.impact.severity", "high")
-            ctx:set("alert.assessment.impact.description", saddr .. "has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
-            ctx:alert()
-            ctx:del()
+            -- Increase and check the context threshold.
+            if ctx:CheckAndDecThreshold() then
+                ctx:set("alert.classification.text", "Possible Worm Activity")
+                ctx:set("alert.correlation_alert.name", "Source host repeating actions taken against it recently")
+                ctx:set("alert.assessment.impact.severity", "high")
+                ctx:set("alert.assessment.impact.description", source .. "has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
+                ctx:alert()
+                ctx:del()
+            end
         end
     end
-end end
-
 end

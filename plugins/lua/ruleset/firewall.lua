@@ -23,13 +23,13 @@
 -- created regarding events attached to this packet.  It sets a timer for the
 -- next 10 seconds for other events that might match the criterea.
 
-is_drop = match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
+isdrop = INPUT:match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
+result = INPUT:match("alert.source(0).node.address(0).address", "(.+)",
+                     "alert.source(0).service.port", "(.*)",
+                     "alert.target(0).node.address(0).address", "(.+)",
+                     "alert.target(0).service.port", "(.*)")
 
-result = match("alert.source(0).node.address(0).address", "(.+)",
-               "alert.source(0).service.port", "(.*)",
-               "alert.target(0).node.address(0).address", "(.+)",
-               "alert.target(0).service.port", "(.*)")
-if is_drop and result then
+if isdrop and result then
     Context.update("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4], { expire = 10 })
 end
 
@@ -39,7 +39,7 @@ end
 -- address which has not been matched by an observed packet denial.  If a packet
 -- denial is not observed in the next 10 seconds, an event alert is generated.
 
-if not is_drop and result then
+if not isdrop and result then
     if Context.get("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4]) == nil then
         ctx = Context("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4],
                       { expire = 10, alert_on_expire = true })

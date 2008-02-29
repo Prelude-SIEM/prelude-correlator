@@ -22,4 +22,6 @@
 *****/
 
 int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
-                     const char *path, const char *regex, prelude_string_t *outstr, unsigned int *idx);
+                     const char *path, const char *regex,
+                     prelude_string_t *outstr, unsigned int *idx,
+                     prelude_bool_t flat, prelude_bool_t has_top_table);

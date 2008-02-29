@@ -46,6 +46,7 @@
 
 
 struct exec_pcre_cb_data {
+        prelude_bool_t flat, has_top_table;
         unsigned int *index;
         lua_State *lstate;
         pcre *regex;
@@ -90,7 +91,7 @@ static int do_pcre_exec(struct exec_pcre_cb_data *item, int *real_ret)
 
 
 
-static int exec_pcre_cb(void *ptr)
+static int exec_pcre_cb(void *ptr, prelude_bool_t push_data)
 {
         char buf[1024];
         int ret, real_ret, i;
@@ -100,7 +101,6 @@ static int exec_pcre_cb(void *ptr)
          * arg:
          * - subject
          */
-
         ret = do_pcre_exec(data, &real_ret);
         if ( ret < 0 )
                 return ret;
@@ -109,8 +109,12 @@ static int exec_pcre_cb(void *ptr)
                 pcre_copy_substring(prelude_string_get_string(data->subject),
                                     data->ovector, real_ret, i, buf, sizeof(buf));
 
-                lua_pushstring(data->lstate, buf);
-                lua_rawseti(data->lstate, -2, (*data->index)++);
+                //if ( push_data ) {
+                        lua_pushstring(data->lstate, buf);
+
+                        if ( data->has_top_table )
+                                lua_rawseti(data->lstate, -2, (*data->index)++);
+                //}
         }
 
         return i;
@@ -118,22 +122,37 @@ static int exec_pcre_cb(void *ptr)
 
 
 
-static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
+
+static int maybe_listed_value_both_cb(idmef_value_t *value, void *extra)
 {
         int ret;
+        prelude_bool_t prev_has;
+        unsigned int *prev, idx = 1;
         struct exec_pcre_cb_data *data = extra;
 
         if ( idmef_value_is_list(value) ) {
-                unsigned int idx = 1, *prev = data->index;
+                if ( ! data->flat ) {
+                        if ( data->has_top_table )
+                                lua_pushnumber(data->lstate, (*data->index)++);
 
-                lua_pushnumber(data->lstate, (*data->index)++);
-                lua_newtable(data->lstate);
+                        lua_newtable(data->lstate);
 
-                data->index = &idx;
-                ret = idmef_value_iterate(value, maybe_listed_value_cb, data);
-                data->index = prev;
+                        prev = data->index;
+                        data->index = &idx;
+                        prev_has = data->has_top_table;
+                        data->has_top_table = TRUE;
+                }
 
-                lua_settable(data->lstate, -3);
+                ret = idmef_value_iterate(value, maybe_listed_value_both_cb, data);
+
+                if ( ! data->flat ) {
+                        data->index = prev;
+                        data->has_top_table = prev_has;
+
+                        if ( data->has_top_table )
+                                lua_settable(data->lstate, -3);
+                }
+
         } else {
                 prelude_string_clear(data->subject);
 
@@ -141,7 +160,7 @@ static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
                 if ( ret < 0 )
                         return ret;
 
-                ret = exec_pcre_cb(extra);
+                ret = exec_pcre_cb(extra, TRUE);
         }
 
 
@@ -149,15 +168,18 @@ static int maybe_listed_value_cb(idmef_value_t *value, void *extra)
 }
 
 
-
 int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
-                     const char *path, const char *regex, prelude_string_t *outstr, unsigned int *idx)
+                     const char *path, const char *regex,
+                     prelude_string_t *outstr, unsigned int *idx,
+                     prelude_bool_t flat, prelude_bool_t multipath)
 {
         int ret;
+        unsigned int lidx = 1;
         int err_offset;
         const char *err_ptr;
         idmef_value_t *value;
         idmef_path_t *ipath;
+        prelude_bool_t ambiguous;
         struct exec_pcre_cb_data data;
 
         ret = idmef_path_new_fast(&ipath, path);
@@ -183,14 +205,46 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         data.subject = outstr;
         data.regex_string = regex;
 
+        data.flat = flat;
+        data.has_top_table = multipath;
+
         if ( ret == 0 ) {
                 prelude_string_set_constant(outstr, "");
-                ret = exec_pcre_cb(&data);
+                ret = exec_pcre_cb(&data, FALSE);
                 pcre_free(data.regex);
                 return ret;
         }
 
-        ret = maybe_listed_value_cb(value, &data);
+        ambiguous = idmef_path_is_ambiguous(ipath);
+
+        if ( flat && multipath && ambiguous ) {
+                /*
+                 * Multiple path (this function is going to be called
+                 * several time), with possibly multiple value, flattened:
+                 *
+                 * Create a new table holding value for this path, which will
+                 * be part of the parent main table.
+                 */
+                data.index = &lidx;
+                lua_pushnumber(lstate, (*idx)++);
+                lua_newtable(lstate);
+                data.has_top_table = TRUE;
+        }
+
+        else if ( flat && ! multipath && ambiguous ) {
+                /*
+                 * Single path, with possibly multiple value, flattened:
+                 * We need a main table to store all the value.
+                 */
+                lua_newtable(lstate);
+                data.has_top_table = TRUE;
+        }
+
+        ret = maybe_listed_value_both_cb(value, &data);
+
+        if ( flat && multipath && ambiguous )
+                lua_settable(lstate, -3);
+
         idmef_value_destroy(value);
         pcre_free(data.regex);
 

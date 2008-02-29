@@ -18,21 +18,22 @@
 -- along with this program; see the file COPYING.  If not, write to
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-is_failed_auth = match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                       "alert.assessment.impact.completion", "failed")
+is_failed_auth = INPUT:match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
+                             "alert.assessment.impact.completion", "failed")
 
-result = match("alert.source(*).node.address(*).address", "(.+)",
-               "alert.target(*).node.address(*).address", "(.+)");
+
+result = INPUT:match("alert.source(*).node.address(*).address", "(.+)",
+                     "alert.target(*).node.address(*).address", "(.+)");
 
 if is_failed_auth and result then
-    for i, s in ipairs(result[1]) do for i, source in ipairs(s) do
-        for i, t in ipairs(result[2]) do for i, target in ipairs(t) do
+    for i, source in ipairs(result[1]) do
+        for i, target in ipairs(result[2]) do
 
             ctx = Context.update("BRUTE_ST_" .. source .. target, { expire = 2, threshold = 5 })
             ctx:set("alert.source(>>)", INPUT:get("alert.source"))
             ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-            ctx:set("alert.correlation_alert.alertident(>>).alertident", IDMEF:get("alert.messageid"))
-            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", IDMEF:get("alert.analyzer(-1).analyzerid"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
 
             if ctx:CheckAndDecThreshold() then
                 ctx:set("alert.classification.text", "Brute force attack")
@@ -43,23 +44,23 @@ if is_failed_auth and result then
                 ctx:alert()
                 ctx:del()
             end
-        end end
-    end end
+        end
+    end
 end
 
 -- Detect brute force attempt by user
 -- This rule looks for all classifications that match login or authentication
 -- attempts, and detects when they exceed a certain threshold.
 
-userid = match("target(*).user.user_id(*).name", "(.+)");
+userid = INPUT:match("target(*).user.user_id(*).name", "(.+)");
 
 if is_failed_auth and userid then
-    for i, target in ipairs(userid[1]) do for i, user in ipairs(target) do
+    for i, user in ipairs(userid[1]) do
         ctx = ctx.update("BRUTE_U_" .. user, { expire = 120, threshold = 2 })
         ctx:Set("alert.source(>>)", INPUT:Get("alert.source"))
         ctx:Set("alert.target(>>)", INPUT:Get("alert.target"))
-        ctx:Set("alert.correlation_alert.alertident(>>).alertident", IDMEF:get("alert.messageid"))
-        ctx:Set("alert.correlation_alert.alertident(-1).analyzerid", IDMEF:get("alert.analyzer(-1).analyzerid"))
+        ctx:Set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+        ctx:Set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
 
         if ctx:CheckAndDecThreshold() then
             ctx:Set("alert.classification.text", "Brute force attack")
@@ -70,5 +71,5 @@ if is_failed_auth and userid then
             ctx:alert()
             ctx:del()
         end
-    end end
+    end
 end

@@ -431,6 +431,7 @@ static int IDMEF_match(lua_State *lstate)
                 ret = 1;
         }
 
+        prelude_string_destroy(str);
         return ret;
 }
 

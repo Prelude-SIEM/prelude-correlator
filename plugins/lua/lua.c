@@ -154,6 +154,7 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                 file_read(fname, str);
         }
 
+        closedir(dir);
         prelude_string_cat(str, "end\n");
 
         ret = luaL_dostring(plugin->lstate, prelude_string_get_string(str));

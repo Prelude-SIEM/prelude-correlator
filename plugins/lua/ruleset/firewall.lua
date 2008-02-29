@@ -1,4 +1,4 @@
--- Copyright (C) 2006 PreludeIDS Technologies. All Rights Reserved.
+-- Copyright (C) 2006-2008 PreludeIDS Technologies. All Rights Reserved.
 -- Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 --
 -- This file is part of the Prelude-Correlator program.
@@ -23,12 +23,13 @@
 -- created regarding events attached to this packet.  It sets a timer for the
 -- next 10 seconds for other events that might match the criterea.
 
-result = match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied",
-               "alert.source(0).node.address(0).address", "(.+)",
+is_drop = match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
+
+result = match("alert.source(0).node.address(0).address", "(.+)",
                "alert.source(0).service.port", "(.*)",
                "alert.target(0).node.address(0).address", "(.+)",
                "alert.target(0).service.port", "(.*)")
-if result ~= nil then
+if is_drop and result then
     Context.update("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4], { expire = 10 })
 end
 
@@ -38,22 +39,17 @@ end
 -- address which has not been matched by an observed packet denial.  If a packet
 -- denial is not observed in the next 10 seconds, an event alert is generated.
 
-result = match("alert.source(0).node.address(0).address", "(.+)",
-               "alert.source(0).service.port", "(.*)",
-               "alert.target(0).node.address(0).address", "(.+)",
-               "alert.target(0).service.port", "(.*)",
-               "alert.analyzer(*).analyzerid", "(.*)",
-               "alert.messageid", "(.*)")
+if not is_drop and result then
+    if Context.get("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4]) == nil then
+        ctx = Context("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4],
+                      { expire = 10, alert_on_expire = true })
 
-if Context.get("FIREWALL_ST_DROP_" .. unpack(result)) == nil then
-    ctx = Context("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4],
-                  { expire = 10, alert_on_expire = true })
-
-    ctx:set("alert.source", INPUT:get("alert.source"))
-    ctx:set("alert.target", INPUT:get("alert.target"))
-    ctx:set("alert.assessment", INPUT:get("alert.assessment"))
-    ctx:set("alert.classification", INPUT:get("alert.classification"))
-    ctx:set("alert.correlation_alert.name", "Events to firewall correlation")
-    ctx:set("alert.correlation_alert.alertident(0).analyzerid", result[5][table.getn(result[5])])
-    ctx:set("alert.correlation_alert.alertident(0).alertident", result[6])
+        ctx:set("alert.source", INPUT:get("alert.source"))
+        ctx:set("alert.target", INPUT:get("alert.target"))
+        ctx:set("alert.assessment", INPUT:get("alert.assessment"))
+        ctx:set("alert.classification", INPUT:get("alert.classification"))
+        ctx:set("alert.correlation_alert.name", "Events to firewall correlation")
+        ctx:set("alert.correlation_alert.alertident(0).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+        ctx:set("alert.correlation_alert.alertident(0).alertident", INPUT:get("alert.messageid"))
+    end
 end

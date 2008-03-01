@@ -254,7 +254,6 @@ int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         prelude_bool_t ambiguous;
         struct exec_pcre_cb_data data;
 
-        prelude_string_t *str;
         ret = idmef_path_new_fast(&ipath, path);
         if ( ret < 0 )
                 return ret;
@@ -268,7 +267,6 @@ int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         if ( ret < 0 )
                 return ret;
 
-        data.subject = str;
         data.cb = retrieve_cb;
         data.index = idx;
         data.lstate = lstate;
@@ -300,14 +298,14 @@ int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
                 data.has_top_table = TRUE;
         }
 
-        prelude_string_new(&str);
+        prelude_string_new(&data.subject);
         ret = maybe_listed_value_both_cb(value, &data);
 
         if ( flat && multipath && ambiguous )
                 lua_settable(lstate, -3);
 
         idmef_value_destroy(value);
-        prelude_string_destroy(str);
+        prelude_string_destroy(data.subject);
 
         return ret;
 }

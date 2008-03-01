@@ -54,6 +54,22 @@ function class(base, ctor)
 end
 
 
+
+function IDMEF:getAnalyzerid()
+        local list = self:get2("alert.analyzer(*).analyzerid")
+        local id
+
+        for i, value in ipairs(list) do
+            id = value
+        end
+
+        return id
+end
+
+--[[
+Context class
+]]
+
 __C = {}
 
 
@@ -105,6 +121,10 @@ function Context:set(path, value)
     if value ~= nil then
         return self._idmef:set(path, value)
     end
+end
+
+function Context:getIDMEF(...)
+    return self._idmef:get2(unpack(arg))
 end
 
 function Context:alert()

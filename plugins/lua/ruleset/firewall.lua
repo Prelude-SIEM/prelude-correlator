@@ -49,7 +49,7 @@ if not isdrop and result then
         ctx:set("alert.assessment", INPUT:get("alert.assessment"))
         ctx:set("alert.classification", INPUT:get("alert.classification"))
         ctx:set("alert.correlation_alert.name", "Events to firewall correlation")
-        ctx:set("alert.correlation_alert.alertident(0).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+        ctx:set("alert.correlation_alert.alertident(0).analyzerid", INPUT:getAnalyzerid())
         ctx:set("alert.correlation_alert.alertident(0).alertident", INPUT:get("alert.messageid"))
     end
 end

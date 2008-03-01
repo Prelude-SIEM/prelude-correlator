@@ -33,7 +33,7 @@ if is_failed_auth and result then
             ctx:set("alert.source(>>)", INPUT:get("alert.source"))
             ctx:set("alert.target(>>)", INPUT:get("alert.target"))
             ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
             if ctx:CheckAndDecThreshold() then
                 ctx:set("alert.classification.text", "Brute force attack")
@@ -60,7 +60,7 @@ if is_failed_auth and userid then
         ctx:Set("alert.source(>>)", INPUT:Get("alert.source"))
         ctx:Set("alert.target(>>)", INPUT:Get("alert.target"))
         ctx:Set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-        ctx:Set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+        ctx:Set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
         if ctx:CheckAndDecThreshold() then
             ctx:Set("alert.classification.text", "Brute force attack")

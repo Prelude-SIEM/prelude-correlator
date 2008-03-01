@@ -32,7 +32,7 @@ if source and target then
             ctx = Context.update("SCAN_EVENTSCAN_" .. saddr .. daddr, { expire = 60, threshold = 30 })
 
             ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
             ctx:set("alert.source(>>)", INPUT:get("alert.source"))
             ctx:set("alert.target(>>)", INPUT:get("alert.target"))
 
@@ -55,27 +55,38 @@ end
 
 classification = INPUT:get("alert.classification.text")
 
-if source and classification then
+if source and target and classification then
     for i, saddr in ipairs(source) do
         ctx = Context.update("SCAN_EVENTSWEEP_" .. classification .. saddr, { expire = 60, threshold = 30 })
+        insert = true
 
-        -- unique (partial implementation)
-        --cur = ctx:get("alert.target(0).node.address(0).address")
-        -- if INPUT:get("alert.target(*).node.address(*).address") not in cur then
-
-        ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-        ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
-
-        if ctx:CheckAndDecThreshold() then
-            ctx:set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
-            ctx:set("alert.classification.text", "Eventsweep")
-            ctx:set("alert.assessment.impact.severity", "high")
-            ctx:alert()
-            ctx:del()
+        cur = ctx:getIDMEF("alert.target(*).node.address(*).address")
+        if cur then
+            for i, address in ipairs(target) do
+                for i, address2 in ipairs(cur) do
+                    if address == address2 then
+                        insert = false
+                        break
+                    end
+                end
+                if not insert then break end
+            end
         end
-            -- end -- unique
+
+        if insert then
+            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
+
+            if ctx:CheckAndDecThreshold() then
+                ctx:set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
+                ctx:set("alert.classification.text", "Eventsweep")
+                ctx:set("alert.assessment.impact.severity", "high")
+                ctx:alert()
+                ctx:del()
+            end
+        end
     end
 end
 
@@ -91,7 +102,7 @@ if source then
         ctx:set("alert.source(>>)", INPUT:get("alert.source"))
         ctx:set("alert.target(>>)", INPUT:get("alert.target"))
         ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:get("alert.analyzer(-1).analyzerid"))
+        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
         if ctx:CheckAndDecThreshold() then
             ctx:set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")

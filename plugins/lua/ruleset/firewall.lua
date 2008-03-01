@@ -44,12 +44,12 @@ if not isdrop and result then
         ctx = Context("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4],
                       { expire = 10, alert_on_expire = true })
 
-        ctx:set("alert.source", INPUT:get("alert.source"))
-        ctx:set("alert.target", INPUT:get("alert.target"))
-        ctx:set("alert.assessment", INPUT:get("alert.assessment"))
-        ctx:set("alert.classification", INPUT:get("alert.classification"))
+        ctx:set("alert.source", INPUT:getraw("alert.source"))
+        ctx:set("alert.target", INPUT:getraw("alert.target"))
+        ctx:set("alert.assessment", INPUT:getraw("alert.assessment"))
+        ctx:set("alert.classification", INPUT:getraw("alert.classification"))
         ctx:set("alert.correlation_alert.name", "Events to firewall correlation")
         ctx:set("alert.correlation_alert.alertident(0).analyzerid", INPUT:getAnalyzerid())
-        ctx:set("alert.correlation_alert.alertident(0).alertident", INPUT:get("alert.messageid"))
+        ctx:set("alert.correlation_alert.alertident(0).alertident", INPUT:getraw("alert.messageid"))
     end
 end

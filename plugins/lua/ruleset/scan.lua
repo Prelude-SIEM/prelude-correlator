@@ -31,10 +31,10 @@ if source and target then
         for i, daddr in ipairs(target) do
             ctx = Context.update("SCAN_EVENTSCAN_" .. saddr .. daddr, { expire = 60, threshold = 30 })
 
-            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
             ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
-            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
+            ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
 
             if ctx:CheckAndDecThreshold("SCAN_EVENTSCAN_" .. saddr .. daddr) then
                 ctx:set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
@@ -74,9 +74,9 @@ if source and target and classification then
         end
 
         if insert then
-            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
             ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
             if ctx:CheckAndDecThreshold() then
@@ -99,9 +99,9 @@ if source then
     for i, saddr in ipairs(source) do
         ctx = Context.update("SCAN_EVENTSTORM_" .. saddr, { expire = 120, threshold = 150 })
 
-        ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-        ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+        ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+        ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
         ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
         if ctx:CheckAndDecThreshold() then

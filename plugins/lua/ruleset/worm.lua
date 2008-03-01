@@ -43,9 +43,9 @@ if result and classification then
 
         ctx = Context.get("WORM_HOST_" .. classification .. source)
         if ctx then
-            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
             ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
             -- Increase and check the context threshold.

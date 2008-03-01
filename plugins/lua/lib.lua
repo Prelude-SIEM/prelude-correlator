@@ -56,7 +56,7 @@ end
 
 
 function IDMEF:getAnalyzerid()
-        local list = self:get2("alert.analyzer(*).analyzerid")
+        local list = self:get("alert.analyzer(*).analyzerid")
         local id
 
         for i, value in ipairs(list) do
@@ -124,7 +124,7 @@ function Context:set(path, value)
 end
 
 function Context:getIDMEF(...)
-    return self._idmef:get2(unpack(arg))
+    return self._idmef:get(unpack(arg))
 end
 
 function Context:alert()

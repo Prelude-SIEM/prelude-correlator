@@ -268,7 +268,57 @@ static int IDMEF_set(lua_State *lstate)
 }
 
 
-static int IDMEF_get2(lua_State *lstate)
+static int IDMEF_getraw(lua_State *lstate)
+{
+        int ret;
+        idmef_path_t *path;
+        idmef_value_t *value;
+        idmef_message_t *idmef;
+        const char *path_str;
+
+        ret = lua_gettop(lstate);
+        if ( ret != 2 ) {
+                prelude_log(PRELUDE_LOG_ERR, "getraw(): require 2 arguments, got %d.\n", ret);
+                return -1;
+        }
+
+        idmef = checkIDMEF(lstate, 1);
+        if ( ! idmef ) {
+                prelude_log(PRELUDE_LOG_ERR, "getraw(): First argument should be 'IDMEF'.\n");
+                return -1;
+        }
+
+        if ( ! lua_isstring(lstate, 2) ) {
+                prelude_log(PRELUDE_LOG_ERR, "getraw(): Second argument should be 'string'.\n");
+                return -1;
+        }
+
+        path_str = lua_tostring(lstate, 2);
+
+        ret = idmef_path_new_fast(&path, path_str);
+        if ( ret < 0 ) {
+                prelude_log(PRELUDE_LOG_ERR, "getraw(%s): %s.\n", path_str, prelude_strerror(ret));
+                return -1;
+        }
+
+        ret = idmef_path_get(path, idmef, &value);
+        idmef_path_destroy(path);
+
+        if ( ret < 0 ) {
+                prelude_log(PRELUDE_LOG_ERR, "getraw(%s): retrieval failed: %s.\n", path_str, prelude_strerror(ret));
+                return -1;
+        }
+
+        if ( ret == 0 )
+                return 0;
+
+        pushIDMEFValue(lstate, value);
+
+        return 1;
+}
+
+
+static int IDMEF_get(lua_State *lstate)
 {
         int ret, i, top;
         unsigned int idx = 1;
@@ -277,13 +327,13 @@ static int IDMEF_get2(lua_State *lstate)
 
         ret = lua_gettop(lstate);
         if ( ret < 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "get2(): require 2 arguments minimum, got %d.\n", ret);
+                prelude_log(PRELUDE_LOG_ERR, "get(): require 2 arguments minimum, got %d.\n", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "get2(): First argument should be 'IDMEF'.\n");
+                prelude_log(PRELUDE_LOG_ERR, "get(): First argument should be 'IDMEF'.\n");
                 return -1;
         }
 
@@ -310,118 +360,6 @@ static int IDMEF_get2(lua_State *lstate)
         }
 
         return ret;
-}
-
-
-
-static int IDMEF_get(lua_State *lstate)
-{
-
-        int ret;
-        const char *path_str;
-        idmef_path_t *path;
-        idmef_value_t *value;
-        idmef_value_type_id_t type;
-        idmef_message_t *idmef;
-
-        ret = lua_gettop(lstate);
-        if ( ret != 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(): require 3 arguments, got %d.\n", ret);
-                return -1;
-        }
-
-        idmef = checkIDMEF(lstate, 1);
-        if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(): First argument should be 'IDMEF'.\n");
-                return -1;
-        }
-
-        if ( ! lua_isstring(lstate, 2) ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(): Second argument should be 'string'.\n");
-                return -1;
-        }
-
-        path_str = lua_tostring(lstate, 2);
-
-        ret = idmef_path_new_fast(&path, path_str);
-        if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(%s): %s.\n", path_str, prelude_strerror(ret));
-                return -1;
-        }
-
-        ret = idmef_path_get(path, idmef, &value);
-        idmef_path_destroy(path);
-
-        if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(%s): retrieval failed: %s.\n", path_str, prelude_strerror(ret));
-                return -1;
-        }
-
-        if ( ret == 0 )
-                return 0;
-
-        type = idmef_value_get_type(value);
-        switch (type) {
-                case IDMEF_VALUE_TYPE_STRING: {
-                        prelude_string_t *s = idmef_value_get_string(value);
-                        lua_pushlstring(lstate, prelude_string_get_string(s), prelude_string_get_len(s));
-                        break;
-                }
-                case IDMEF_VALUE_TYPE_INT8:
-                        lua_pushnumber(lstate, idmef_value_get_int8(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_UINT8:
-                        lua_pushnumber(lstate, idmef_value_get_uint8(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_INT16:
-                        lua_pushnumber(lstate, idmef_value_get_int16(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_UINT16:
-                        lua_pushnumber(lstate, idmef_value_get_uint16(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_INT32:
-                        lua_pushnumber(lstate, idmef_value_get_int32(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_UINT32:
-                        lua_pushnumber(lstate, idmef_value_get_uint32(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_INT64:
-                        lua_pushnumber(lstate, idmef_value_get_int64(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_UINT64:
-                        lua_pushnumber(lstate, idmef_value_get_uint64(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_FLOAT:
-                        lua_pushnumber(lstate, idmef_value_get_float(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_DOUBLE:
-                        lua_pushnumber(lstate, idmef_value_get_double(value));
-                        break;
-
-                case IDMEF_VALUE_TYPE_CLASS:
-                case IDMEF_VALUE_TYPE_LIST:
-                        pushIDMEFValue(lstate, value);
-                        break;
-
-                default:
-                        idmef_value_destroy(value);
-                        prelude_log(PRELUDE_LOG_ERR, "get(%s): could not handle value type '%d'.\n", path_str, type);
-                        return -1;
-        }
-
-        if ( type != IDMEF_VALUE_TYPE_CLASS && type != IDMEF_VALUE_TYPE_LIST )
-                idmef_value_destroy(value);
-
-        return 1;
 }
 
 
@@ -489,7 +427,7 @@ static const luaL_reg IDMEF_methods[] = {
         { "new", IDMEF_new     },
         { "set", IDMEF_set     },
         { "get", IDMEF_get     },
-        { "get2", IDMEF_get2   },
+        { "getraw", IDMEF_getraw },
         { "match", IDMEF_match },
         { "alert", IDMEF_alert },
         { 0, 0                 }

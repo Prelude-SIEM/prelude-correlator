@@ -30,9 +30,9 @@ if is_failed_auth and result then
         for i, target in ipairs(result[2]) do
 
             ctx = Context.update("BRUTE_ST_" .. source .. target, { expire = 2, threshold = 5 })
-            ctx:set("alert.source(>>)", INPUT:get("alert.source"))
-            ctx:set("alert.target(>>)", INPUT:get("alert.target"))
-            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
+            ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+            ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+            ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
             ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
             if ctx:CheckAndDecThreshold() then
@@ -57,10 +57,10 @@ userid = INPUT:match("target(*).user.user_id(*).name", "(.+)");
 if is_failed_auth and userid then
     for i, user in ipairs(userid[1]) do
         ctx = ctx.update("BRUTE_U_" .. user, { expire = 120, threshold = 2 })
-        ctx:Set("alert.source(>>)", INPUT:Get("alert.source"))
-        ctx:Set("alert.target(>>)", INPUT:Get("alert.target"))
-        ctx:Set("alert.correlation_alert.alertident(>>).alertident", INPUT:get("alert.messageid"))
-        ctx:Set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
+        ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+        ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
+        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
 
         if ctx:CheckAndDecThreshold() then
             ctx:Set("alert.classification.text", "Brute force attack")

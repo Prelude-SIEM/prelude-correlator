@@ -32,6 +32,8 @@
 #include <lua.h>
 #include <libprelude/prelude.h>
 
+#include "regex.h"
+
 
 #define MAX_REFERENCE_PER_RULE 64
 
@@ -46,6 +48,7 @@
 
 
 struct exec_pcre_cb_data {
+        int (*cb)(idmef_value_t *value, void *data, prelude_bool_t push);
         prelude_bool_t flat, has_top_table;
         unsigned int *index;
         lua_State *lstate;
@@ -91,7 +94,7 @@ static int do_pcre_exec(struct exec_pcre_cb_data *item, int *real_ret)
 
 
 
-static int exec_pcre_cb(void *ptr, prelude_bool_t push_data)
+static int exec_pcre_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data)
 {
         char buf[1024];
         int ret, real_ret, i;
@@ -121,6 +124,76 @@ static int exec_pcre_cb(void *ptr, prelude_bool_t push_data)
 }
 
 
+static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data)
+{
+        idmef_value_type_id_t type;
+        struct exec_pcre_cb_data *data = ptr;
+        lua_State *lstate = data->lstate;
+
+        type = idmef_value_get_type(value);
+        switch (type) {
+                case IDMEF_VALUE_TYPE_STRING: {
+                        prelude_string_t *s = idmef_value_get_string(value);
+                        lua_pushlstring(lstate, prelude_string_get_string(s), prelude_string_get_len(s));
+                        break;
+                }
+
+                case IDMEF_VALUE_TYPE_INT8:
+                        lua_pushnumber(lstate, idmef_value_get_int8(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_UINT8:
+                        lua_pushnumber(lstate, idmef_value_get_uint8(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_INT16:
+                        lua_pushnumber(lstate, idmef_value_get_int16(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_UINT16:
+                        lua_pushnumber(lstate, idmef_value_get_uint16(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_INT32:
+                        lua_pushnumber(lstate, idmef_value_get_int32(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_UINT32:
+                        lua_pushnumber(lstate, idmef_value_get_uint32(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_INT64:
+                        lua_pushnumber(lstate, idmef_value_get_int64(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_UINT64:
+                        lua_pushnumber(lstate, idmef_value_get_uint64(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_FLOAT:
+                        lua_pushnumber(lstate, idmef_value_get_float(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_DOUBLE:
+                        lua_pushnumber(lstate, idmef_value_get_double(value));
+                        break;
+
+                case IDMEF_VALUE_TYPE_CLASS:
+                case IDMEF_VALUE_TYPE_LIST:
+                        pushIDMEFValue(lstate, value);
+                        break;
+
+                default:
+                        idmef_value_destroy(value);
+                        prelude_log(PRELUDE_LOG_ERR, "get(): could not handle value type '%d'.\n", type);
+                        return -1;
+        }
+
+        if ( data->has_top_table )
+                lua_rawseti(data->lstate, -2, (*data->index)++);
+
+        return 0;
+}
 
 
 static int maybe_listed_value_both_cb(idmef_value_t *value, void *extra)
@@ -160,9 +233,81 @@ static int maybe_listed_value_both_cb(idmef_value_t *value, void *extra)
                 if ( ret < 0 )
                         return ret;
 
-                ret = exec_pcre_cb(extra, TRUE);
+                ret = data->cb(value, extra, TRUE);
+                prelude_string_clear(data->subject);
         }
 
+
+        return ret;
+}
+
+
+
+int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
+                        const char *path, unsigned int *idx,
+                        prelude_bool_t flat, prelude_bool_t multipath)
+{
+        int ret;
+        unsigned int lidx = 1;
+        idmef_path_t *ipath;
+        idmef_value_t *value;
+        prelude_bool_t ambiguous;
+        struct exec_pcre_cb_data data;
+
+        prelude_string_t *str;
+        ret = idmef_path_new_fast(&ipath, path);
+        if ( ret < 0 )
+                return ret;
+
+        ret = idmef_path_get(ipath, idmef, &value);
+        idmef_path_destroy(ipath);
+
+        if ( ret == 0 )
+                return -1;
+
+        if ( ret < 0 )
+                return ret;
+
+        data.subject = str;
+        data.cb = retrieve_cb;
+        data.index = idx;
+        data.lstate = lstate;
+        data.flat = flat;
+        data.has_top_table = multipath;
+
+        ambiguous = idmef_path_is_ambiguous(ipath);
+
+        if ( flat && multipath && ambiguous ) {
+                /*
+                 * Multiple path (this function is going to be called
+                 * several time), with possibly multiple value, flattened:
+                 *
+                 * Create a new table holding value for this path, which will
+                 * be part of the parent main table.
+                 */
+                data.index = &lidx;
+                lua_pushnumber(lstate, (*idx)++);
+                lua_newtable(lstate);
+                data.has_top_table = TRUE;
+        }
+
+        else if ( flat && ! multipath && ambiguous ) {
+                /*
+                 * Single path, with possibly multiple value, flattened:
+                 * We need a main table to store all the value.
+                 */
+                lua_newtable(lstate);
+                data.has_top_table = TRUE;
+        }
+
+        prelude_string_new(&str);
+        ret = maybe_listed_value_both_cb(value, &data);
+
+        if ( flat && multipath && ambiguous )
+                lua_settable(lstate, -3);
+
+        idmef_value_destroy(value);
+        prelude_string_destroy(str);
 
         return ret;
 }
@@ -200,6 +345,7 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
                 return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "unable to compile regex: %s", err_ptr);
         }
 
+        data.cb = exec_pcre_cb;
         data.index = idx;
         data.lstate = lstate;
         data.subject = outstr;
@@ -210,7 +356,7 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
 
         if ( ret == 0 ) {
                 prelude_string_set_constant(outstr, "");
-                ret = exec_pcre_cb(&data, FALSE);
+                ret = exec_pcre_cb(NULL, &data, FALSE);
                 pcre_free(data.regex);
                 return ret;
         }

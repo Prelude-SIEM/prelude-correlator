@@ -37,6 +37,7 @@
 #include "prelude-correlator.h"
 #include "lua-idmef.h"
 #include "lua-idmef-value.h"
+#include "regex.h"
 
 #define IDMEF_CLASS "IDMEF"
 
@@ -253,7 +254,6 @@ static int IDMEF_set(lua_State *lstate)
         }
 
         ret = copy_idmef_path_if_needed(idmef, path, value);
-        //ret = idmef_path_set(path, idmef, value);
         idmef_path_destroy(path);
 
         if ( ! nofree )
@@ -268,8 +268,55 @@ static int IDMEF_set(lua_State *lstate)
 }
 
 
+static int IDMEF_get2(lua_State *lstate)
+{
+        int ret, i, top;
+        unsigned int idx = 1;
+        idmef_message_t *idmef;
+        prelude_bool_t flat = TRUE, multipath = FALSE;
+
+        ret = lua_gettop(lstate);
+        if ( ret < 2 ) {
+                prelude_log(PRELUDE_LOG_ERR, "get2(): require 2 arguments minimum, got %d.\n", ret);
+                return -1;
+        }
+
+        idmef = checkIDMEF(lstate, 1);
+        if ( ! idmef ) {
+                prelude_log(PRELUDE_LOG_ERR, "get2(): First argument should be 'IDMEF'.\n");
+                return -1;
+        }
+
+        top = lua_gettop(lstate);
+
+        if ( lua_isboolean(lstate, top) ) {
+                flat = lua_toboolean(lstate, top);
+                top--;
+        }
+
+        multipath = (top - 3) > 0 ? TRUE : FALSE;
+        if ( multipath )
+                lua_newtable(lstate);
+
+        for ( i = 2; i <= top; i++ ) {
+
+                ret = retrieve_idmef_path(lstate, idmef, lua_tostring(lstate, i), &idx, flat, multipath);
+                if ( ret < 0 ) {
+                        ret = 0;
+                        break;
+                }
+
+                ret = 1;
+        }
+
+        return ret;
+}
+
+
+
 static int IDMEF_get(lua_State *lstate)
 {
+
         int ret;
         const char *path_str;
         idmef_path_t *path;
@@ -442,6 +489,7 @@ static const luaL_reg IDMEF_methods[] = {
         { "new", IDMEF_new     },
         { "set", IDMEF_set     },
         { "get", IDMEF_get     },
+        { "get2", IDMEF_get2   },
         { "match", IDMEF_match },
         { "alert", IDMEF_alert },
         { 0, 0                 }

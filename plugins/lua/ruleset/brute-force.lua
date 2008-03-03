@@ -18,18 +18,20 @@
 -- along with this program; see the file COPYING.  If not, write to
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-is_failed_auth = INPUT:match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                             "alert.assessment.impact.completion", "failed")
+function brute_force(INPUT)
+
+local is_failed_auth = INPUT:match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
+                                   "alert.assessment.impact.completion", "failed")
 
 
-result = INPUT:match("alert.source(*).node.address(*).address", "(.+)",
-                     "alert.target(*).node.address(*).address", "(.+)");
+local result = INPUT:match("alert.source(*).node.address(*).address", "(.+)",
+                           "alert.target(*).node.address(*).address", "(.+)");
 
 if is_failed_auth and result then
     for i, source in ipairs(result[1]) do
         for i, target in ipairs(result[2]) do
 
-            ctx = Context.update("BRUTE_ST_" .. source .. target, { expire = 2, threshold = 5 })
+            local ctx = Context.update("BRUTE_ST_" .. source .. target, { expire = 2, threshold = 5 })
             ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
             ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
             ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
@@ -52,11 +54,11 @@ end
 -- This rule looks for all classifications that match login or authentication
 -- attempts, and detects when they exceed a certain threshold.
 
-userid = INPUT:match("target(*).user.user_id(*).name", "(.+)");
+local userid = INPUT:get("alert.target(*).user.user_id(*).name");
 
 if is_failed_auth and userid then
-    for i, user in ipairs(userid[1]) do
-        ctx = ctx.update("BRUTE_U_" .. user, { expire = 120, threshold = 2 })
+    for i, user in ipairs(userid) do
+        local ctx = Context.update("BRUTE_U_" .. user, { expire = 120, threshold = 2 })
         ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
         ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
         ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
@@ -73,3 +75,5 @@ if is_failed_auth and userid then
         end
     end
 end
+
+end -- function brute_force(INPUT)

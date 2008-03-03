@@ -19,12 +19,14 @@
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
+function scan(INPUT)
+
 -- Detect Eventscan:
 -- Playing multiple events from a single host against another single host
 
 
-source = INPUT:match("alert.source(*).node.address(*).address", "(.+)")
-target = INPUT:match("alert.target(*).node.address(*).address", "(.+)")
+local source = INPUT:get("alert.source(*).node.address(*).address")
+local target = INPUT:get("alert.target(*).node.address(*).address")
 
 if source and target then
     for i, saddr in ipairs(source) do
@@ -53,7 +55,7 @@ end
 -- Detect Eventsweep:
 -- Playing the same event from a single host against multiple hosts
 
-classification = INPUT:get("alert.classification.text")
+local classification = INPUT:get("alert.classification.text")
 
 if source and target and classification then
     for i, saddr in ipairs(source) do
@@ -63,13 +65,10 @@ if source and target and classification then
         cur = ctx:getIDMEF("alert.target(*).node.address(*).address")
         if cur then
             for i, address in ipairs(target) do
-                for i, address2 in ipairs(cur) do
-                    if address == address2 then
-                        insert = false
-                        break
-                    end
+                if table_lookup(cur, address) then
+                    insert = false
+                    break
                 end
-                if not insert then break end
             end
         end
 
@@ -113,3 +112,5 @@ if source then
         end
     end
 end
+
+end -- function scan(INPUT)

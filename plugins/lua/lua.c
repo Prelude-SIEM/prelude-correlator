@@ -48,10 +48,47 @@ int lua_LTX_correlation_plugin_init(prelude_plugin_entry_t *pe, void *data);
 
 typedef struct lua_plugin {
         lua_State *lstate;
+        prelude_list_t runlist;
 } lua_plugin_t;
 
 
+
+typedef struct {
+        prelude_list_t list;
+        char *function;
+        double elapsed;
+} lua_ruleset_t;
+
+
 static prelude_correlator_plugin_t lua_plugin;
+
+
+
+static int add_lua_ruleset(lua_plugin_t *plugin, const char *function)
+{
+        char *ptr;
+        lua_ruleset_t *lr;
+
+        lr = malloc(sizeof(*lr));
+        if ( ! lr ) {
+                prelude_log(PRELUDE_LOG_ERR, "memory exhausted.\n");
+                return -1;
+        }
+
+        lr->elapsed = 0;
+        ptr = lr->function = strdup(function);
+
+        while ( *ptr ) {
+                if ( *ptr == '-' )
+                        *ptr = '_';
+
+                ptr++;
+        }
+
+        prelude_list_add_tail(&plugin->runlist, &lr->list);
+
+        return 0;
+}
 
 
 static int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
@@ -80,48 +117,40 @@ static int timeval_subtract (struct timeval *result, struct timeval *x, struct t
 static void lua_run(prelude_plugin_instance_t *pi, idmef_message_t *idmef)
 {
         int ret;
+        double total = 0;
+        prelude_list_t *tmp;
+        lua_ruleset_t *lr;
         struct timeval te, ts, result;
         lua_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(pi);
 
         if ( idmef_message_get_type(idmef) != IDMEF_MESSAGE_TYPE_ALERT )
                 return;
 
-        gettimeofday(&ts, NULL);
+        prelude_list_for_each_reversed(&plugin->runlist, tmp) {
+                lr = prelude_list_entry(tmp, lua_ruleset_t, list);
 
-        lua_getfield(plugin->lstate, LUA_GLOBALSINDEX, "__main__");
+                gettimeofday(&ts, NULL);
 
-        pushIDMEF(plugin->lstate, idmef_message_ref(idmef));
-        ret = lua_pcall(plugin->lstate, 1, 0, 0);
+                lua_getfield(plugin->lstate, LUA_GLOBALSINDEX, lr->function);
+                pushIDMEF(plugin->lstate, idmef_message_ref(idmef));
 
-        gettimeofday(&te, NULL);
+                ret = lua_pcall(plugin->lstate, 1, 0, 0);
+                gettimeofday(&te, NULL);
+
+                if ( ret != 0 )
+                        prelude_log(PRELUDE_LOG_ERR, "LUA error on '%s': %s.\n", lr->function, lua_tostring(plugin->lstate, -1));
+
+                timeval_subtract(&result, &te, &ts);
+                total += result.tv_sec + result.tv_usec * 1e-6;
+
+                lr->elapsed += result.tv_sec + result.tv_usec * 1e-6;
+                printf("[%s]: %f\n", lr->function, result.tv_sec + result.tv_usec * 1e-6);
+        }
 
         timeval_subtract(&result, &te, &ts);
-        printf("RAN LUA CODE: %f sec\n", result.tv_sec + result.tv_usec*1e-6);
-
-        if ( ret != 0 )
-                prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(plugin->lstate, -1));
+        printf("RAN LUA CODE: %f sec\n", total);
 
         lua_gc(plugin->lstate, LUA_GCCOLLECT, 0);
-}
-
-
-static int file_read(const char *filename, prelude_string_t *out)
-{
-        FILE *fd;
-        char buf[8192];
-
-        fd = fopen(filename, "r");
-        if ( ! fd ) {
-                prelude_log(PRELUDE_LOG_ERR, "could not open '%s' for reading: %s.\n", filename, strerror(errno));
-                return -1;
-        }
-
-        while ( fgets(buf, sizeof(buf), fd) ) {
-                prelude_string_cat(out, buf);
-        }
-
-        fclose(fd);
-        return 0;
 }
 
 
@@ -130,13 +159,8 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
         int ret;
         DIR *dir;
         struct dirent *dh;
-        char fname[PATH_MAX];
-        prelude_string_t *str;
+        char fname[PATH_MAX], *ext;
         lua_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(context);
-
-        ret = prelude_string_new(&str);
-        if ( ret < 0 )
-                return ret;
 
         dir = opendir(optarg);
         if ( ! dir ) {
@@ -144,26 +168,23 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                 return -1;
         }
 
-        prelude_string_cat(str, "function __main__(INPUT)\n");
-
         while ( (dh = readdir(dir)) ) {
-                if ( ! strstr(dh->d_name, ".lua") )
+                if ( ! (ext = strstr(dh->d_name, ".lua")) )
                         continue;
 
                 snprintf(fname, sizeof(fname), "%s/%s", optarg, dh->d_name);
-                file_read(fname, str);
+
+                ret = luaL_dofile(plugin->lstate, fname);
+                if ( ret != 0 ) {
+                        prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(plugin->lstate, -1));
+                        return -1;
+                }
+
+                dh->d_name[strlen(dh->d_name) - 4] = 0;
+                add_lua_ruleset(plugin, dh->d_name);
         }
 
         closedir(dir);
-        prelude_string_cat(str, "end\n");
-
-        ret = luaL_dostring(plugin->lstate, prelude_string_get_string(str));
-        prelude_string_destroy(str);
-
-        if ( ret != 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(plugin->lstate, -1));
-                return -1;
-        }
 
         return 0;
 }
@@ -178,6 +199,8 @@ static int lua_activate(prelude_option_t *opt, const char *optarg, prelude_strin
         new = calloc(1, sizeof(*new));
         if ( ! new )
                 return prelude_error_from_errno(errno);
+
+        prelude_list_init(&new->runlist);
 
         new->lstate = lua_open();
         if ( ! new->lstate ) {
@@ -210,9 +233,20 @@ static int lua_activate(prelude_option_t *opt, const char *optarg, prelude_strin
 
 static void lua_destroy(prelude_plugin_instance_t *pi, prelude_string_t *err)
 {
+        prelude_list_t *tmp, *bkp;
+        lua_ruleset_t *lr;
         lua_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(pi);
 
-        //lua_collectgc(plugin->lstate);
+        prelude_list_for_each_safe(&plugin->runlist, tmp, bkp) {
+                lr = prelude_list_entry(tmp, lua_ruleset_t, list);
+                printf("[%s]: %f elapsed.\n", lr->function, lr->elapsed);
+
+                prelude_list_del(&lr->list);
+
+                free(lr->function);
+                free(lr);
+        }
+
         lua_close(plugin->lstate);
         free(plugin);
 }

@@ -23,14 +23,23 @@
 -- created regarding events attached to this packet.  It sets a timer for the
 -- next 10 seconds for other events that might match the criterea.
 
-isdrop = INPUT:match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
-result = INPUT:match("alert.source(0).node.address(0).address", "(.+)",
-                     "alert.source(0).service.port", "(.*)",
-                     "alert.target(0).node.address(0).address", "(.+)",
-                     "alert.target(0).service.port", "(.*)")
+function firewall(INPUT)
 
-if isdrop and result then
-    Context.update("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4], { expire = 10 })
+local isdrop = INPUT:match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
+local result = INPUT:get("alert.source(0).node.address(0).address",
+                         "alert.source(0).service.port",
+                         "alert.target(0).node.address(0).address",
+                         "alert.target(0).service.port")
+
+local ctxname
+local source, sport, target, dport = result[1], result[2] or "", result[3], result[4] or ""
+
+if source and target then
+    ctxname = source .. sport .. target .. dport
+end
+
+if isdrop and source and target then
+    Context.update(ctxname, { expire = 10 })
 end
 
 
@@ -39,11 +48,9 @@ end
 -- address which has not been matched by an observed packet denial.  If a packet
 -- denial is not observed in the next 10 seconds, an event alert is generated.
 
-if not isdrop and result then
-    if Context.get("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4]) == nil then
-        ctx = Context("FIREWALL_ST_DROP_" .. result[1] .. result[2] .. result[3] .. result[4],
-                      { expire = 10, alert_on_expire = true })
-
+if not isdrop and source and target then
+    if not Context.get(ctxname) then
+        local ctx = Context.new(ctxname, { expire = 10, alert_on_expire = true })
         ctx:set("alert.source", INPUT:getraw("alert.source"))
         ctx:set("alert.target", INPUT:getraw("alert.target"))
         ctx:set("alert.assessment", INPUT:getraw("alert.assessment"))
@@ -53,3 +60,5 @@ if not isdrop and result then
         ctx:set("alert.correlation_alert.alertident(0).alertident", INPUT:getraw("alert.messageid"))
     end
 end
+
+end -- function firewall(INPUT)

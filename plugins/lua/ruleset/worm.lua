@@ -19,21 +19,22 @@
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
+function worm(INPUT)
+
 -- This rule looks for events against a host, records the messageid, then sets
 -- a timer of 600 seconds.   If the host then replays the event against
 -- other hosts multiple times, an event is generated.
 
 
-classification = INPUT:get("alert.classification.text")
+local result = INPUT:get("alert.classification.text",
+                         "alert.source(*).node.address(*).address",
+                         "alert.target(*).node.address(*).address")
 
-result = INPUT:match("source(*).node.address(*).address", "(.+)",
-                     "target(*).node.address(*).address", "(.+)");
-
-if result and classification then
+if result and result[1] and result[2] and result[3] then
 -- Create context for classification combined with all the target.
 
-    for i, target in ipairs(result[1]) do
-        ctx = Context.update("WORM_HOST_" .. classification .. target, { expire = 300, threshold = 5 })
+    for i, target in ipairs(result[3]) do
+        ctx = Context.update("WORM_HOST_" .. result[1] .. target, { expire = 300, threshold = 5 })
     end
 
     for i, source in ipairs(result[2]) do
@@ -41,7 +42,7 @@ if result and classification then
         -- thus, we check whether a context exist with this classification combined to
         -- this source.
 
-        ctx = Context.get("WORM_HOST_" .. classification .. source)
+        ctx = Context.get("WORM_HOST_" .. result[1] .. source)
         if ctx then
             ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
             ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
@@ -60,3 +61,5 @@ if result and classification then
         end
     end
 end
+
+end -- function worm(INPUT)

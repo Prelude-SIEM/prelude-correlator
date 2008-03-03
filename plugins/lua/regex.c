@@ -31,6 +31,7 @@
 
 #include <lua.h>
 #include <libprelude/prelude.h>
+#include <libprelude/prelude-hash.h>
 
 #include "regex.h"
 
@@ -47,16 +48,26 @@
 #endif
 
 
+typedef struct {
+        char *string;
+        pcre *regex;
+        pcre_extra *extra;
+} prepared_pcre_t;
+
+
 struct exec_pcre_cb_data {
+        prepared_pcre_t *pp;
         int (*cb)(idmef_value_t *value, void *data, prelude_bool_t push);
         prelude_bool_t flat, has_top_table;
         unsigned int *index;
         lua_State *lstate;
-        pcre *regex;
-        const char *regex_string;
         prelude_string_t *subject;
         int ovector[MAX_REFERENCE_PER_RULE * 3];
 };
+
+
+
+static prelude_hash_t *regex_table = NULL;
 
 
 
@@ -71,18 +82,18 @@ static int do_pcre_exec(struct exec_pcre_cb_data *item, int *real_ret)
         int cnt = 0, i;
         size_t osize = sizeof(item->ovector) / sizeof(*item->ovector);
 
-        *real_ret = pcre_exec(item->regex, NULL,
+        *real_ret = pcre_exec(item->pp->regex, item->pp->extra,
                               prelude_string_get_string(item->subject),
                               prelude_string_get_len(item->subject), 0, 0,
                               item->ovector, osize);
 
-        prelude_log_debug(9, "[%d]: '%s' against '%s'.\n", *real_ret, item->regex_string,
+        prelude_log_debug(9, "[%d]: '%s' against '%s'.\n", *real_ret, item->pp->string,
                           prelude_string_get_string(item->subject));
 
         if ( *real_ret <= 0 )
                 return *real_ret;
 
-        pcre_fullinfo(item->regex, NULL, PCRE_INFO_CAPTURECOUNT, &cnt);
+        pcre_fullinfo(item->pp->regex, item->pp->extra, PCRE_INFO_CAPTURECOUNT, &cnt);
         if ( cnt == 0 )
                 return *real_ret;
 
@@ -178,21 +189,14 @@ static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data
                         lua_pushnumber(lstate, idmef_value_get_double(value));
                         break;
 
-                case IDMEF_VALUE_TYPE_CLASS:
-                case IDMEF_VALUE_TYPE_LIST:
-                        pushIDMEFValue(lstate, value);
-                        break;
-
                 default:
-                        idmef_value_destroy(value);
-                        prelude_log(PRELUDE_LOG_ERR, "get(): could not handle value type '%d'.\n", type);
-                        return -1;
+                        return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "could not handle value type '%d'", type);
         }
 
         if ( data->has_top_table )
-                lua_rawseti(data->lstate, -2, (*data->index)++);
+                lua_rawseti(lstate, -2, (*data->index)++);
 
-        return 0;
+        return 1;
 }
 
 
@@ -237,7 +241,6 @@ static int maybe_listed_value_both_cb(idmef_value_t *value, void *extra)
                 prelude_string_clear(data->subject);
         }
 
-
         return ret;
 }
 
@@ -256,13 +259,15 @@ int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
 
         ret = idmef_path_new_fast(&ipath, path);
         if ( ret < 0 )
-                return ret;
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "error creating IDMEF path '%s': %s\n", path, prelude_strerror(ret));;
 
         ret = idmef_path_get(ipath, idmef, &value);
         idmef_path_destroy(ipath);
 
-        if ( ret == 0 )
-                return -1;
+        if ( ret == 0 ) {
+                (*idx)++; /* this index is nil */
+                return 0;
+        }
 
         if ( ret < 0 )
                 return ret;
@@ -307,7 +312,38 @@ int retrieve_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         idmef_value_destroy(value);
         prelude_string_destroy(data.subject);
 
-        return ret;
+        return 1;
+}
+
+
+static int compile_regex(const char *regex_string, prepared_pcre_t **pp)
+{
+        int err_offset;
+        const char *err_ptr;
+
+        if ( ! regex_table )
+                prelude_hash_new2(&regex_table, 1024, NULL, NULL, NULL, NULL);
+
+        *pp = prelude_hash_get(regex_table, regex_string);
+        if ( *pp )
+                return 0;
+
+        *pp = malloc(sizeof(**pp));
+        if ( ! *pp )
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "memory exhausted");
+
+        (*pp)->regex = pcre_compile(regex_string, 0, &err_ptr, &err_offset, NULL);
+        if ( ! (*pp)->regex ) {
+                free(*pp);
+                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "unable to compile regex '%s': %s", regex_string, err_ptr);
+        }
+
+        (*pp)->extra = pcre_study((*pp)->regex, 0, &err_ptr);
+        (*pp)->string = strdup(regex_string);
+
+        prelude_hash_set(regex_table, (*pp)->string, *pp);
+
+        return 0;
 }
 
 
@@ -318,12 +354,15 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
 {
         int ret;
         unsigned int lidx = 1;
-        int err_offset;
-        const char *err_ptr;
+        prepared_pcre_t *pp;
         idmef_value_t *value;
         idmef_path_t *ipath;
         prelude_bool_t ambiguous;
         struct exec_pcre_cb_data data;
+
+        ret = compile_regex(regex, &pp);
+        if ( ret < 0 )
+                return ret;
 
         ret = idmef_path_new_fast(&ipath, path);
         if ( ret < 0 )
@@ -335,19 +374,11 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         if ( ret < 0 )
                 return ret;
 
-        data.regex = pcre_compile(regex, 0, &err_ptr, &err_offset, NULL);
-        if ( ! data.regex ) {
-                if ( ret > 0 )
-                        idmef_value_destroy(value);
-
-                return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "unable to compile regex: %s", err_ptr);
-        }
-
+        data.pp = pp;
         data.cb = exec_pcre_cb;
         data.index = idx;
         data.lstate = lstate;
         data.subject = outstr;
-        data.regex_string = regex;
 
         data.flat = flat;
         data.has_top_table = multipath;
@@ -355,8 +386,7 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
         if ( ret == 0 ) {
                 prelude_string_set_constant(outstr, "");
                 ret = exec_pcre_cb(NULL, &data, FALSE);
-                pcre_free(data.regex);
-                return ret;
+                return (ret == PCRE_ERROR_NOMATCH) ? 0 : 1;
         }
 
         ambiguous = idmef_path_is_ambiguous(ipath);
@@ -390,9 +420,5 @@ int match_idmef_path(lua_State *lstate, idmef_message_t *idmef,
                 lua_settable(lstate, -3);
 
         idmef_value_destroy(value);
-        pcre_free(data.regex);
-
-        return ret;
+        return (ret < 0) ? 0 : 1;
 }
-
-

@@ -148,7 +148,7 @@ static idmef_message_t *checkIDMEF(lua_State *lstate, int index)
 
         idmef = *ptr;
         if ( ! idmef )
-                luaL_error(lstate, "IDMEF message is NULL!\n");
+                luaL_error(lstate, "IDMEF message is NULL!");
 
         return idmef;
 }
@@ -190,7 +190,7 @@ static int IDMEF_alert(lua_State *lstate)
 
         ret = lua_gettop(lstate);
         if ( ret != 1 ) {
-                prelude_log(PRELUDE_LOG_ERR, "Alert(): require 1 arguments, got %d.\n", ret);
+                luaL_error(lstate, "Alert(): require 1 arguments, got %d", ret);
                 return -1;
         }
 
@@ -212,18 +212,18 @@ static int IDMEF_set(lua_State *lstate)
 
         ret = lua_gettop(lstate);
         if ( ret != 3 ) {
-                prelude_log(PRELUDE_LOG_ERR, "Set(): require 3 arguments, got %d.\n", ret);
+                luaL_error(lstate, "Set(): require 3 arguments, got %d", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "Set(): First argument should be 'IDMEF'.\n");
+                luaL_error(lstate, "Set(): First argument should be 'IDMEF'", ret);
                 return -1;
         }
 
         if ( ! lua_isstring(lstate, 2) ) {
-                prelude_log(PRELUDE_LOG_ERR, "Set(): Second argument should be 'string'.\n");
+                luaL_error(lstate, "Set(): Second argument should be 'string'");
                 return -1;
         }
 
@@ -231,7 +231,7 @@ static int IDMEF_set(lua_State *lstate)
 
         ret = idmef_path_new_fast(&path, paths);
         if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "could not create path '%s': %s.\n", paths, prelude_strerror(ret));
+                luaL_error(lstate, "Set(%s): unable to create path: %s", paths, prelude_strerror(ret));
                 return -1;
         }
 
@@ -249,7 +249,7 @@ static int IDMEF_set(lua_State *lstate)
 
         else {
                 idmef_path_destroy(path);
-                prelude_log(PRELUDE_LOG_ERR, "Unexpected third argument for Set(%s).\n", paths);
+                luaL_error(lstate, "Set(%s): Unhandled type for argument 3: %s", paths);
                 return -1;
         }
 
@@ -260,7 +260,7 @@ static int IDMEF_set(lua_State *lstate)
                 idmef_value_destroy(value);
 
         if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "error setting path '%s': %s.\n", paths, prelude_strerror(ret));
+                luaL_error(lstate, "Set(%s): could not set path: %s", paths, prelude_strerror(ret));
                 return -1;
         }
 
@@ -278,18 +278,18 @@ static int IDMEF_getraw(lua_State *lstate)
 
         ret = lua_gettop(lstate);
         if ( ret != 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "getraw(): require 2 arguments, got %d.\n", ret);
+                luaL_error(lstate, "getraw(): require 2 arguments, got %d", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "getraw(): First argument should be 'IDMEF'.\n");
+                luaL_error(lstate, "getraw(): First argument should be 'IDMEF'");
                 return -1;
         }
 
         if ( ! lua_isstring(lstate, 2) ) {
-                prelude_log(PRELUDE_LOG_ERR, "getraw(): Second argument should be 'string'.\n");
+                luaL_error(lstate, "getraw(): Second argument should be 'string'");
                 return -1;
         }
 
@@ -297,7 +297,7 @@ static int IDMEF_getraw(lua_State *lstate)
 
         ret = idmef_path_new_fast(&path, path_str);
         if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "getraw(%s): %s.\n", path_str, prelude_strerror(ret));
+                luaL_error(lstate, "getraw(%s): %s", path_str, prelude_strerror(ret));
                 return -1;
         }
 
@@ -305,7 +305,7 @@ static int IDMEF_getraw(lua_State *lstate)
         idmef_path_destroy(path);
 
         if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "getraw(%s): retrieval failed: %s.\n", path_str, prelude_strerror(ret));
+                luaL_error(lstate, "getraw(%s): retrieval failed: %s", path_str, prelude_strerror(ret));
                 return -1;
         }
 
@@ -313,7 +313,6 @@ static int IDMEF_getraw(lua_State *lstate)
                 return 0;
 
         pushIDMEFValue(lstate, value);
-
         return 1;
 }
 
@@ -323,17 +322,17 @@ static int IDMEF_get(lua_State *lstate)
         int ret, i, top;
         unsigned int idx = 1;
         idmef_message_t *idmef;
-        prelude_bool_t flat = TRUE, multipath = FALSE;
+        prelude_bool_t flat = TRUE, multipath = FALSE, has_ret = FALSE;
 
         ret = lua_gettop(lstate);
         if ( ret < 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(): require 2 arguments minimum, got %d.\n", ret);
+                luaL_error(lstate, "get(): require 2 arguments minimum, got %d", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "get(): First argument should be 'IDMEF'.\n");
+                luaL_error(lstate, "get(): First argument should be 'IDMEF'");
                 return -1;
         }
 
@@ -352,14 +351,15 @@ static int IDMEF_get(lua_State *lstate)
 
                 ret = retrieve_idmef_path(lstate, idmef, lua_tostring(lstate, i), &idx, flat, multipath);
                 if ( ret < 0 ) {
-                        ret = 0;
+                        luaL_error(lstate, "get(%s): %s", lua_tostring(lstate, i), prelude_strerror(ret));
                         break;
                 }
 
-                ret = 1;
+                if ( ret > 0 )
+                        has_ret = TRUE;
         }
 
-        return ret;
+        return has_ret ? 1 : 0;
 }
 
 
@@ -375,19 +375,19 @@ static int IDMEF_match(lua_State *lstate)
 
         ret = lua_gettop(lstate);
         if ( ret < 3 ) {
-                prelude_log(PRELUDE_LOG_ERR, "match(): require 3 arguments minimum, got %d.\n", ret);
+                luaL_error(lstate, "match(): require 3 arguments minimum, got %d", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                prelude_log(PRELUDE_LOG_ERR, "match(): First argument should be 'IDMEF'.\n");
+                luaL_error(lstate, "match(): First argument should be 'IDMEF'");
                 return -1;
         }
 
         ret = prelude_string_new(&str);
         if ( ret < 0 ) {
-                prelude_log(PRELUDE_LOG_ERR, "Match(): error creating string object.\n");
+                luaL_error(lstate, "match(): error creating string object");
                 return -1;
         }
 
@@ -407,8 +407,11 @@ static int IDMEF_match(lua_State *lstate)
                 regexp = lua_tostring(lstate, i + 1);
 
                 ret = match_idmef_path(lstate, idmef, path, regexp, str, &idx, flat, multipath);
+                if ( ret == 0 )
+                        break;
+
                 if ( ret < 0 ) {
-                        ret = 0;
+                        luaL_error(lstate, "get(%s): %s", lua_tostring(lstate, i), prelude_strerror(ret));
                         break;
                 }
 

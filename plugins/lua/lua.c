@@ -266,7 +266,7 @@ int lua_LTX_correlation_plugin_init(prelude_plugin_entry_t *pe, void *root_optli
 
         prelude_plugin_set_activation_option(pe, opt, NULL);
 
-        ret = prelude_option_add(opt, NULL, hook, 'r', "ruleset", "Ruleset to use",
+        ret = prelude_option_add(opt, NULL, hook, 'r', "rulesdir", "Ruleset directory",
                                  PRELUDE_OPTION_ARGUMENT_REQUIRED, set_lua_ruleset, NULL);
         if ( ret < 0 )
                 return ret;

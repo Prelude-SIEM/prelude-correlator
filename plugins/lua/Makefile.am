@@ -1,6 +1,8 @@
 SUBDIRS = ruleset
 AM_CPPFLAGS = @LIBPRELUDE_CFLAGS@ @PCRE_CFLAGS@ @LUA_CFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/src/include -I$(top_srcdir)/libmissing -DLUA_DATADIR=\"@LUA_DATADIR@\"
 
+noinst_HEADERS = lua-timer.h lua-idmef.h lua-idmef-value.h regex.h
+
 lua_la_SOURCES = lua.c lua-idmef.c lua-idmef-value.c lua-timer.c regex.c
 lua_la_LDFLAGS = -module -avoid-version
 lua_la_LIBADD  = @LUA_LIBS@ @PCRE_LIBS@

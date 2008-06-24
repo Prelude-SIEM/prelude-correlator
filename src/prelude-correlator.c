@@ -333,7 +333,7 @@ static int poll_manager(prelude_connection_pool_t *pool)
         do {
                 msg = NULL;
 
-                ret = prelude_connection_pool_recv(pool, 1, &conn, &msg);
+                ret = prelude_connection_pool_recv(pool, 1000, &conn, &msg);
                 prelude_timer_wake_up();
                 handle_signal_if_needed();
 

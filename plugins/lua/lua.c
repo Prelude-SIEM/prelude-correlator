@@ -158,6 +158,7 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
 {
         int ret;
         DIR *dir;
+        unsigned int cnt = 0;
         struct dirent *dh;
         char fname[PATH_MAX], *ext;
         lua_plugin_t *plugin = prelude_plugin_instance_get_plugin_data(context);
@@ -167,6 +168,8 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                 prelude_log(PRELUDE_LOG_ERR, "could not open '%s': %s.\n", optarg, strerror(errno));
                 return -1;
         }
+
+
 
         while ( (dh = readdir(dir)) ) {
                 if ( ! (ext = strstr(dh->d_name, ".lua")) )
@@ -182,9 +185,12 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
 
                 dh->d_name[strlen(dh->d_name) - 4] = 0;
                 add_lua_ruleset(plugin, dh->d_name);
+
+                cnt++;
         }
 
         closedir(dir);
+        prelude_log(PRELUDE_LOG_INFO, "LUA plugin loaded %d rulesets.\n", cnt);
 
         return 0;
 }

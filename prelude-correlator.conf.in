@@ -22,5 +22,5 @@ include = @LIBPRELUDE_CONFIG_PREFIX@/default/idmef-client.conf
 # Here start plugins configuration #
 ####################################
 
-[pcre]
-ruleset=@configdir@/ruleset/pcre.rules
+[lua]
+rulesdir = @configdir@/lua-rules

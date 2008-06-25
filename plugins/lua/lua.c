@@ -183,6 +183,8 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                         return -1;
                 }
 
+                ret = lua_pcall(plugin->lstate, 0, 0, 0);
+
                 dh->d_name[strlen(dh->d_name) - 4] = 0;
                 add_lua_ruleset(plugin, dh->d_name);
 
@@ -262,7 +264,7 @@ static void lua_destroy(prelude_plugin_instance_t *pi, prelude_string_t *err)
 int lua_LTX_correlation_plugin_init(prelude_plugin_entry_t *pe, void *root_optlist)
 {
         int ret;
-        prelude_option_t *opt, *popt;
+        prelude_option_t *opt;
         int hook = PRELUDE_OPTION_TYPE_CLI|PRELUDE_OPTION_TYPE_CFG;
 
         ret = prelude_option_add(root_optlist, &opt, hook, 0, "lua", "LUA plugin option",

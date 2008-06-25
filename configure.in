@@ -156,8 +156,6 @@ src/include/Makefile
 plugins/Makefile
 plugins/lua/Makefile
 plugins/lua/ruleset/Makefile
-plugins/pcre/Makefile
-plugins/pcre/ruleset/Makefile
 
 ])
 AC_OUTPUT

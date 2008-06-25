@@ -1,1 +1,1 @@
-SUBDIRS = lua pcre
+SUBDIRS = lua

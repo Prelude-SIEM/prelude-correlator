@@ -135,6 +135,59 @@ static int exec_pcre_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_dat
 }
 
 
+static void pushIDMEFTime(lua_State *lstate, idmef_time_t *time)
+{
+        time_t t;
+        struct tm *tb;
+
+        t = idmef_time_get_sec(time) + idmef_time_get_gmt_offset(time);
+
+        tb = gmtime(&t);
+
+        lua_newtable(lstate);
+
+        lua_pushstring(lstate, "year");
+        lua_pushnumber(lstate, 1900 + tb->tm_year);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "month");
+        lua_pushnumber(lstate, tb->tm_mon + 1);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "day");
+        lua_pushnumber(lstate, tb->tm_mday);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "yday");
+        lua_pushnumber(lstate, tb->tm_yday);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "wday");
+        lua_pushnumber(lstate, tb->tm_wday + 1);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "hour");
+        lua_pushnumber(lstate, tb->tm_hour);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "min");
+        lua_pushnumber(lstate, tb->tm_min);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "sec");
+        lua_pushnumber(lstate, tb->tm_sec);
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "usec");
+        lua_pushnumber(lstate, idmef_time_get_usec(time));
+        lua_settable(lstate, -3);
+
+        lua_pushstring(lstate, "gmtoff");
+        lua_pushnumber(lstate, idmef_time_get_gmt_offset(time));
+        lua_settable(lstate, -3);
+}
+
+
 static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data)
 {
         idmef_value_type_id_t type;
@@ -189,6 +242,10 @@ static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data
                         lua_pushnumber(lstate, idmef_value_get_double(value));
                         break;
 
+                case IDMEF_VALUE_TYPE_TIME:
+                        pushIDMEFTime(lstate, idmef_value_get_time(value));
+                        break;
+
                 default:
                         return prelude_error_verbose(PRELUDE_ERROR_GENERIC, "could not handle value type '%d'", type);
         }
@@ -203,8 +260,8 @@ static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data
 static int maybe_listed_value_both_cb(idmef_value_t *value, void *extra)
 {
         int ret;
-        prelude_bool_t prev_has;
-        unsigned int *prev, idx = 1;
+        prelude_bool_t prev_has = FALSE;
+        unsigned int *prev = NULL, idx = 1;
         struct exec_pcre_cb_data *data = extra;
 
         if ( idmef_value_is_list(value) ) {

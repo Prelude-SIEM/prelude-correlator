@@ -4,7 +4,7 @@ EXTRA_DIST = AUTHORS COPYING HACKING.README INSTALL NEWS README prelude-correlat
 
 
 install-data-local:
-	$(INSTALL) -m 700 -d $(prelude_correlator_context_dir)
+	$(INSTALL) -m 700 -d $(DESTDIR)$(prelude_correlator_context_dir)
 	@if test -f $(DESTDIR)$(configdir)/prelude-correlator.conf; then                                        \
 		echo "********************************************************************************";        \
 		echo;                                                                                           \

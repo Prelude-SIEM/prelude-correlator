@@ -1,7 +1,7 @@
 AC_INIT
 AC_PREREQ(2.59)
 AC_CANONICAL_TARGET([])
-AM_INIT_AUTOMAKE(prelude-correlator, 0.9.0-beta1a)
+AM_INIT_AUTOMAKE(prelude-correlator, 0.9.0-beta1b)
 AM_CONFIG_HEADER(config.h)
 AM_DISABLE_STATIC
 
@@ -85,11 +85,6 @@ PKG_CHECK_MODULES(LUA, lua >= 5.1, [], [
     PKG_CHECK_MODULES(LUA, lua5.1 >= 5.1)
 ])
 
-PRELUDE_CORRELATOR_CONFIG_PREFIX=$prefix/etc/prelude-correlator
-AC_SUBST(PRELUDE_CORRELATOR_CONFIG_PREFIX)
-
-CORRELATION_PLUGIN_DIR=$prefix/lib/prelude-correlator
-AC_SUBST(CORRELATION_PLUGIN_DIR)
 
 
 dnl **************************************************
@@ -154,17 +149,24 @@ AS_AC_EXPAND(SYSCONFDIR, $sysconfdir)
 AS_AC_EXPAND(LOCALSTATEDIR, $localstatedir)
 
 
-configdir=$SYSCONFDIR/prelude-correlator
-prelude_correlator_conf=$configdir/prelude-correlator.conf
-prelude_correlator_context_dir=$LOCALSTATEDIR/lib/prelude-correlator
+PRELUDE_CORRELATOR_CONF=$SYSCONFDIR/prelude-correlator/prelude-correlator.conf
+AC_SUBST(PRELUDE_CORRELATOR_CONF)
 
-LUA_DATADIR="$datadir/prelude-correlator/lua"
+PRELUDE_CORRELATOR_CONTEXT_DIR=$LOCALSTATEDIR/lib/prelude-correlator
+AC_SUBST(PRELUDE_CORRELATOR_CONTEXT_DIR)
+
+PRELUDE_CORRELATOR_CONFDIR=$SYSCONFDIR/prelude-correlator
+AC_SUBST(PRELUDE_CORRELATOR_CONFDIR)
+
+CORRELATION_PLUGIN_DIR=$LIBDIR/prelude-correlator
+AC_SUBST(CORRELATION_PLUGIN_DIR)
+
+
+LUA_DATADIR="$DATADIR/prelude-correlator/lua"
 AC_SUBST(LUA_DATADIR)
 
-AC_SUBST(configdir)
-AC_SUBST(prelude_correlator_context_dir)
-AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONF, "$prelude_correlator_conf", Path to Prelude-Correlator configuration file)
-AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONTEXT_DIR, "$prelude_correlator_context_dir", Path to Prelude-Correlator runtime file)
+AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONF, "$PRELUDE_CORRELATOR_CONF", Path to Prelude-Correlator configuration file)
+AC_DEFINE_UNQUOTED(PRELUDE_CORRELATOR_CONTEXT_DIR, "$PRELUDE_CORRELATOR_CONTEXT_DIR", Path to Prelude-Correlator runtime file)
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)

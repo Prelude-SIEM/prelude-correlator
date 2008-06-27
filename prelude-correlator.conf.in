@@ -23,4 +23,4 @@ include = @LIBPRELUDE_CONFIG_PREFIX@/default/idmef-client.conf
 ####################################
 
 [lua]
-rulesdir = @configdir@/lua-rules
+rulesdir = @PRELUDE_CORRELATOR_CONFDIR@/lua-rules

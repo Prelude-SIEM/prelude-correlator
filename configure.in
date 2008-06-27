@@ -81,9 +81,9 @@ dnl **************************************************
 dnl * LUA support                                    *
 dnl **************************************************
 
-
-PKG_CHECK_MODULES(LUA, [lua5.1 >= 5.0])
-
+PKG_CHECK_MODULES(LUA, lua >= 5.1, [], [
+    PKG_CHECK_MODULES(LUA, lua5.1 >= 5.1)
+])
 
 PRELUDE_CORRELATOR_CONFIG_PREFIX=$prefix/etc/prelude-correlator
 AC_SUBST(PRELUDE_CORRELATOR_CONFIG_PREFIX)

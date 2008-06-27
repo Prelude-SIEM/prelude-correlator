@@ -1,5 +1,7 @@
 SUBDIRS = ruleset
-AM_CPPFLAGS = @LIBPRELUDE_CFLAGS@ @PCRE_CFLAGS@ @LUA_CFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/src/include -I$(top_srcdir)/libmissing -DLUA_DATADIR=\"@LUA_DATADIR@\"
+
+AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_srcdir)/libmissing @LIBPRELUDE_CFLAGS@ @PCRE_CFLAGS@ @LUA_CFLAGS@ -DLUA_DATADIR=\"@LUA_DATADIR@\"
+AM_CFLAGS = @GLOBAL_CFLAGS@
 
 noinst_HEADERS = lua-timer.h lua-idmef.h lua-idmef-value.h regex.h
 

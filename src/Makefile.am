@@ -1,6 +1,7 @@
 SUBDIRS = include
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/include -I$(top_srcdir)/libmissing @LIBPRELUDE_CFLAGS@ -DCORRELATION_PLUGIN_DIR=\"@CORRELATION_PLUGIN_DIR@\"
+AM_CPPFLAGS = -I$(srcdir)/include/ -I$(top_srcdir)/libmissing -I$(top_srcdir)/libev @LIBPRELUDE_CFLAGS@ -DCORRELATION_PLUGIN_DIR=\"@CORRELATION_PLUGIN_DIR@\"
+AM_CFLAGS = @PRELUDE_MANAGER_CFLAGS@ @GLOBAL_CFLAGS@
 
 bin_PROGRAMS = prelude-correlator
 prelude_correlator_LDADD = @LIBPRELUDE_LIBS@ $(top_builddir)/libmissing/libmissing.la

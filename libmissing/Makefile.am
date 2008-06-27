@@ -1,6 +1,6 @@
 ## DO NOT EDIT! GENERATED AUTOMATICALLY!
 ## Process this file with automake to produce Makefile.in.
-# Copyright (C) 2004-2007 Free Software Foundation, Inc.
+# Copyright (C) 2002-2008 Free Software Foundation, Inc.
 #
 # This file is free software, distributed under the terms of the GNU
 # General Public License.  As a special exception to the GNU General
@@ -48,6 +48,8 @@ EXTRA_libmissing_la_SOURCES += gettimeofday.c
 
 LINK_WARNING_H=$(top_srcdir)/./link-warning.h
 
+EXTRA_DIST += $(top_srcdir)/./link-warning.h
+
 ## end   gnulib module link-warning
 
 ## begin gnulib module string
@@ -56,11 +58,13 @@ BUILT_SOURCES += string.h
 
 # We need the following in order to create <string.h> when the system
 # doesn't have one that works with the given compiler.
-string.h: string_.h
+string.h: string.in.h
 	rm -f $@-t $@
 	{ echo '/* DO NOT EDIT! GENERATED AUTOMATICALLY! */' && \
-	  sed -e 's|@''ABSOLUTE_STRING_H''@|$(ABSOLUTE_STRING_H)|g' \
+	  sed -e 's/@''INCLUDE_NEXT''@/$(INCLUDE_NEXT)/g' \
+	      -e 's|@''NEXT_STRING_H''@|$(NEXT_STRING_H)|g' \
 	      -e 's|@''GNULIB_MBSLEN''@|$(GNULIB_MBSLEN)|g' \
+	      -e 's|@''GNULIB_MBSNLEN''@|$(GNULIB_MBSNLEN)|g' \
 	      -e 's|@''GNULIB_MBSCHR''@|$(GNULIB_MBSCHR)|g' \
 	      -e 's|@''GNULIB_MBSRCHR''@|$(GNULIB_MBSRCHR)|g' \
 	      -e 's|@''GNULIB_MBSSTR''@|$(GNULIB_MBSSTR)|g' \
@@ -76,6 +80,7 @@ string.h: string_.h
 	      -e 's|@''GNULIB_MEMMEM''@|$(GNULIB_MEMMEM)|g' \
 	      -e 's|@''GNULIB_MEMPCPY''@|$(GNULIB_MEMPCPY)|g' \
 	      -e 's|@''GNULIB_MEMRCHR''@|$(GNULIB_MEMRCHR)|g' \
+	      -e 's|@''GNULIB_RAWMEMCHR''@|$(GNULIB_RAWMEMCHR)|g' \
 	      -e 's|@''GNULIB_STPCPY''@|$(GNULIB_STPCPY)|g' \
 	      -e 's|@''GNULIB_STPNCPY''@|$(GNULIB_STPNCPY)|g' \
 	      -e 's|@''GNULIB_STRCHRNUL''@|$(GNULIB_STRCHRNUL)|g' \
@@ -84,15 +89,17 @@ string.h: string_.h
 	      -e 's|@''GNULIB_STRNLEN''@|$(GNULIB_STRNLEN)|g' \
 	      -e 's|@''GNULIB_STRPBRK''@|$(GNULIB_STRPBRK)|g' \
 	      -e 's|@''GNULIB_STRSEP''@|$(GNULIB_STRSEP)|g' \
+	      -e 's|@''GNULIB_STRSTR''@|$(GNULIB_STRSTR)|g' \
 	      -e 's|@''GNULIB_STRCASESTR''@|$(GNULIB_STRCASESTR)|g' \
 	      -e 's|@''GNULIB_STRTOK_R''@|$(GNULIB_STRTOK_R)|g' \
+	      -e 's|@''GNULIB_STRERROR''@|$(GNULIB_STRERROR)|g' \
+	      -e 's|@''GNULIB_STRSIGNAL''@|$(GNULIB_STRSIGNAL)|g' \
 	      -e 's|@''HAVE_DECL_MEMMEM''@|$(HAVE_DECL_MEMMEM)|g' \
 	      -e 's|@''HAVE_MEMPCPY''@|$(HAVE_MEMPCPY)|g' \
 	      -e 's|@''HAVE_DECL_MEMRCHR''@|$(HAVE_DECL_MEMRCHR)|g' \
+	      -e 's|@''HAVE_RAWMEMCHR''@|$(HAVE_RAWMEMCHR)|g' \
 	      -e 's|@''HAVE_STPCPY''@|$(HAVE_STPCPY)|g' \
 	      -e 's|@''HAVE_STPNCPY''@|$(HAVE_STPNCPY)|g' \
-	      -e 's|@''HAVE_STRCASECMP''@|$(HAVE_STRCASECMP)|g' \
-	      -e 's|@''HAVE_DECL_STRNCASECMP''@|$(HAVE_DECL_STRNCASECMP)|g' \
 	      -e 's|@''HAVE_STRCHRNUL''@|$(HAVE_STRCHRNUL)|g' \
 	      -e 's|@''HAVE_DECL_STRDUP''@|$(HAVE_DECL_STRDUP)|g' \
 	      -e 's|@''HAVE_STRNDUP''@|$(HAVE_STRNDUP)|g' \
@@ -102,13 +109,20 @@ string.h: string_.h
 	      -e 's|@''HAVE_STRSEP''@|$(HAVE_STRSEP)|g' \
 	      -e 's|@''HAVE_STRCASESTR''@|$(HAVE_STRCASESTR)|g' \
 	      -e 's|@''HAVE_DECL_STRTOK_R''@|$(HAVE_DECL_STRTOK_R)|g' \
+	      -e 's|@''HAVE_DECL_STRERROR''@|$(HAVE_DECL_STRERROR)|g' \
+	      -e 's|@''HAVE_DECL_STRSIGNAL''@|$(HAVE_DECL_STRSIGNAL)|g' \
+	      -e 's|@''REPLACE_MEMMEM''@|$(REPLACE_MEMMEM)|g' \
+	      -e 's|@''REPLACE_STRCASESTR''@|$(REPLACE_STRCASESTR)|g' \
+	      -e 's|@''REPLACE_STRSTR''@|$(REPLACE_STRSTR)|g' \
+	      -e 's|@''REPLACE_STRERROR''@|$(REPLACE_STRERROR)|g' \
+	      -e 's|@''REPLACE_STRSIGNAL''@|$(REPLACE_STRSIGNAL)|g' \
 	      -e '/definition of GL_LINK_WARNING/r $(LINK_WARNING_H)' \
-	      < $(srcdir)/string_.h; \
+	      < $(srcdir)/string.in.h; \
 	} > $@-t
 	mv $@-t $@
 MOSTLYCLEANFILES += string.h string.h-t
 
-EXTRA_DIST += string_.h
+EXTRA_DIST += string.in.h
 
 ## end   gnulib module string
 
@@ -136,20 +150,21 @@ BUILT_SOURCES += $(SYS_TIME_H)
 
 # We need the following in order to create <sys/time.h> when the system
 # doesn't have one that works with the given compiler.
-sys/time.h: sys_time_.h
+sys/time.h: sys_time.in.h
 	@MKDIR_P@ sys
 	rm -f $@-t $@
 	{ echo '/* DO NOT EDIT! GENERATED AUTOMATICALLY! */'; \
 	  sed -e 's/@''HAVE_SYS_TIME_H''@/$(HAVE_SYS_TIME_H)/g' \
-	      -e 's|@''ABSOLUTE_SYS_TIME_H''@|$(ABSOLUTE_SYS_TIME_H)|g' \
+	      -e 's/@''INCLUDE_NEXT''@/$(INCLUDE_NEXT)/g' \
+	      -e 's|@''NEXT_SYS_TIME_H''@|$(NEXT_SYS_TIME_H)|g' \
 	      -e 's/@''REPLACE_GETTIMEOFDAY''@/$(REPLACE_GETTIMEOFDAY)/g' \
 	      -e 's/@''HAVE_STRUCT_TIMEVAL''@/$(HAVE_STRUCT_TIMEVAL)/g' \
-	      < $(srcdir)/sys_time_.h; \
+	      < $(srcdir)/sys_time.in.h; \
 	} > $@-t
 	mv $@-t $@
 MOSTLYCLEANFILES += sys/time.h sys/time.h-t
 
-EXTRA_DIST += sys_time_.h
+EXTRA_DIST += sys_time.in.h
 
 ## end   gnulib module sys_time
 
@@ -165,4 +180,5 @@ mostlyclean-local: mostlyclean-generic
 	  if test -n "$$dir" && test -d $$dir; then \
 	    echo "rmdir $$dir"; rmdir $$dir; \
 	  fi; \
-	done
+	done; \
+	:

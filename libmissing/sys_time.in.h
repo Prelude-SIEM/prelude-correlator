@@ -4,7 +4,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
-   the Free Software Foundation; either version 2.1, or (at your option)
+   the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,27 +18,35 @@
 
 /* Written by Paul Eggert.  */
 
-#ifndef _GL_SYS_TIME_H
-#define _GL_SYS_TIME_H
+#if defined _GL_SYS_TIME_H
 
-#if @HAVE_SYS_TIME_H@
-# include @ABSOLUTE_SYS_TIME_H@
+/* Simply delegate to the system's header, without adding anything.  */
+# if @HAVE_SYS_TIME_H@
+#  @INCLUDE_NEXT@ @NEXT_SYS_TIME_H@
+# endif
+
 #else
-# include <time.h>
-#endif
 
-#if ! @HAVE_STRUCT_TIMEVAL@
+# define _GL_SYS_TIME_H
+
+# if @HAVE_SYS_TIME_H@
+#  @INCLUDE_NEXT@ @NEXT_SYS_TIME_H@
+# else
+#  include <time.h>
+# endif
+
+# if ! @HAVE_STRUCT_TIMEVAL@
 struct timeval
 {
   time_t tv_sec;
   long int tv_usec;
 };
-#endif
+# endif
 
-#if @REPLACE_GETTIMEOFDAY@
-# undef gettimeofday
-# define gettimeofday rpl_gettimeofday
+# if @REPLACE_GETTIMEOFDAY@
+#  undef gettimeofday
+#  define gettimeofday rpl_gettimeofday
 int gettimeofday (struct timeval *restrict, void *restrict);
-#endif
+# endif
 
 #endif /* _GL_SYS_TIME_H */

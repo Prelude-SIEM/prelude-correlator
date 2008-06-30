@@ -324,9 +324,9 @@ static int IDMEF_get(lua_State *lstate)
         idmef_message_t *idmef;
         prelude_bool_t flat = TRUE, multipath = FALSE, has_ret = FALSE;
 
-        ret = lua_gettop(lstate);
-        if ( ret < 2 ) {
-                luaL_error(lstate, "get(): require 2 arguments minimum, got %d", ret);
+        top = lua_gettop(lstate);
+        if ( top < 2 ) {
+                luaL_error(lstate, "get(): require 2 arguments minimum, got %d", top);
                 return -1;
         }
 
@@ -336,14 +336,12 @@ static int IDMEF_get(lua_State *lstate)
                 return -1;
         }
 
-        top = lua_gettop(lstate);
-
         if ( lua_isboolean(lstate, top) ) {
                 flat = lua_toboolean(lstate, top);
                 top--;
         }
 
-        multipath = (top - 3) > 0 ? TRUE : FALSE;
+        multipath = (top - 2) > 0 ? TRUE : FALSE;
         if ( multipath )
                 lua_newtable(lstate);
 
@@ -355,7 +353,7 @@ static int IDMEF_get(lua_State *lstate)
                         break;
                 }
 
-                if ( ret > 0 )
+                if ( ret > 0 && ! has_ret )
                         has_ret = TRUE;
         }
 

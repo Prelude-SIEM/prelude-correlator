@@ -26,15 +26,15 @@ local is_succeeded = INPUT:match("alert.assessment.impact.completion", "succeede
 
 -- Run this code only on saturday (1) and sunday (6), or from 6:00pm to 9:00am.
 if is_succeeded and (t.wday == 1 or t.wday == 6 or t.hour < 9 or t.hour > 18) then
-        ctx:set("alert.source", INPUT:getraw("alert.source"))
-        ctx:set("alert.target", INPUT:getraw("alert.target"))
-        ctx:set("alert.classification", INPUT:getraw("alert.classification"))
-        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
-        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
-        ctx:set("alert.correlation_alert.name", "Critical system activity on day off")
+	local ca = IDMEF.new()
 
-        ctx:alert()
-        ctx:del()
+        ca:set("alert.source", INPUT:getraw("alert.source"))
+        ca:set("alert.target", INPUT:getraw("alert.target"))
+        ca:set("alert.classification", INPUT:getraw("alert.classification"))
+        ca:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
+        ca:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
+        ca:set("alert.correlation_alert.name", "Critical system activity on day off")
+	ca:alert()
 end
 
 end

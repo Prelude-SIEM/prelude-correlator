@@ -342,8 +342,10 @@ static int IDMEF_get(lua_State *lstate)
         }
 
         multipath = (top - 2) > 0 ? TRUE : FALSE;
-        if ( multipath )
+        if ( multipath ) {
                 lua_newtable(lstate);
+                has_ret = TRUE;
+        }
 
         for ( i = 2; i <= top; i++ ) {
 
@@ -353,7 +355,7 @@ static int IDMEF_get(lua_State *lstate)
                         break;
                 }
 
-                if ( ret > 0 && ! has_ret )
+                if ( ret > 0 )
                         has_ret = TRUE;
         }
 

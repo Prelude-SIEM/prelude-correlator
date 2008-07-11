@@ -206,24 +206,24 @@ static int IDMEF_set(lua_State *lstate)
         int ret;
         const char *paths;
         idmef_path_t *path;
-        idmef_value_t *value;
         idmef_message_t *idmef;
+        idmef_value_t *value = NULL;
         prelude_bool_t nofree = FALSE;
 
         ret = lua_gettop(lstate);
         if ( ret != 3 ) {
-                luaL_error(lstate, "Set(): require 3 arguments, got %d", ret);
+                luaL_error(lstate, "set(): require 3 arguments, got %d", ret);
                 return -1;
         }
 
         idmef = checkIDMEF(lstate, 1);
         if ( ! idmef ) {
-                luaL_error(lstate, "Set(): First argument should be 'IDMEF'", ret);
+                luaL_error(lstate, "set(): First argument should be 'IDMEF'", ret);
                 return -1;
         }
 
         if ( ! lua_isstring(lstate, 2) ) {
-                luaL_error(lstate, "Set(): Second argument should be 'string'");
+                luaL_error(lstate, "set(): Second argument should be 'string'");
                 return -1;
         }
 
@@ -231,36 +231,47 @@ static int IDMEF_set(lua_State *lstate)
 
         ret = idmef_path_new_fast(&path, paths);
         if ( ret < 0 ) {
-                luaL_error(lstate, "Set(%s): unable to create path: %s", paths, prelude_strerror(ret));
+                luaL_error(lstate, "set(%s): unable to create path: %s", paths, prelude_strerror(ret));
                 return -1;
         }
 
         if ( lua_isstring(lstate, 3) ) {
                 prelude_string_t *str;
+
                 ret = prelude_string_new_dup(&str, lua_tostring(lstate, 3));
-                ret = idmef_value_new_string(&value, str);
+                if ( ret >= 0 )
+                        ret = idmef_value_new_string(&value, str);
         }
 
         else if ( lua_isnumber(lstate, 3) )
                 ret = idmef_value_new_double(&value, lua_tonumber(lstate, 3));
+
+        else if ( lua_isnil(lstate, 3) )
+                value = NULL;
 
         else if ( (value = checkIDMEFValue(lstate, 3)) )
                 nofree = TRUE;
 
         else {
                 idmef_path_destroy(path);
-                luaL_error(lstate, "Set(%s): Unhandled type for argument 3: %s", paths);
+                luaL_error(lstate, "set(%s): Unhandled type for argument 3: %s", paths);
                 return -1;
         }
 
-        ret = copy_idmef_path_if_needed(idmef, path, value);
+        if ( ret >= 0 ) {
+                if ( value )
+                        ret = copy_idmef_path_if_needed(idmef, path, value);
+                else
+                        ret = idmef_path_set(path, idmef, NULL);
+        }
+
         idmef_path_destroy(path);
 
-        if ( ! nofree )
+        if ( ! nofree && value )
                 idmef_value_destroy(value);
 
         if ( ret < 0 ) {
-                luaL_error(lstate, "Set(%s): could not set path: %s", paths, prelude_strerror(ret));
+                luaL_error(lstate, "set(%s): could not set path: %s", paths, prelude_strerror(ret));
                 return -1;
         }
 

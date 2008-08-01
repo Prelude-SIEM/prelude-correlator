@@ -67,8 +67,8 @@ if is_failed_auth and userid then
         if ctx:CheckAndDecThreshold() then
             ctx:set("alert.classification.text", "Brute force attack")
             ctx:set("alert.correlation_alert.name", "Multiple failed login")
-            ctx:set("alert.impact.severity", "high")
-            ctx:set("alert.impact.description", "Multiple failed attempts have been made to login to a user account")
+            ctx:set("alert.assessment.impact.severity", "high")
+            ctx:set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
 
             ctx:alert()
             ctx:del()

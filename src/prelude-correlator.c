@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <libprelude/prelude.h>
 #include <libprelude/prelude-log.h>

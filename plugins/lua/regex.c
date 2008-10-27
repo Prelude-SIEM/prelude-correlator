@@ -202,6 +202,49 @@ static int retrieve_cb(idmef_value_t *value, void *ptr, prelude_bool_t push_data
                         break;
                 }
 
+                case IDMEF_VALUE_TYPE_DATA: {
+                        idmef_data_t *d = idmef_value_get_data(value);
+
+                        switch (idmef_data_get_type(d)) {
+                                case IDMEF_DATA_TYPE_CHAR: {
+                                        char c = idmef_data_get_char(d);
+                                        lua_pushlstring(lstate, &c, 1);
+                                        break;
+                                }
+
+                                case IDMEF_DATA_TYPE_BYTE: {
+                                        unsigned char b = idmef_data_get_byte(d);
+                                        lua_pushlstring(lstate, (const char *) &b, 1);
+                                        break;
+                                }
+
+                                case IDMEF_DATA_TYPE_UINT32:
+                                        lua_pushnumber(lstate, idmef_data_get_uint32(d));
+                                        break;
+
+                                case IDMEF_DATA_TYPE_UINT64:
+                                        lua_pushnumber(lstate, idmef_data_get_uint64(d));
+                                        break;
+
+                                case IDMEF_DATA_TYPE_FLOAT:
+                                        lua_pushnumber(lstate, idmef_data_get_uint64(d));
+                                        break;
+
+                                case IDMEF_DATA_TYPE_CHAR_STRING:
+                                        lua_pushlstring(lstate, idmef_data_get_char_string(d), idmef_data_get_len(d));
+                                        break;
+
+                                case IDMEF_DATA_TYPE_BYTE_STRING:
+                                        lua_pushlstring(lstate, (const char *) idmef_data_get_byte_string(d), idmef_data_get_len(d));
+                                        break;
+
+                                default:
+                                        prelude_log(PRELUDE_LOG_ERR, "Unknown IDMEF data type.\n");
+                                        break;
+                        }
+                        break;
+                }
+
                 case IDMEF_VALUE_TYPE_INT8:
                         lua_pushnumber(lstate, idmef_value_get_int8(value));
                         break;

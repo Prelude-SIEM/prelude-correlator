@@ -320,8 +320,10 @@ static int IDMEF_getraw(lua_State *lstate)
                 return -1;
         }
 
-        if ( ret == 0 )
-                return 0;
+        if ( ret == 0 ) {
+                lua_pushnil(lstate);
+                return 1;
+        }
 
         pushIDMEFValue(lstate, value);
         return 1;

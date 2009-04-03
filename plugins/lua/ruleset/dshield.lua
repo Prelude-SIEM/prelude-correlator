@@ -32,27 +32,12 @@
 
 
 
-function make_zeroed_str(quad)
-        if tonumber(quad) < 100 and tonumber(quad) >= 10 then
-                return "0" .. quad
-        end
-        if tonumber(quad) < 10 then
-                return "00" .. quad
-        end
-
-        return quad
-end
-
 function normalize_ip(ipaddr)
-        quads = string.split(ipaddr,".")
-
-        q1 = make_zeroed_str(quads[0])
-        q2 = make_zeroed_str(quads[1])
-        q3 = make_zeroed_str(quads[2])
-        q4 = make_zeroed_str(quads[3])
-
-        return q1 .. "." .. q2 .. "." .. q3 .. "." .. q4
+        quads = string.split(ipaddr, ".")
+        return string.format("%.3d.%.3d.%.3d.%.3d", quads[1], quads[2], quads[3], quads[4])
 end
+
+
 
 function dshield(INPUT)
 

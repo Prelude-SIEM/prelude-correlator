@@ -33,49 +33,49 @@
 
 
 function split(str, patt)
-	vals = {}; valindex = 0; word = ""
-	-- need to add a trailing separator to catch the last value.
-	str = str .. patt
-	for i = 1, string.len(str) do
+        vals = {}; valindex = 0; word = ""
+        -- need to add a trailing separator to catch the last value.
+        str = str .. patt
+        for i = 1, string.len(str) do
 
-		cha = string.sub(str, i, i)
-		if cha ~= patt then
-			word = word .. cha
-		else
-			if word ~= nil then
-				vals[valindex] = word
-				valindex = valindex + 1
-				word = ""
-			else
-				-- in case we get a line with no data.
-				break
-			end
-		end
+                cha = string.sub(str, i, i)
+                if cha ~= patt then
+                        word = word .. cha
+                else
+                        if word ~= nil then
+                                vals[valindex] = word
+                                valindex = valindex + 1
+                                word = ""
+                        else
+                                -- in case we get a line with no data.
+                                break
+                        end
+                end
 
-	end
-	return vals
+        end
+        return vals
 end
 
 function make_zeroed_str(quad)
-	if tonumber(quad) < 100 and tonumber(quad) >= 10 then
-		return "0" .. quad
-	end
-	if tonumber(quad) < 10 then
-		return "00" .. quad
-	end
+        if tonumber(quad) < 100 and tonumber(quad) >= 10 then
+                return "0" .. quad
+        end
+        if tonumber(quad) < 10 then
+                return "00" .. quad
+        end
 
-	return quad
+        return quad
 end
 
 function normalize_ip(ipaddr)
-	quads = split(ipaddr,".")
+        quads = split(ipaddr,".")
 
-	q1 = make_zeroed_str(quads[0])
-	q2 = make_zeroed_str(quads[1])
-	q3 = make_zeroed_str(quads[2])
-	q4 = make_zeroed_str(quads[3])
+        q1 = make_zeroed_str(quads[0])
+        q2 = make_zeroed_str(quads[1])
+        q3 = make_zeroed_str(quads[2])
+        q4 = make_zeroed_str(quads[3])
 
-	return q1 .. "." .. q2 .. "." .. q3 .. "." .. q4
+        return q1 .. "." .. q2 .. "." .. q3 .. "." .. q4
 end
 
 function dshield(INPUT)
@@ -85,27 +85,27 @@ io.input("/etc/prelude-correlator/ipsascii.html")
 local result = INPUT:match("alert.source(*).node.address(*).address", "(.+)",
                            "alert.target(*).node.address(*).address", "(.+)");
 if result then
-	for i, source in ipairs(result[1]) do
-		normalized_ip = normalize_ip(source)
-		for line in io.lines() do
-			val = split(line, "\t")
-			if not string.find(val[0],"^#.*") then
-				if string.find(val[0], normalized_ip) then
-					local ctx = Context.update("DSHIELD_DB_" .. source, { threshold = 1 })
-					ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
-					ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
-					ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
-					ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
-					ctx:set("alert.classification.text", "IP source matching Dshield database")
-					ctx:set("alert.correlation_alert.name", "IP source matching Dshield database")
-					ctx:set("alert.assessment.impact.description", "Dshield gather IP addresses taged from firewall logs drops")
-					ctx:set("alert.assessment.impact.severity", "high")
-					ctx:alert()
-					ctx:del()
-				end
-			end
-		end
-	end -- for i, source in ipairs(result[1]) do
+        for i, source in ipairs(result[1]) do
+                normalized_ip = normalize_ip(source)
+                for line in io.lines() do
+                        val = split(line, "\t")
+                        if not string.find(val[0],"^#.*") then
+                                if string.find(val[0], normalized_ip) then
+                                        local ctx = Context.update("DSHIELD_DB_" .. source, { threshold = 1 })
+                                        ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+                                        ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+                                        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
+                                        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
+                                        ctx:set("alert.classification.text", "IP source matching Dshield database")
+                                        ctx:set("alert.correlation_alert.name", "IP source matching Dshield database")
+                                        ctx:set("alert.assessment.impact.description", "Dshield gather IP addresses taged from firewall logs drops")
+                                        ctx:set("alert.assessment.impact.severity", "high")
+                                        ctx:alert()
+                                        ctx:del()
+                                end
+                        end
+                end
+        end -- for i, source in ipairs(result[1]) do
 end -- if result then
 
 end -- function dshield_match(INPUT)

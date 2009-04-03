@@ -32,30 +32,6 @@
 
 
 
-function split(str, patt)
-        vals = {}; valindex = 0; word = ""
-        -- need to add a trailing separator to catch the last value.
-        str = str .. patt
-        for i = 1, string.len(str) do
-
-                cha = string.sub(str, i, i)
-                if cha ~= patt then
-                        word = word .. cha
-                else
-                        if word ~= nil then
-                                vals[valindex] = word
-                                valindex = valindex + 1
-                                word = ""
-                        else
-                                -- in case we get a line with no data.
-                                break
-                        end
-                end
-
-        end
-        return vals
-end
-
 function make_zeroed_str(quad)
         if tonumber(quad) < 100 and tonumber(quad) >= 10 then
                 return "0" .. quad
@@ -68,7 +44,7 @@ function make_zeroed_str(quad)
 end
 
 function normalize_ip(ipaddr)
-        quads = split(ipaddr,".")
+        quads = string.split(ipaddr,".")
 
         q1 = make_zeroed_str(quads[0])
         q2 = make_zeroed_str(quads[1])
@@ -88,7 +64,7 @@ if result then
         for i, source in ipairs(result[1]) do
                 normalized_ip = normalize_ip(source)
                 for line in io.lines() do
-                        val = split(line, "\t")
+                        val = string.split(line, "\t")
                         if not string.find(val[0],"^#.*") then
                                 if string.find(val[0], normalized_ip) then
                                         local ctx = Context.update("DSHIELD_DB_" .. source, { threshold = 1 })

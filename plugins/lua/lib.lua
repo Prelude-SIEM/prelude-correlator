@@ -139,3 +139,24 @@ function table_lookup(list, what)
 
     return false
 end
+
+
+function string.split(str, pattern)
+        local ret = {}
+        local start = 1
+        local plen = string.len(pattern)
+
+        while true do
+                local pos = string.find(str, pattern, start, true)
+                if not pos then
+                        break
+                end
+
+                table.insert(ret, string.sub(str, start, pos - 1))
+                start = pos + plen
+        end
+
+        table.insert(ret, string.sub(str, start))
+        return ret
+end
+

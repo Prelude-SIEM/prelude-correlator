@@ -65,7 +65,7 @@ if source and target and classification then
         cur = ctx:getIDMEF("alert.target(*).node.address(*).address")
         if cur then
             for i, address in ipairs(target) do
-                if table_lookup(cur, address) then
+                if table.find(cur, address) then
                     insert = false
                     break
                 end

@@ -107,7 +107,7 @@ end
 
 -- Utility function
 --
-function _table_dump(depth, result)
+function _table.dump(depth, result)
    for i,v in pairs(result) do
         if type(v) == "table" then
                 for x=0,depth-1 do io.write("\t") end io.write(i, " table") print(":")
@@ -119,10 +119,10 @@ function _table_dump(depth, result)
 end
 
 
-function table_dump(result)
+function table.dump(result)
     print "***********************"
     if result then
-        _table_dump(0, result)
+        _table.dump(0, result)
     else
         print("table is nil")
     end
@@ -130,7 +130,7 @@ function table_dump(result)
 end
 
 
-function table_lookup(list, what)
+function table.find(list, what)
     for key, value in ipairs(list) do
         if value == what then
             return true

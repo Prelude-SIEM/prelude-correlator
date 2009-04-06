@@ -107,11 +107,11 @@ end
 
 -- Utility function
 --
-function _table.dump(depth, result)
+function table._dump(depth, result)
    for i,v in pairs(result) do
         if type(v) == "table" then
                 for x=0,depth-1 do io.write("\t") end io.write(i, " table") print(":")
-                _table_dump(depth + 1, v)
+                table._dump(depth + 1, v)
         else
                 for x=0,depth-1 do io.write("\t") end print(i, v or "<nil>")
         end
@@ -122,7 +122,7 @@ end
 function table.dump(result)
     print "***********************"
     if result then
-        _table.dump(0, result)
+        table._dump(0, result)
     else
         print("table is nil")
     end

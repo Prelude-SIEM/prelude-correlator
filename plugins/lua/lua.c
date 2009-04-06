@@ -200,6 +200,31 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
 }
 
 
+static int l_generic(lua_State *lstate, int level)
+{
+        if ( ! lua_isstring(lstate, 1) )
+                return -1;
+
+        prelude_log(level, "%s\n", lua_tostring(lstate, 1));
+
+        return 0;
+}
+
+static int l_info(lua_State *lstate)
+{
+        return l_generic(lstate, PRELUDE_LOG_INFO);
+}
+
+static int l_warning(lua_State *lstate)
+{
+        return l_generic(lstate, PRELUDE_LOG_WARN);
+}
+
+static int l_error(lua_State *lstate)
+{
+        return l_generic(lstate, PRELUDE_LOG_ERR);
+}
+
 
 static int lua_activate(prelude_option_t *opt, const char *optarg, prelude_string_t *err, void *context)
 {
@@ -234,6 +259,15 @@ static int lua_activate(prelude_option_t *opt, const char *optarg, prelude_strin
         }
 
         prelude_plugin_instance_set_plugin_data(context, new);
+
+        lua_pushcfunction(new->lstate, l_info);
+        lua_setglobal(new->lstate, "info");
+
+        lua_pushcfunction(new->lstate, l_warning);
+        lua_setglobal(new->lstate, "warn");
+
+        lua_pushcfunction(new->lstate, l_error);
+        lua_setglobal(new->lstate, "error");
 
         lua_pushstring(new->lstate, PRELUDE_CORRELATOR_LIB_DIR);
         lua_setglobal(new->lstate, "PRELUDE_CORRELATOR_LIB_DIR");

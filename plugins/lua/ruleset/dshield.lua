@@ -20,7 +20,6 @@
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 --
 
-
 local DSHIELD_RELOAD = 7 * 24 * 60 * 60
 local DSHIELD_URL = "http://www.dshield.org/ipsascii.html?limit=10000"
 
@@ -54,9 +53,9 @@ function retrieve_dshield_data()
                 return load_dshield_data(fname, attr)
         end
 
-        print("Downloading host list from dshield, this might take some time...")
+        info("Downloading host list from dshield, this might take some time...")
         body = http.request(DSHIELD_URL)
-        print("Downloading done, processing data.")
+        info("Downloading done, processing data.")
 
         fd = io.output(fname)
         fd:write(body)

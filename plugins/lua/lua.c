@@ -173,8 +173,6 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
                 return -1;
         }
 
-
-
         while ( (dh = readdir(dir)) ) {
                 if ( ! (ext = strstr(dh->d_name, ".lua")) )
                         continue;
@@ -236,6 +234,9 @@ static int lua_activate(prelude_option_t *opt, const char *optarg, prelude_strin
         }
 
         prelude_plugin_instance_set_plugin_data(context, new);
+
+        lua_pushstring(new->lstate, PRELUDE_CORRELATOR_LIB_DIR);
+        lua_setglobal(new->lstate, "PRELUDE_CORRELATOR_LIB_DIR");
 
         return 0;
 }

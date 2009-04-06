@@ -183,8 +183,8 @@ static int set_lua_ruleset(prelude_option_t *opt, const char *optarg, prelude_st
 
                 ret = luaL_dofile(plugin->lstate, fname);
                 if ( ret != 0 ) {
-                        prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(plugin->lstate, -1));
-                        return -1;
+                        prelude_log(PRELUDE_LOG_ERR, "%s: %s.\n", fname, lua_tostring(plugin->lstate, -1));
+                        continue;
                 }
 
                 ret = lua_pcall(plugin->lstate, 0, 0, 0);

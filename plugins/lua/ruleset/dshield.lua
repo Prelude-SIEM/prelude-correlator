@@ -26,8 +26,7 @@ local DSHIELD_URL = "http://www.dshield.org/ipsascii.html?limit=10000"
 function load_dshield_data(fname, attr)
         local cnt = 0
         local iphash = {}
-
-        fd = io.input(fname)
+        local fd = io.input(fname)
 
         for line in fd:lines() do
                 if not string.find(line,"^#") then
@@ -54,10 +53,10 @@ function retrieve_dshield_data()
         end
 
         info("Downloading host list from dshield, this might take some time...")
-        body = http.request(DSHIELD_URL)
+        local body = http.request(DSHIELD_URL)
         info("Downloading done, processing data.")
 
-        fd = io.output(fname)
+        local fd = io.output(fname)
         fd:write(body)
         fd:close(body)
 
@@ -69,7 +68,7 @@ iphash = retrieve_dshield_data()
 
 
 function normalize_ip(ipaddr)
-        quads = string.split(ipaddr, ".")
+        local quads = string.split(ipaddr, ".")
         return string.format("%.3d.%.3d.%.3d.%.3d", quads[1], quads[2], quads[3], quads[4])
 end
 

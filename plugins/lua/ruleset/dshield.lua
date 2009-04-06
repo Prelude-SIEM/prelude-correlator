@@ -18,18 +18,55 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program; see the file COPYING.  If not, write to
 -- the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-
--- IMPORTANT. READ ME!
--- This script checks against the Dshield (www.dshield.org) database
--- for source IP addresses matching it.
--- To have this correlation rule working:
---   * you need to set up a mirror fetching
---     http://www.dshield.org/ipsascii.html?limit=10000 once a week.
---   * save this file under /etc/prelude-correlator/ipascii.html
 --
--- If you want to set up a dshield mirror for IP and ports list,
--- you can use this Perl script: http://www.wallinfire.net/files/dshield-mirror
 
+
+local DSHIELD_RELOAD = 7 * 24 * 60 * 60
+local DSHIELD_URL = "http://www.dshield.org/ipsascii.html?limit=10000"
+
+function load_dshield_data(fname, attr)
+        local cnt = 0
+        local iphash = {}
+
+        fd = io.input(fname)
+
+        for line in fd:lines() do
+                if not string.find(line,"^#") then
+                        val = string.split(line, "\t")
+                        iphash[val[1]] = true
+                        cnt = cnt + 1
+                end
+        end
+
+        Timer.new(DSHIELD_RELOAD - (os.time() - attr.modification), retrieve_dshield_data)
+
+        return iphash
+end
+
+
+function retrieve_dshield_data()
+        local lfs = require("lfs")
+        local http = require("socket.http")
+        local fname = PRELUDE_CORRELATOR_LIB_DIR .. "/dshield.dat"
+
+        local attr = lfs.attributes(fname)
+        if attr and (os.time() - attr.modification) < DSHIELD_RELOAD then
+                return load_dshield_data(fname, attr)
+        end
+
+        print("Downloading host list from dshield, this might take some time...")
+        body = http.request(DSHIELD_URL)
+        print("Downloading done, processing data.")
+
+        fd = io.output(fname)
+        fd:write(body)
+        fd:close(body)
+
+        return load_dshield_data(fname, attr)
+end
+
+
+iphash = retrieve_dshield_data()
 
 
 function normalize_ip(ipaddr)
@@ -38,36 +75,26 @@ function normalize_ip(ipaddr)
 end
 
 
-
 function dshield(INPUT)
 
-io.input("/etc/prelude-correlator/ipsascii.html")
-
-local result = INPUT:match("alert.source(*).node.address(*).address", "(.+)",
-                           "alert.target(*).node.address(*).address", "(.+)");
+local result = INPUT:get("alert.source(*).node.address(*).address")
 if result then
-        for i, source in ipairs(result[1]) do
-                normalized_ip = normalize_ip(source)
-                for line in io.lines() do
-                        val = string.split(line, "\t")
-                        if not string.find(val[0],"^#.*") then
-                                if string.find(val[0], normalized_ip) then
-                                        local ctx = Context.update("DSHIELD_DB_" .. source, { threshold = 1 })
-                                        ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
-                                        ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
-                                        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
-                                        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
-                                        ctx:set("alert.classification.text", "IP source matching Dshield database")
-                                        ctx:set("alert.correlation_alert.name", "IP source matching Dshield database")
-                                        ctx:set("alert.assessment.impact.description", "Dshield gather IP addresses taged from firewall logs drops")
-                                        ctx:set("alert.assessment.impact.severity", "high")
-                                        ctx:alert()
-                                        ctx:del()
-                                end
-                        end
+        for i, source in ipairs(result) do
+                if iphash[normalize_ip(source)] then
+                        local ctx = Context.update("DSHIELD_DB_" .. source, { threshold = 1 })
+                        ctx:set("alert.source(>>)", INPUT:getraw("alert.source"))
+                        ctx:set("alert.target(>>)", INPUT:getraw("alert.target"))
+                        ctx:set("alert.correlation_alert.alertident(>>).alertident", INPUT:getraw("alert.messageid"))
+                        ctx:set("alert.correlation_alert.alertident(-1).analyzerid", INPUT:getAnalyzerid())
+                        ctx:set("alert.classification.text", "IP source matching Dshield database")
+                        ctx:set("alert.correlation_alert.name", "IP source matching Dshield database")
+                        ctx:set("alert.assessment.impact.description", "Dshield gather IP addresses tagged from firewall logs drops")
+                        ctx:set("alert.assessment.impact.severity", "high")
+                        ctx:alert()
+                        ctx:del()
                 end
-        end -- for i, source in ipairs(result[1]) do
-end -- if result then
+        end
+end
 
 end -- function dshield_match(INPUT)
 

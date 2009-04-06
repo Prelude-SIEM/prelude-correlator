@@ -24,17 +24,15 @@ __C = {}
 Context = {}
 Context.__index = Context
 
-function _del_context_(name)
-        c = Context.get(name)
-
-        if c._alert_on_expire then
-            c:alert()
-        end
-
-        c:del()
+function _timer_cb(timer, ctx)
+    ctx:del()
 end
 
 function Context:del()
+    if self._alert_on_expire then
+        self:alert()
+    end
+
     self._timer = nil
     self._idmef = nil
     __C[self._name] = nil
@@ -67,7 +65,6 @@ function Context.get(name)
     return __C[name]
 end
 
-
 function Context.new(name, options)
     local ctx = {}
 
@@ -85,8 +82,8 @@ function Context.new(name, options)
     end
 
     if ctx._expire ~= nil then
-        ctx._timer = Timer.new(name)
-        ctx._timer:start(ctx._expire)
+        ctx._timer = Timer.new(ctx._expire, _timer_cb, ctx)
+        ctx._timer:start()
     end
 
     return ctx

@@ -23,6 +23,6 @@
 
 typedef struct lua_timer lua_timer_t;
 
-lua_timer_t *pushTimer(lua_State *lstate, const char *cname);
+lua_timer_t *pushTimer(lua_State *lstate, int expire, int func_ref, int data_ref);
 
 int Timer_register(lua_State *lstate);

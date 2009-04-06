@@ -45,8 +45,11 @@
 struct lua_timer {
         prelude_bool_t is_active;
         prelude_timer_t timer;
-        char *data;
         lua_State *lstate;
+
+        int cb_timer_ref;
+        int cb_func_ref;
+        int cb_data_ref;
 };
 
 
@@ -56,18 +59,18 @@ static void timer_cb(void *data)
         int ret;
         lua_timer_t *timer = data;
 
-        lua_getglobal(timer->lstate, "_del_context_");
-        lua_pushstring(timer->lstate, timer->data);
+        lua_rawgeti(timer->lstate, LUA_REGISTRYINDEX, timer->cb_func_ref);
+        lua_rawgeti(timer->lstate, LUA_REGISTRYINDEX, timer->cb_timer_ref);
 
-        ret = lua_pcall(timer->lstate, 1, 0, 0);
-        if ( ret != 0 )
-                prelude_log(PRELUDE_LOG_ERR, "LUA error: %s.\n", lua_tostring(timer->lstate, -1));
-
-
-        //lua_gc(timer->lstate, LUA_GCCOLLECT, 0);
+        if ( timer->cb_data_ref )
+                lua_rawgeti(timer->lstate, LUA_REGISTRYINDEX, timer->cb_data_ref);
 
         timer->is_active = FALSE;
         prelude_timer_destroy(&timer->timer);
+
+        ret = lua_pcall(timer->lstate, (timer->cb_data_ref) ? 2 : 1, 0, 0);
+        if ( ret != 0 )
+                prelude_log(PRELUDE_LOG_ERR, "timer callback problem: %s.\n", lua_tostring(timer->lstate, -1));
 }
 
 
@@ -98,22 +101,26 @@ static lua_timer_t *checkTimer(lua_State *lstate, int index)
 }
 
 
-lua_timer_t *pushTimer(lua_State *lstate, const char *cname)
+lua_timer_t *pushTimer(lua_State *lstate, int expire, int func_ref, int data_ref)
 {
-        char *dup;
         lua_timer_t *timer;
-
-        dup = strdup(cname);
-        if ( ! dup )
-                return NULL;
 
         timer = lua_newuserdata(lstate, sizeof(*timer));
         timer->is_active = FALSE;
-        timer->data = dup;
         timer->lstate = lstate;
+
+        timer->cb_func_ref = func_ref;
+        timer->cb_data_ref = data_ref;
+
+        prelude_timer_set_data(&timer->timer, timer);
+        prelude_timer_set_expire(&timer->timer, expire);
+        prelude_timer_set_callback(&timer->timer, timer_cb);
 
         luaL_getmetatable(lstate, TIMER_CLASS);
         lua_setmetatable(lstate, -2);
+
+        lua_pushvalue(lstate, -1);
+        timer->cb_timer_ref = luaL_ref(lstate, LUA_REGISTRYINDEX);
 
         return timer;
 }
@@ -123,19 +130,33 @@ static int Timer_new(lua_State *lstate)
 {
         int ret;
         lua_timer_t *timer;
+        int data_ref = 0, func_ref;
 
         ret = lua_gettop(lstate);
-        if ( ret != 1 ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_start(): require 1 arguments, got %d.\n", ret);
+        if ( ret < 2 || ret > 3 ) {
+                prelude_log(PRELUDE_LOG_ERR, "TimerNew(): require 3 arguments, got %d.\n", ret);
                 return -1;
         }
 
-        if ( ! lua_isstring(lstate, 1) ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_init(): First argument should be 'string'.\n");
+        if ( ! lua_isnumber(lstate, 1) ) {
+                prelude_log(PRELUDE_LOG_ERR, "TimerNew(): First argument should be 'number'.\n");
                 return -1;
         }
 
-        timer = pushTimer(lstate, lua_tostring(lstate, 1));
+        if ( ! lua_isfunction(lstate, 2) ) {
+                prelude_log(PRELUDE_LOG_ERR, "TimerNew(): Second argument should be 'function'.\n");
+                return -1;
+        }
+
+        lua_pushvalue(lstate, 2);
+        func_ref = luaL_ref(lstate, LUA_REGISTRYINDEX);
+
+        if ( ret == 3 ) {
+                lua_pushvalue(lstate, 3);
+                data_ref = luaL_ref(lstate, LUA_REGISTRYINDEX);
+        }
+
+        timer = pushTimer(lstate, lua_tonumber(lstate, 1), func_ref, data_ref);
         return 1;
 }
 
@@ -146,8 +167,8 @@ static int Timer_start(lua_State *lstate)
         lua_timer_t *timer;
 
         ret = lua_gettop(lstate);
-        if ( ret != 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_start(): require 2 arguments, got %d.\n", ret);
+        if ( ret != 1 ) {
+                prelude_log(PRELUDE_LOG_ERR, "timer_start(): require 1 arguments, got %d.\n", ret);
                 return -1;
         }
 
@@ -157,15 +178,7 @@ static int Timer_start(lua_State *lstate)
                 return -1;
         }
 
-        if ( ! lua_isnumber(lstate, 2) ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_init(): First argument should be a 'number'.\n");
-                return -1;
-        }
-
         timer->is_active = TRUE;
-        prelude_timer_set_data(&timer->timer, timer);
-        prelude_timer_set_expire(&timer->timer, lua_tonumber(lstate, 2));
-        prelude_timer_set_callback(&timer->timer, timer_cb);
         prelude_timer_init(&timer->timer);
 
         return 0;
@@ -178,8 +191,8 @@ static int Timer_reset(lua_State *lstate)
         lua_timer_t *timer;
 
         ret = lua_gettop(lstate);
-        if ( ret != 2 ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_reset(): require 2 arguments, got %d.\n", ret);
+        if ( ret < 1 || ret > 2 ) {
+                prelude_log(PRELUDE_LOG_ERR, "timer_reset(): require 1 or 2 arguments, got %d.\n", ret);
                 return -1;
         }
 
@@ -189,17 +202,21 @@ static int Timer_reset(lua_State *lstate)
                 return -1;
         }
 
-        if ( ! lua_isnumber(lstate, 2) ) {
-                prelude_log(PRELUDE_LOG_ERR, "timer_reset(): Second argument should be a 'number'.\n");
-                return -1;
+        if ( ret == 2 ) {
+                if ( ! lua_isnumber(lstate, 2) ) {
+                        prelude_log(PRELUDE_LOG_ERR, "timer_reset(): Second argument should be a 'number'.\n");
+                        return -1;
+                }
+
+                prelude_timer_set_expire(&timer->timer, lua_tonumber(lstate, 2));
         }
 
         timer->is_active = TRUE;
-        prelude_timer_set_expire(&timer->timer, lua_tonumber(lstate, 2));
         prelude_timer_reset(&timer->timer);
 
         return 0;
 }
+
 
 
 static int Timer_stop(lua_State *lstate)
@@ -240,10 +257,13 @@ static int Timer_gc(lua_State *lstate)
         lua_timer_t *timer;
 
         timer = toTimer(lstate, 1);
+
+        luaL_unref(timer->lstate, LUA_REGISTRYINDEX, timer->cb_func_ref);
+        luaL_unref(timer->lstate, LUA_REGISTRYINDEX, timer->cb_data_ref);
+        luaL_unref(timer->lstate, LUA_REGISTRYINDEX, timer->cb_timer_ref);
+
         if ( timer && timer->is_active )
                 prelude_timer_destroy(&timer->timer);
-
-        free(timer->data);
 
         prelude_log_debug(1, "[gc] TIMER at %p\n", timer);
         return 0;

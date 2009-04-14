@@ -19,12 +19,12 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
+from pycor import siteconfig
 from pycor.idmef import IDMEF
 from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context, get_context
 
-PRELUDE_CORRELATOR_LIB_DIR="/home/yoann"
 DSHIELD_RELOAD = 7 * 24 * 60 * 60
 DSHIELD_URI = "/ipsascii.html?limit=10000"
 DSHIELD_SRV = "www.dshield.org"
@@ -44,8 +44,8 @@ def load_dshield_data(fname):
 
 
 def retrieve_dshield_data():
-    fname = PRELUDE_CORRELATOR_LIB_DIR + "/dshield.dat"
-
+    fname = siteconfig.lib_dir + "/dshield.dat"
+    
     try:
         st = os.stat(fname)
         if time.time() - st.st_mtime < DSHIELD_RELOAD:

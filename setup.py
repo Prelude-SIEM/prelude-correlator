@@ -13,7 +13,9 @@ class my_install(install):
                 else:
                         self.conf_prefix = "/etc/pycor"
 
-                os.makedirs(self.prefix + "/var/lib/pycor")
+                if not os.path.exists(self.prefix + "/var/lib/pycor"):
+                        os.makedirs(self.prefix + "/var/lib/pycor")
+                        
                 self.init_siteconfig()
                 install.run(self)
                 

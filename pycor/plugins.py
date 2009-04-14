@@ -18,6 +18,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import sys, os
+from pycor import siteconfig
 
 class Plugin(object):
     pass
@@ -26,10 +27,9 @@ class PluginManager:
         _instances = []
 
         def __init__(self):
-                path = "/home/yoann/dev/prelude/git/pycor/ruleset"
-                sys.path.insert(0, path)
+                sys.path.insert(0, siteconfig.ruleset_dir)
 
-                for file in os.listdir(path):
+                for file in os.listdir(siteconfig.ruleset_dir):
                         pl = __import__(os.path.splitext(file)[0], None, None, [''])
 
                 for plugin in Plugin.__subclasses__():

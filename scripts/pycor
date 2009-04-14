@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2009 PreludeIDS Technologies. All Rights Reserved.
+# Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
+#
+# This file is part of the Prewikka program.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+import sys, os
+from pycol import idmef, plugins
+from optparse import OptionParser
+from PreludeEasy import ClientEasy
+
+class PreludeClient:
+        def __init__(self, print_input=None, print_output=None, dry_run=False):
+                self._message_processed = 0
+                self._print_input = print_input
+                self._print_output = print_output
+                self._dry_run = dry_run
+                self._client = ClientEasy("pycol", ClientEasy.IDMEF_READ|ClientEasy.IDMEF_WRITE, "pycol", "Correlator")
+                self._client.Start()
+                self._pm = plugins.PluginManager()
+
+        def _handle_event(self, idmef):
+                if self._print_input:
+                        self._print_input.write(str(idmef))
+
+                for plugin in self._pm.find():
+                        plugin.run(idmef)
+
+                self._message_processed += 1
+
+        def correlationAlert(self, idmef):
+                if not self._dry_run:
+                        self._client.SendIDMEF(idmef)
+
+                if self._print_output:
+                        self._print_output.write(str(idmef))
+
+        def recvEvent(self):
+                msg = idmef.IDMEF()
+
+                while True:
+                        self._client.RecvIDMEF(msg)
+                        if msg.Get("alert.create_time"):
+                                self._handle_event(msg)
+
+                        msg.reset()
+
+
+parser = OptionParser()
+parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
+parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur")
+parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
+parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
+parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
+parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
+parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
+(options, args) = parser.parse_args()
+
+ifd = None
+if options.print_input:
+        if options.print_input == "-":
+                ifd = sys.stdout
+        else:
+                ifd = open(options.print_input, "w")
+
+ofd = None
+if options.print_output:
+        if options.print_output == "-":
+                ofd = sys.stdout
+        else:
+                ofd = open(options.print_output, "w")
+
+if options.daemon:
+    if os.fork():
+        os._exit(0)
+
+    os.setsid()
+    if os.fork():
+        os._exit(0)
+
+    os.umask(077)
+
+    fd = os.open('/dev/null', os.O_RDWR)
+    for i in xrange(3):
+        os.dup2(fd, i)
+
+    os.close(fd)
+    if options.pidfile:
+        open(pidfile, "w").write(str(os.getpid()))
+
+
+prelude_client = PreludeClient(print_input=ifd, print_output=ofd)
+idmef.set_prelude_client(prelude_client)
+prelude_client.recvEvent()

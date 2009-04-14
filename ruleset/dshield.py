@@ -19,6 +19,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
+from pycor.idmef import IDMEF
 from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context, get_context

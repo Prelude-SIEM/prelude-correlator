@@ -19,9 +19,9 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
-from pycol.utils import flatten
-from pycol.plugins import Plugin
-from pycol.context import Context, get_context
+from pycor.utils import flatten
+from pycor.plugins import Plugin
+from pycor.context import Context, get_context
 
 PRELUDE_CORRELATOR_LIB_DIR="/home/yoann"
 DSHIELD_RELOAD = 7 * 24 * 60 * 60

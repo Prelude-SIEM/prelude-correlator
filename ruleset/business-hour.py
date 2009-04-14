@@ -18,8 +18,8 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import time
-from pycol.idmef import IDMEF
-from pycol.plugins import Plugin
+from pycor.idmef import IDMEF
+from pycor.plugins import Plugin
 
 # Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
 

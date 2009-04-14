@@ -22,9 +22,9 @@
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.
 
-from pycol.utils import flatten, match
-from pycol.plugins import Plugin
-from pycol.context import Context, get_context
+from pycor.utils import flatten, match
+from pycor.plugins import Plugin
+from pycor.context import Context, get_context
 
 class WormPlugin(Plugin):
     def run(self, idmef):

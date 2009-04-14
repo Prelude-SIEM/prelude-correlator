@@ -17,9 +17,9 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from pycol.utils import flatten, match
-from pycol.plugins import Plugin
-from pycol.context import Context
+from pycor.utils import flatten, match
+from pycor.plugins import Plugin
+from pycor.context import Context
 
 class BruteforcePlugin(Plugin):
     def run(self, idmef):

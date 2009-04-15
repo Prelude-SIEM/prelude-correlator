@@ -22,9 +22,10 @@
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.
 
+from pycor import context
 from pycor.utils import flatten, match
 from pycor.plugins import Plugin
-from pycor.context import Context, get_context
+from pycor.context import Context
 
 class WormPlugin(Plugin):
     def run(self, idmef):
@@ -40,7 +41,7 @@ class WormPlugin(Plugin):
             # We are trying to see whether a previous target is now attacking other hosts
             # thus, we check whether a context exist with this classification combined to
             # this source.
-            ctx = get_context("WORM_HOST_" + ctxt + source)
+            ctx = context.search("WORM_HOST_" + ctxt + source)
             if not ctx:
                 continue
 
@@ -56,4 +57,4 @@ class WormPlugin(Plugin):
                 ctx.Set("alert.assessment.impact.severity", "high")
                 ctx.Set("alert.assessment.impact.description", source + "has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
                 ctx.alert()
-                del(ctx)
+                ctx.destroy()

@@ -23,7 +23,7 @@ from pycor import siteconfig
 from pycor.idmef import IDMEF
 from pycor.utils import flatten
 from pycor.plugins import Plugin
-from pycor.context import Context, get_context
+from pycor.context import Context
 
 DSHIELD_RELOAD = 7 * 24 * 60 * 60
 DSHIELD_URI = "/ipsascii.html?limit=10000"

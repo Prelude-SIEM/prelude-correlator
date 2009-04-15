@@ -46,7 +46,7 @@ class BruteforcePlugin(Plugin):
                     ctx.Set("alert.assessment.impact.severity", "high")
                     ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
                     ctx.alert()
-                    del(ctx)
+                    ctx.destroy()
 
 
 # Detect brute force attempt by user
@@ -75,5 +75,5 @@ class BruteForceUserPlugin(Plugin):
                 ctx.Set("alert.assessment.impact.severity", "high")
                 ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
                 ctx.alert()
-                del(ctx)
+                ctx.destroy()
 

@@ -63,4 +63,4 @@ class OpenSSHMultipleAuthTypesPlugin(Plugin):
                     ctx.Set("alert.assessment.impact.severity", "medium")
                     ctx.Set("alert.assessment.impact.description", "Multiple ways of authenticating a single user have been found over SSH. If passphrase is the only allowed method, make sure you disable passwords.")
                     ctx.alert()
-                    del(ctx)
+                    ctx.destroy()

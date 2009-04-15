@@ -45,7 +45,7 @@ def load_dshield_data(fname):
 
 def retrieve_dshield_data():
     fname = siteconfig.lib_dir + "/dshield.dat"
-    
+
     try:
         st = os.stat(fname)
         if time.time() - st.st_mtime < DSHIELD_RELOAD:
@@ -83,4 +83,4 @@ class DshieldPlugin(Plugin):
                 ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
                 ca.Set("alert.assessment.impact.description", "Dshield gather IP addresses tagged from firewall logs drops")
                 ca.Set("alert.assessment.impact.severity", "high")
-                ca.Alert()
+                ca.alert()

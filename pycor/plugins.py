@@ -23,6 +23,7 @@ from pycor import siteconfig
 class Plugin(object):
     pass
 
+
 class PluginManager:
         _instances = []
 
@@ -35,6 +36,12 @@ class PluginManager:
                 for plugin in Plugin.__subclasses__():
                         self._instances.append(plugin())
 
-        def find(self):
-                return self._instances
+                print "%d plugin have been loaded." % len(Plugin.__subclasses__())
 
+
+        def run(self, idmef):
+                for plugin in self._instances:
+                        try:
+                                plugin.run(idmef)
+                        except Exception, e:
+                                print(e)

@@ -25,23 +25,23 @@ class Plugin(object):
 
 
 class PluginManager:
-        _instances = []
+    _instances = []
 
-        def __init__(self):
-                sys.path.insert(0, siteconfig.ruleset_dir)
+    def __init__(self):
+        sys.path.insert(0, siteconfig.ruleset_dir)
 
-                for file in os.listdir(siteconfig.ruleset_dir):
-                        pl = __import__(os.path.splitext(file)[0], None, None, [''])
+        for file in os.listdir(siteconfig.ruleset_dir):
+            pl = __import__(os.path.splitext(file)[0], None, None, [''])
 
-                for plugin in Plugin.__subclasses__():
-                        self._instances.append(plugin())
+            for plugin in Plugin.__subclasses__():
+                self._instances.append(plugin())
 
-                print "%d plugin have been loaded." % len(Plugin.__subclasses__())
+        print "%d plugin have been loaded." % len(Plugin.__subclasses__())
 
 
-        def run(self, idmef):
-                for plugin in self._instances:
-                        try:
-                                plugin.run(idmef)
-                        except Exception, e:
-                                print(e)
+    def run(self, idmef):
+        for plugin in self._instances:
+            try:
+                plugin.run(idmef)
+            except Exception, e:
+                print(e)

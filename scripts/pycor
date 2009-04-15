@@ -19,10 +19,12 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import sys, os
-from pycor import idmef, plugins
+import sys, os, time, signal
+from pycor import idmef, plugins, context
 from optparse import OptionParser
 from PreludeEasy import ClientEasy
+
+stop_working = False
 
 class PreludeClient:
         def __init__(self, print_input=None, print_output=None, dry_run=False):
@@ -32,15 +34,16 @@ class PreludeClient:
                 self._dry_run = dry_run
                 self._client = ClientEasy("prelude-correlator", ClientEasy.IDMEF_READ|ClientEasy.IDMEF_WRITE, "prelude-correlator", "Correlator")
                 self._client.Start()
+                self._continue = True
                 self._pm = plugins.PluginManager()
+                print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
+
 
         def _handle_event(self, idmef):
                 if self._print_input:
                         self._print_input.write(str(idmef))
 
-                for plugin in self._pm.find():
-                        plugin.run(idmef)
-
+                self._pm.run(idmef)
                 self._message_processed += 1
 
         def correlationAlert(self, idmef):
@@ -53,13 +56,26 @@ class PreludeClient:
         def recvEvent(self):
                 msg = idmef.IDMEF()
 
-                while True:
-                        self._client.RecvIDMEF(msg)
-                        if msg.Get("alert.create_time"):
-                                self._handle_event(msg)
+                last = time.time()
+                while self._continue:
+                        try:
+                            r = self._client.RecvIDMEF(msg, 1000)
+                        except:
+                                pass # EINTR
 
-                        msg.reset()
+                        if r:
+                                if msg.Get("alert.create_time"):
+                                        self._handle_event(msg)
 
+                                msg.reset()
+
+                        now = time.time()
+                        if now - last >= 1:
+                                context.wakeup(now)
+                                last = now
+
+        def stop(self):
+                self._continue = False
 
 parser = OptionParser()
 parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
@@ -104,6 +120,21 @@ if options.daemon:
         open(pidfile, "w").write(str(os.getpid()))
 
 
+def handle_signal(signum, frame):
+        print 'Signal handler called with signal', signum
+        stop_working = True
+        prelude_client.stop()
+
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGINT, handle_signal)
+
+# restore previous context.
+context.load()
+
 prelude_client = PreludeClient(print_input=ifd, print_output=ofd)
 idmef.set_prelude_client(prelude_client)
 prelude_client.recvEvent()
+
+# save existing context
+context.save()
+

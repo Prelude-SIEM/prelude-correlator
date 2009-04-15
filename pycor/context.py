@@ -17,36 +17,106 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from threading import Timer
-from pycor import idmef
+import time, StringIO, pickle
+from pycor import idmef, siteconfig
 
-_CONTEXT_TABLE = {}
+_TIMER_LIST = [ ]
+_CONTEXT_TABLE = { }
+
+
+class Timer:
+        def __setstate__(self, dict):
+                self.__dict__.update(dict)
+                if self._active:
+                        _TIMER_LIST.append(self)
+
+        def __del__(self):
+                try:
+                        self.stop()
+                except:
+                        return
+
+        def __init__(self, expire, ctxname):
+                self._active = False
+                self._expire = expire
+                self._ctxname = ctxname
+                self.start()
+
+        def stop(self):
+                if self._active:
+                        _TIMER_LIST.remove(self)
+                        self._active = False
+
+        def start(self):
+                self._active = True
+                self._start = time.time()
+                _TIMER_LIST.append(self)
+
+        def reset(self):
+                self.stop()
+                self.start()
+
+        def expire(self):
+                self.stop()
+                _CONTEXT_TABLE[self._ctxname].destroy()
+
 
 class Context(idmef.IDMEF):
         def __init__(self, name, options={}, update=False):
+
                 if update and _CONTEXT_TABLE.has_key(name):
-                        #_CONTEXT_TABLE[name]._timer.cancel()
-                        #_CONTEXT_TABLE[name]._timer.start()
-                        self = _CONTEXT_TABLE[name]
+                        ctx = _CONTEXT_TABLE[name]
+                        if ctx._timer:
+                                ctx._timer.reset()
 
                 self._name = name
                 self._threshold = options.get("threshold", -1)
                 self._alert_on_expire = options.get("alert_on_expire", False)
 
                 if options.has_key("expire"):
-                        #self._timer = Timer(options["expire"], self._timer_expire)
-                        #self._timer.start()
-                        pass
+                        self._timer = Timer(options["expire"], self._name)
+                else:
+                        self._timer = None
 
                 _CONTEXT_TABLE[name] = self
+                idmef.IDMEF.__init__(self)
 
-        def _timer_expire(self):
-                _CONTEXT_TABLE[self._name] = None
-                del(self)
+        def __new__(cls, name, options={}, update=False):
+                if update and _CONTEXT_TABLE.has_key(name):
+                        return _CONTEXT_TABLE[name]
 
-        def update(self, name, options={}):
-                pass
+                return super(Context, cls).__new__(cls, name, options, update)
 
 
-def get_context(name):
-        return _CONTEXT_TABLE.get(name, None)
+        def CheckAndDecThreshold(self):
+                self._threshold = self._threshold - 1
+                if self._threshold == 0:
+                        return True
+                else:
+                        return False
+
+        def destroy(self):
+                if self._alert_on_expire:
+                        self.alert()
+
+                del(_CONTEXT_TABLE[self._name])
+
+
+def search(name):
+    if _CONTEXT_TABLE.has_key(name):
+        return _CONTEXT_TABLE[name]
+
+    return None
+
+def save():
+        fd = open(siteconfig.lib_dir + "/context.dat", "w")
+        pickle.dump(_CONTEXT_TABLE, fd)
+
+def load():
+        fd = open(siteconfig.lib_dir + "/context.dat", "r")
+        _CONTEXT_TABLE.update(pickle.load(fd))
+
+def wakeup(now):
+        for timer in _TIMER_LIST:
+                if now - timer._start >= timer._expire:
+                        timer.expire()

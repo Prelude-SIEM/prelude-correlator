@@ -17,9 +17,33 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+import tempfile
 import PreludeEasy
 
+
 class IDMEF(PreludeEasy.IDMEF):
+        def __setstate__(self, dict):
+                fd = tempfile.TemporaryFile("r+")
+                fd.write(dict["idmef_encoded"])
+                fd.seek(0)
+
+                PreludeEasy.IDMEF.__init__(self)
+                self.Read(fd)
+
+                del(dict["idmef_encoded"])
+                self.__dict__.update(dict)
+
+        def __getstate__(self):
+                fd = tempfile.TemporaryFile("r+")
+                self.Write(fd)
+                fd.seek(0)
+
+                odict = self.__dict__.copy()
+                odict["idmef_encoded"] = fd.read()
+                del(odict["this"])
+
+                return odict
+
         def __init__(self):
             self._cache = { }
             PreludeEasy.IDMEF.__init__(self)
@@ -36,6 +60,7 @@ class IDMEF(PreludeEasy.IDMEF):
         def alert(self):
                 global prelude_client
                 prelude_client.correlationAlert(self)
+
 
 
 def set_prelude_client(client):

@@ -58,7 +58,7 @@ class Timer:
 
         def expire(self):
                 self.stop()
-                _CONTEXT_TABLE[self._ctxname].destroy()
+                _CONTEXT_TABLE[self._ctxname].destroy(expire=True)
 
 
 class Context(idmef.IDMEF):
@@ -95,8 +95,11 @@ class Context(idmef.IDMEF):
                 else:
                         return False
 
-        def destroy(self):
-                if self._alert_on_expire:
+        def destroy(self, expire=False):
+                if self._timer:
+                        self._timer.stop()
+
+                if expire and self._alert_on_expire:
                         self.alert()
 
                 del(_CONTEXT_TABLE[self._name])

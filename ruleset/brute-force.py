@@ -58,7 +58,7 @@ class BruteForceUserPlugin(Plugin):
                             "alert.assessment.impact.completion", "failed"):
             return
 
-        userid = idmef.Get("alert.target(*).user.user_id(*).name");
+        userid = flatten(idmef.Get("alert.target(*).user.user_id(*).name"));
         if not userid:
             return
 

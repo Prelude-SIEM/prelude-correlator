@@ -1,4 +1,4 @@
-# Copyright (C) 29 PreludeIDS Technologies. All Rights Reserved.
+# Copyright (C) 2009 PreludeIDS Technologies. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 #
 # This file is part of the Prewikka program.
@@ -53,7 +53,8 @@ def match(idmef, *args):
     i = 0
     while i < len(args):
         value = idmef.Get(args[i])
-        if not re.compile(args[i + 1]).match(value):
+
+        if not value or not re.compile(args[i + 1]).match(value):
             return False
 
         i+= 2

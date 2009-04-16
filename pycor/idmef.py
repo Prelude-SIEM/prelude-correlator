@@ -17,8 +17,11 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import tempfile
+import tempfile, re
 import PreludeEasy
+
+
+_REGEX_CACHE = {}
 
 
 class IDMEF(PreludeEasy.IDMEF):
@@ -44,15 +47,32 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return odict
 
-        def __init__(self):
-            self._cache = { }
-            PreludeEasy.IDMEF.__init__(self)
+        def Set(self, path, value):
+                if type(value) == PreludeEasy.IDMEFValue:
+                        cur = self.Get(path)
+                        if cur and value.Match(cur, PreludeEasy.IDMEFCriterion.EQUAL) > 0:
+                                return
 
-        def Get(self, name):
-            if not self._cache.has_key(name):
-                self._cache[name] = PreludeEasy.IDMEF.Get(self, name)
+                PreludeEasy.IDMEF.Set(self, path, value)
 
-            return self._cache[name]
+        def match(self, *args):
+                if (len(args) % 2) != 0:
+                        raise("Invalid number of arguments.")
+
+                i = 0
+                while i < len(args):
+                        if _REGEX_CACHE.has_key(args[i + 1]):
+                            r = _REGEX_CACHE[args[i + 1]]
+                        else:
+                            r = _REGEX_CACHE[args[i + 1]] = re.compile(args[i + 1])
+
+                        value = self.Get(args[i])
+                        if not value or not r.match(value):
+                                return False
+
+                        i+= 2
+
+                return True
 
         def reset(self):
                 self._cache = { }

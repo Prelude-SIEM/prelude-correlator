@@ -17,8 +17,6 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import re
-
 def flatten(x):
     """flatten(sequence) -> list
 
@@ -42,21 +40,3 @@ def flatten(x):
         else:
             result.append(el)
     return result
-
-
-
-def match(idmef, *args):
-    if (len(args) % 2) != 0:
-        print("match(): invalid number of arguments.")
-        return False
-
-    i = 0
-    while i < len(args):
-        value = idmef.Get(args[i])
-
-        if not value or not re.compile(args[i + 1]).match(value):
-            return False
-
-        i+= 2
-
-    return True

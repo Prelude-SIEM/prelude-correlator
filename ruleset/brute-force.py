@@ -23,8 +23,8 @@ from pycor.context import Context
 
 class BruteforcePlugin(Plugin):
     def run(self, idmef):
-        if not match(idmef, "alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                            "alert.assessment.impact.completion", "failed"):
+        if not idmef.match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
+                           "alert.assessment.impact.completion", "failed"):
             return
 
         sadd = flatten(idmef.Get("alert.source(*).node.address(*).address"))

@@ -23,33 +23,35 @@ from pycor import siteconfig
 from pycor.idmef import IDMEF
 from pycor.utils import flatten
 from pycor.plugins import Plugin
-from pycor.context import Context
+from pycor.context import Context, Timer
 
 DSHIELD_RELOAD = 7 * 24 * 60 * 60
 DSHIELD_URI = "/ipsascii.html?limit=10000"
 DSHIELD_SRV = "www.dshield.org"
 
-def load_dshield_data(fname):
+iphash = { }
+
+def load_dshield_data(fname, age = 0):
     cnt = 0
-    iphash = {}
     fd = open(fname, "r")
+
+    iphash.clear()
 
     for line in fd:
         if line[0] != '#':
             iphash[line.split('\t')[0]] = True
             cnt = cnt + 1
 
-    #Timer.new(DSHIELD_RELOAD - (os.time() - attr.modification), retrieve_dshield_data)
-    return iphash
+    Timer(DSHIELD_RELOAD - age, retrieve_dshield_data)
 
 
-def retrieve_dshield_data():
+def retrieve_dshield_data(timer=None):
     fname = siteconfig.lib_dir + "/dshield.dat"
 
     try:
         st = os.stat(fname)
         if time.time() - st.st_mtime < DSHIELD_RELOAD:
-            return load_dshield_data(fname)
+            return load_dshield_data(fname, time.time() - st.st_mtime)
     except:
         pass
 
@@ -65,10 +67,10 @@ def retrieve_dshield_data():
     fd.close()
 
     print("Downloading done, processing data.")
-    return load_dshield_data(fname)
+    load_dshield_data(fname)
 
 
-iphash = retrieve_dshield_data()
+retrieve_dshield_data()
 
 class DshieldPlugin(Plugin):
     def run(self, idmef):

@@ -55,6 +55,6 @@ class WormPlugin(Plugin):
                 ctx.Set("alert.classification.text", "Possible Worm Activity")
                 ctx.Set("alert.correlation_alert.name", "Source host repeating actions taken against it recently")
                 ctx.Set("alert.assessment.impact.severity", "high")
-                ctx.Set("alert.assessment.impact.description", source + "has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
+                ctx.Set("alert.assessment.impact.description", source + " has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
                 ctx.alert()
                 ctx.destroy()

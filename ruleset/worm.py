@@ -23,7 +23,7 @@
 # other hosts multiple times, an event is generated.
 
 from pycor import context
-from pycor.utils import flatten, match
+from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context
 

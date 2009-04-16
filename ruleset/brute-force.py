@@ -17,7 +17,7 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from pycor.utils import flatten, match
+from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context
 
@@ -54,8 +54,8 @@ class BruteforcePlugin(Plugin):
 # attempts, and detects when they exceed a certain threshold.
 class BruteForceUserPlugin(Plugin):
     def run(self, idmef):
-        if not match(idmef, "alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                            "alert.assessment.impact.completion", "failed"):
+        if not idmef.match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
+                           "alert.assessment.impact.completion", "failed"):
             return
 
         userid = flatten(idmef.Get("alert.target(*).user.user_id(*).name"));

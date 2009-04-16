@@ -24,20 +24,22 @@ from pycor import idmef, plugins, context
 from optparse import OptionParser
 from PreludeEasy import ClientEasy
 
-stop_working = False
-
 class PreludeClient:
         def __init__(self, print_input=None, print_output=None, dry_run=False):
                 self._message_processed = 0
+                self._alert_generated = 0
                 self._print_input = print_input
                 self._print_output = print_output
-                self._dry_run = dry_run
-                self._client = ClientEasy("prelude-correlator", ClientEasy.IDMEF_READ|ClientEasy.IDMEF_WRITE, "prelude-correlator", "Correlator")
-                self._client.Start()
                 self._continue = True
+
                 self._pm = plugins.PluginManager()
                 print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
+                if not dry_run:
+                        self._client = ClientEasy("prelude-correlator", ClientEasy.IDMEF_READ|ClientEasy.IDMEF_WRITE, "prelude-correlator", "Correlator")
+                        self._client.Start()
+                else:
+                        self._client = None
 
         def _handle_event(self, idmef):
                 if self._print_input:
@@ -46,8 +48,13 @@ class PreludeClient:
                 self._pm.run(idmef)
                 self._message_processed += 1
 
+        def stats(self):
+                print("%d message received, %d correlationAlert generated." % (self._message_processed, self._alert_generated))
+
         def correlationAlert(self, idmef):
-                if not self._dry_run:
+                self._alert_generated = self._alert_generated + 1
+
+                if self._client:
                         self._client.SendIDMEF(idmef)
 
                 if self._print_output:
@@ -61,12 +68,11 @@ class PreludeClient:
                         try:
                             r = self._client.RecvIDMEF(msg, 1000)
                         except:
-                                pass # EINTR
+                                r = 0
 
                         if r:
                                 if msg.Get("alert.create_time"):
                                         self._handle_event(msg)
-
                                 msg.reset()
 
                         now = time.time()
@@ -122,11 +128,15 @@ if options.daemon:
 
 def handle_signal(signum, frame):
         print 'Signal handler called with signal', signum
-        stop_working = True
-        prelude_client.stop()
+        if signum == signal.SIGQUIT:
+                prelude_client.stats()
+                context.stats()
+        else:
+                prelude_client.stop()
 
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGINT, handle_signal)
+signal.signal(signal.SIGQUIT, handle_signal)
 
 # restore previous context.
 context.load()

@@ -64,9 +64,7 @@ class Context(idmef.IDMEF, Timer):
                 if update and _CONTEXT_TABLE.has_key(name):
                         ctx = _CONTEXT_TABLE[name]
                         if isinstance(ctx, Timer):
-                                print "reset on instance"
                                 ctx.reset()
-
                         return
 
                 self._name = name

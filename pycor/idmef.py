@@ -75,7 +75,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 return True
 
         def reset(self):
-                self._cache = { }
+                return
 
         def alert(self):
                 global prelude_client

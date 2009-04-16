@@ -27,56 +27,54 @@ _CONTEXT_TABLE = { }
 class Timer:
         def __setstate__(self, dict):
                 self.__dict__.update(dict)
-                if self._active:
+                if self._start:
                         _TIMER_LIST.append(self)
 
-        def __del__(self):
-                try:
-                        self.stop()
-                except:
-                        return
-
-        def __init__(self, expire, ctxname):
-                self._active = False
+        def __init__(self, expire, cb_func=None):
+                self._start = None
                 self._expire = expire
-                self._ctxname = ctxname
+                self._cb = cb_func
                 self.start()
 
-        def stop(self):
-                if self._active:
-                        _TIMER_LIST.remove(self)
-                        self._active = False
+        def _timerExpireCallback(self):
+                self.stop()
+                self._cb(self)
 
         def start(self):
-                self._active = True
-                self._start = time.time()
-                _TIMER_LIST.append(self)
+                if not self._start:
+                        self._start = time.time()
+                        _TIMER_LIST.append(self)
+
+        def stop(self):
+                if self._start:
+                        _TIMER_LIST.remove(self)
+                        self._start = None
 
         def reset(self):
                 self.stop()
                 self.start()
 
-        def expire(self):
-                self.stop()
-                _CONTEXT_TABLE[self._ctxname].destroy(expire=True)
 
+class Context(idmef.IDMEF, Timer):
+        def __setstate__(self, dict):
+                Timer.__setstate__(self, dict)
+                idmef.IDMEF.__setstate__(self, dict)
 
-class Context(idmef.IDMEF):
         def __init__(self, name, options={}, update=False):
-
                 if update and _CONTEXT_TABLE.has_key(name):
                         ctx = _CONTEXT_TABLE[name]
-                        if ctx._timer:
-                                ctx._timer.reset()
+                        if isinstance(ctx, Timer):
+                                print "reset on instance"
+                                ctx.reset()
+
+                        return
 
                 self._name = name
                 self._threshold = options.get("threshold", -1)
                 self._alert_on_expire = options.get("alert_on_expire", False)
 
                 if options.has_key("expire"):
-                        self._timer = Timer(options["expire"], self._name)
-                else:
-                        self._timer = None
+                        Timer.__init__(self, options["expire"])
 
                 _CONTEXT_TABLE[name] = self
                 idmef.IDMEF.__init__(self)
@@ -95,12 +93,15 @@ class Context(idmef.IDMEF):
                 else:
                         return False
 
-        def destroy(self, expire=False):
-                if self._timer:
-                        self._timer.stop()
-
-                if expire and self._alert_on_expire:
+        def _timerExpireCallback(self):
+                if self._alert_on_expire:
                         self.alert()
+
+                self.destroy()
+
+        def destroy(self):
+                if isinstance(self, Timer):
+                        self.stop()
 
                 del(_CONTEXT_TABLE[self._name])
 
@@ -116,10 +117,22 @@ def save():
         pickle.dump(_CONTEXT_TABLE, fd)
 
 def load():
-        fd = open(siteconfig.lib_dir + "/context.dat", "r")
-        _CONTEXT_TABLE.update(pickle.load(fd))
+        try:
+                fd = open(siteconfig.lib_dir + "/context.dat", "r")
+                _CONTEXT_TABLE.update(pickle.load(fd))
+        except:
+                pass
 
 def wakeup(now):
         for timer in _TIMER_LIST:
                 if now - timer._start >= timer._expire:
-                        timer.expire()
+                        timer._timerExpireCallback()
+
+
+def stats():
+        now = time.time()
+        for ctx in _CONTEXT_TABLE.values():
+                if not ctx._start:
+                        print("[%s]: threshold=%d" % (ctx._name, ctx._threshold))
+                else:
+                        print("[%s]: threshold=%d expire=%d" % (ctx._name, ctx._threshold, ctx._expire - (now - ctx._start)))

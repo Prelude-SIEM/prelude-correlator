@@ -47,6 +47,9 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return odict
 
+        def Get(self, path, replacement=None):
+                return PreludeEasy.IDMEF.Get(self, path) or replacement
+
         def Set(self, path, value):
                 if type(value) == PreludeEasy.IDMEFValue:
                         cur = self.Get(path)

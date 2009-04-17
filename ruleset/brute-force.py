@@ -17,7 +17,6 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context
 
@@ -27,9 +26,9 @@ class BruteforcePlugin(Plugin):
                            "alert.assessment.impact.completion", "failed"):
             return
 
-        sadd = flatten(idmef.Get("alert.source(*).node.address(*).address"))
-        tadd = flatten(idmef.Get("alert.target(*).node.address(*).address"))
-        if len(sadd) == 0 or len(tadd) == 0:
+        sadd = idmef.Get("alert.source(*).node.address(*).address")
+        tadd = idmef.Get("alert.target(*).node.address(*).address")
+        if not sadd or not tadd:
             return
 
         for source in sadd:
@@ -58,7 +57,7 @@ class BruteForceUserPlugin(Plugin):
                            "alert.assessment.impact.completion", "failed"):
             return
 
-        userid = flatten(idmef.Get("alert.target(*).user.user_id(*).name"));
+        userid = idmef.Get("alert.target(*).user.user_id(*).name");
         if not userid:
             return
 

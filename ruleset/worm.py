@@ -23,9 +23,7 @@
 # other hosts multiple times, an event is generated.
 
 from pycor import context
-from pycor.utils import flatten
 from pycor.plugins import Plugin
-from pycor.context import Context
 
 class WormPlugin(Plugin):
     def run(self, idmef):
@@ -34,10 +32,10 @@ class WormPlugin(Plugin):
             return
 
         # Create context for classification combined with all the target.
-        for target in flatten(idmef.Get("alert.target(*).node.address(*).address")):
-            ctx = Context("WORM_HOST_" + ctxt + target, { "expire": 300, "threshold": 5 }, update = True)
+        for target in idmef.Get("alert.target(*).node.address(*).address"):
+            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300, "threshold": 5 }, update = True)
 
-        for source in flatten(idmef.Get("alert.source(*).node.address(*).address")):
+        for source in idmef.Get("alert.source(*).node.address(*).address"):
             # We are trying to see whether a previous target is now attacking other hosts
             # thus, we check whether a context exist with this classification combined to
             # this source.

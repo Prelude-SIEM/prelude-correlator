@@ -21,7 +21,6 @@
 import os, httplib, time
 from pycor import siteconfig
 from pycor.idmef import IDMEF
-from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context, Timer
 
@@ -74,7 +73,7 @@ retrieve_dshield_data()
 
 class DshieldPlugin(Plugin):
     def run(self, idmef):
-        for source in flatten(idmef.Get("alert.source(*).node.address(*).address")):
+        for source in idmef.Get("alert.source(*).node.address(*).address"):
             if iphash.has_key(source):
                 ca = IDMEF()
                 ca.Set("alert.source(>>)", idmef.Get("alert.source"))

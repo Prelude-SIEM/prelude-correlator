@@ -22,7 +22,6 @@
 
 from pycor.context import Context
 from pycor.plugins import Plugin
-from pycor.utils import flatten
 
 class EventScanPlugin(Plugin):
     def run(self, idmef):
@@ -32,8 +31,8 @@ class EventScanPlugin(Plugin):
         if not source or not target:
             return
 
-        for saddr in flatten(source):
-            for daddr in flatten(target):
+        for saddr in source:
+            for daddr in target:
                 ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30 }, update = True)
                 ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
                 ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
@@ -59,7 +58,7 @@ class EventSweepPlugin(Plugin):
         if not source or not target or not classification:
             return
 
-        for saddr in flatten(source):
+        for saddr in source:
             ctx = Context("SCAN_EVENTSWEEP_" + classification + saddr, { "expire": 60, "threshold": 30 }, update = True)
             insert = True
 
@@ -94,7 +93,7 @@ class EventStormPlugin(Plugin):
         if not source:
             return
 
-        for saddr in flatten(source):
+        for saddr in source:
             ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150 }, update = True)
 
             ctx.Set("alert.source(>>)", idmef.Get("alert.source"))

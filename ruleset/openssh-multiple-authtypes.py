@@ -18,7 +18,6 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from pycor.utils import flatten
 from pycor.plugins import Plugin
 from pycor.context import Context
 
@@ -31,9 +30,9 @@ class OpenSSHMultipleAuthTypesPlugin(Plugin):
         if idmef.Get("alert.assessment.impact.completion") != "succeeded":
                 return
 
-        users = flatten(idmef.Get("alert.target(*).user.user_id(*).name"))
-        addr  = flatten(idmef.Get("alert.target(*).node.address(*).address"))
-        if len(users) == 0 or len(addr) == 0:
+        users = idmef.Get("alert.target(*).user.user_id(*).name")
+        addr  = idmef.Get("alert.target(*).node.address(*).address")
+        if not users or not addr:
                 return
 
         meaning = idmef.Get("alert.additional_data(*).meaning")

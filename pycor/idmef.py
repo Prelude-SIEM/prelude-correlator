@@ -21,8 +21,7 @@ import tempfile, re
 import PreludeEasy
 from pycor import utils
 
-_REGEX_CACHE = {}
-
+_RegexType = type(re.compile(""))
 
 class IDMEF(PreludeEasy.IDMEF):
         def __setstate__(self, dict):
@@ -50,6 +49,8 @@ class IDMEF(PreludeEasy.IDMEF):
         def Get(self, path, flatten=True, replacement=None):
                 value = PreludeEasy.IDMEF.Get(self, path)
                 if not value:
+                        if flatten and not replacement:
+                                return []
                         return replacement
 
                 if flatten and type(value) is tuple:
@@ -65,24 +66,38 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 PreludeEasy.IDMEF.Set(self, path, value)
 
+        def _match(self, path, needle):
+                value = self.Get(path)
+
+                if not isinstance(needle, _RegexType):
+                        ret = value == needle
+                else:
+                        m = needle.match(value or "")
+                        if not m:
+                                return False
+
+                        ret = m.groups()
+
+                return ret
+
         def match(self, *args):
                 if (len(args) % 2) != 0:
                         raise("Invalid number of arguments.")
 
+                ret = []
+
                 i = 0
                 while i < len(args):
-                        if _REGEX_CACHE.has_key(args[i + 1]):
-                            r = _REGEX_CACHE[args[i + 1]]
-                        else:
-                            r = _REGEX_CACHE[args[i + 1]] = re.compile(args[i + 1])
+                        r = self._match(args[i], args[i + 1])
+                        if not r:
+                                return None
 
-                        value = self.Get(args[i])
-                        if not value or not r.match(value):
-                                return False
+                        elif isinstance(r, tuple):
+                                ret.extend(r)
 
-                        i+= 2
+                        i += 2
 
-                return True
+                return ret
 
         def reset(self):
                 return
@@ -90,7 +105,6 @@ class IDMEF(PreludeEasy.IDMEF):
         def alert(self):
                 global prelude_client
                 prelude_client.correlationAlert(self)
-
 
 
 def set_prelude_client(client):

@@ -17,12 +17,12 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+import re
 from pycor import context
 from pycor.plugins import Plugin
 
 class FirewallPlugin(Plugin):
     def run(self, idmef):
-        isdrop = idmef.match("alert.classification.text", "[Pp]acket [Dd]ropped|[Dd]enied")
         source = idmef.Get("alert.source(0).node.address(0).address")
         sport = idmef.Get("alert.source(0).service.port", 0)
         target = idmef.Get("alert.target(0).node.address(0).address")
@@ -33,7 +33,7 @@ class FirewallPlugin(Plugin):
 
         ctxname = "FIREWALL_" + source + str(sport) + target + str(dport)
 
-        if isdrop:
+        if idmef.match("alert.classification.text", re.compile("[Pp]acket [Dd]ropped|[Dd]enied")):
                 # Update context if any, removing the alert_on_expire attribute.
                 ctx = context.Context(ctxname, { "expire": 10 }, update = True)
         else:

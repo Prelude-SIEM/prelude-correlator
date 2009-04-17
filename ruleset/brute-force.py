@@ -17,15 +17,12 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+import re
 from pycor.plugins import Plugin
 from pycor.context import Context
 
-class BruteforcePlugin(Plugin):
-    def run(self, idmef):
-        if not idmef.match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                           "alert.assessment.impact.completion", "failed"):
-            return
-
+class BrutePlugin(Plugin):
+    def _BruteForce(self, idmef):
         sadd = idmef.Get("alert.source(*).node.address(*).address")
         tadd = idmef.Get("alert.target(*).node.address(*).address")
         if not sadd or not tadd:
@@ -47,16 +44,7 @@ class BruteforcePlugin(Plugin):
                     ctx.alert()
                     ctx.destroy()
 
-
-# Detect brute force attempt by user
-# This rule looks for all classifications that match login or authentication
-# attempts, and detects when they exceed a certain threshold.
-class BruteForceUserPlugin(Plugin):
-    def run(self, idmef):
-        if not idmef.match("alert.classification.text", "[Ll]ogin|[Aa]uthentication",
-                           "alert.assessment.impact.completion", "failed"):
-            return
-
+    def _BruteUserForce(self, idmef):
         userid = idmef.Get("alert.target(*).user.user_id(*).name");
         if not userid:
             return
@@ -76,3 +64,11 @@ class BruteForceUserPlugin(Plugin):
                 ctx.alert()
                 ctx.destroy()
 
+
+    def run(self, idmef):
+        if not idmef.match("alert.classification.text", re.compile("[Ll]ogin|[Aa]uthentication"),
+                           "alert.assessment.impact.completion", "failed"):
+            return
+
+        self._BruteForce()
+        self._BruteUserForce()

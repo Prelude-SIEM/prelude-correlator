@@ -30,24 +30,15 @@ class OpenSSHMultipleAuthTypesPlugin(Plugin):
         if idmef.Get("alert.assessment.impact.completion") != "succeeded":
                 return
 
-        users = idmef.Get("alert.target(*).user.user_id(*).name")
-        addr  = idmef.Get("alert.target(*).node.address(*).address")
-        if not users or not addr:
-                return
-
-        meaning = idmef.Get("alert.additional_data(*).meaning")
-        if not meaning:
-                return
-
         try:
-                i = meaning.index("Authentication method")
+                idx = idmef.Get("alert.additional_data(*).meaning").index("Authentication method")
         except:
                 return
 
-        data = idmef.Get("alert.additional_data(%d).data" % i)
+        data = idmef.Get("alert.additional_data(%d).data" % idx)
 
-        for username in users:
-            for target in addr:
+        for username in idmef.Get("alert.target(*).user.user_id(*).name"):
+            for target in idmef.Get("alert.target(*).node.address(*).address"):
                 ctx = Context("SSH_MAT_" + target + username, {"threshold": 1}, update = True)
                 ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
                 ctx.Set("alert.target(>>)", idmef.Get("alert.target"))

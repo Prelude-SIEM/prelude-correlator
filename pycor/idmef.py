@@ -19,7 +19,7 @@
 
 import tempfile, re
 import PreludeEasy
-
+from pycor import utils
 
 _REGEX_CACHE = {}
 
@@ -47,8 +47,15 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return odict
 
-        def Get(self, path, replacement=None):
-                return PreludeEasy.IDMEF.Get(self, path) or replacement
+        def Get(self, path, flatten=True, replacement=None):
+                value = PreludeEasy.IDMEF.Get(self, path)
+                if not value:
+                        return replacement
+
+                if flatten and type(value) is tuple:
+                        value = utils.flatten(value)
+
+                return value
 
         def Set(self, path, value):
                 if type(value) == PreludeEasy.IDMEFValue:

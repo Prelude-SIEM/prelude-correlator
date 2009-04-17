@@ -20,9 +20,10 @@
 import sys, os, traceback
 from pycor import siteconfig
 
-class Plugin(object):
-    pass
 
+class Plugin(object):
+    def run(self, idmef):
+        pass
 
 class PluginManager:
     _instances = []

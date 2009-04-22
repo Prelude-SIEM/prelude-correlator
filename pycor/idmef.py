@@ -61,7 +61,7 @@ class IDMEF(PreludeEasy.IDMEF):
         def Set(self, path, value):
                 if type(value) == PreludeEasy.IDMEFValue:
                         cur = self.Get(path)
-                        if cur and value.Match(cur, PreludeEasy.IDMEFCriterion.EQUAL) > 0:
+                        if cur and value.Match(cur, PreludeEasy.IDMEFCriterion.OPERATOR_EQUAL) > 0:
                                 return
 
                 PreludeEasy.IDMEF.Set(self, path, value)

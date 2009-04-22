@@ -36,7 +36,7 @@ class PreludeClient:
                 print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
                 if not dry_run:
-                        self._client = ClientEasy("prelude-correlator", ClientEasy.IDMEF_READ|ClientEasy.IDMEF_WRITE, "prelude-correlator", "Correlator")
+                        self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE, "prelude-correlator", "Correlator")
                         self._client.Start()
                 else:
                         self._client = None

@@ -45,7 +45,7 @@ class OpenSSHMultipleAuthTypesPlugin(Plugin):
                 ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
                 ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
 
-                if not ctx.has_attr("authtype"):
+                if not hasattr(ctx, "authtype"):
                     ctx.authtype = data
                 elif ctx.authtype != data:
                     ctx.Set("alert.classification.text", "Multiple authentication methods")

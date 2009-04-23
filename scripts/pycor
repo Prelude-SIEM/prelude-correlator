@@ -20,7 +20,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import sys, os, time, signal
-from pycor import idmef, plugins, context
+from pycor import idmef, plugins, context, siteconfig
 from optparse import OptionParser
 from PreludeEasy import ClientEasy
 
@@ -83,7 +83,7 @@ class PreludeClient:
         def stop(self):
                 self._continue = False
 
-parser = OptionParser()
+parser = OptionParser(usage="%prog", version="%%prog %s" % siteconfig.version)
 parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
 parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur")
 parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")

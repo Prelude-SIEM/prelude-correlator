@@ -17,7 +17,7 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import time, StringIO, pickle
+import os, time, StringIO, pickle
 from pycor import idmef, siteconfig
 
 _TIMER_LIST = [ ]
@@ -34,11 +34,16 @@ class Timer:
                 self._start = None
                 self._expire = expire
                 self._cb = cb_func
-                self.start()
 
         def _timerExpireCallback(self):
                 self.stop()
                 self._cb(self)
+
+        def running(self):
+                return self._start != None
+
+        def setExpire(self, expire):
+                self._expire = expire
 
         def start(self):
                 if not self._start:
@@ -65,17 +70,19 @@ class Context(idmef.IDMEF, Timer):
                 self._alert_on_expire = options.get("alert_on_expire", False)
 
                 if update and _CONTEXT_TABLE.has_key(name):
-                        if isinstance(self, Timer):
-                                self.reset()
+                        if Timer.running(self):
+                                Timer.reset(self)
                         return
 
                 self._name = name
+                _CONTEXT_TABLE[name] = self
+
+                idmef.IDMEF.__init__(self)
+                Timer.__init__(self, 0)
 
                 if options.has_key("expire"):
-                        Timer.__init__(self, options["expire"])
-
-                _CONTEXT_TABLE[name] = self
-                idmef.IDMEF.__init__(self)
+                        Timer.setExpire(self, options["expire"])
+                        Timer.start(self)
 
         def __new__(cls, name, options={}, update=False):
                 if update and _CONTEXT_TABLE.has_key(name):
@@ -115,11 +122,12 @@ def save():
         pickle.dump(_CONTEXT_TABLE, fd)
 
 def load():
-        try:
+        if os.path.exists(siteconfig.lib_dir + "/context.dat"):
                 fd = open(siteconfig.lib_dir + "/context.dat", "r")
-                _CONTEXT_TABLE.update(pickle.load(fd))
-        except:
-                pass
+                try:
+                        _CONTEXT_TABLE.update(pickle.load(fd))
+                except EOFError:
+                        return
 
 def wakeup(now):
         for timer in _TIMER_LIST:

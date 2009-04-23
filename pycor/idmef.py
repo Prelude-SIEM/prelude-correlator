@@ -47,10 +47,13 @@ class IDMEF(PreludeEasy.IDMEF):
                 return odict
 
         def Get(self, path, flatten=True, replacement=None):
-                value = PreludeEasy.IDMEF.Get(self, path)
+                path = PreludeEasy.IDMEFPath(path)
+
+                value = path.Get(self)
                 if not value:
-                        if flatten and not replacement:
-                                return []
+                        if path.IsAmbiguous() and flatten:
+                                return replacement or []
+
                         return replacement
 
                 if flatten and type(value) is tuple:

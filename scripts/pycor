@@ -31,15 +31,14 @@ class PreludeClient:
                 self._print_input = print_input
                 self._print_output = print_output
                 self._continue = True
+                self._dry_run = dry_run
 
                 self._pm = plugins.PluginManager()
                 print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
-                if not dry_run:
-                        self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE, "prelude-correlator", "Correlator")
-                        self._client.Start()
-                else:
-                        self._client = None
+                self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE, "prelude-correlator", "Correlator")
+                self._client.Start()
+
 
         def _handle_event(self, idmef):
                 if self._print_input:
@@ -54,7 +53,7 @@ class PreludeClient:
         def correlationAlert(self, idmef):
                 self._alert_generated = self._alert_generated + 1
 
-                if self._client:
+                if not self._dry_run:
                         self._client.SendIDMEF(idmef)
 
                 if self._print_output:
@@ -85,7 +84,7 @@ class PreludeClient:
 
 parser = OptionParser(usage="%prog", version="%%prog %s" % siteconfig.version)
 parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
-parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur")
+parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
 parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
 parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
 parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
@@ -141,7 +140,7 @@ signal.signal(signal.SIGQUIT, handle_signal)
 # restore previous context.
 context.load()
 
-prelude_client = PreludeClient(print_input=ifd, print_output=ofd)
+prelude_client = PreludeClient(print_input=ifd, print_output=ofd, dry_run=options.dry_run)
 idmef.set_prelude_client(prelude_client)
 prelude_client.recvEvent()
 

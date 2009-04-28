@@ -24,57 +24,62 @@ from pycor.idmef import IDMEF
 from pycor.plugins import Plugin
 from pycor.context import Context, Timer
 
-DSHIELD_RELOAD = 7 * 24 * 60 * 60
-DSHIELD_URI = "/ipsascii.html?limit=10000"
-DSHIELD_SRV = "www.dshield.org"
-
-iphash = { }
-
-def load_dshield_data(fname, age = 0):
-    cnt = 0
-    fd = open(fname, "r")
-
-    iphash.clear()
-
-    for line in fd:
-        if line[0] != '#':
-            iphash[line.split('\t')[0]] = True
-            cnt = cnt + 1
-
-    Timer(DSHIELD_RELOAD - age, retrieve_dshield_data)
-
-
-def retrieve_dshield_data(timer=None):
-    fname = siteconfig.lib_dir + "/dshield.dat"
-
-    try:
-        st = os.stat(fname)
-        if time.time() - st.st_mtime < DSHIELD_RELOAD:
-            return load_dshield_data(fname, time.time() - st.st_mtime)
-    except:
-        pass
-
-    print("Downloading host list from dshield, this might take some time...")
-    con = httplib.HTTPConnection(DSHIELD_SRV)
-    con.request("GET", DSHIELD_URI)
-    r = con.getresponse()
-    if r.status != 200:
-        return
-
-    fd = open(fname, "w")
-    fd.write(r.read())
-    fd.close()
-
-    print("Downloading done, processing data.")
-    load_dshield_data(fname)
-
-
-retrieve_dshield_data()
 
 class DshieldPlugin(Plugin):
+    DSHIELD_RELOAD = 7 * 24 * 60 * 60
+    DSHIELD_SERVER = "www.dshield.org"
+    DSHIELD_URI = "www.dshield.org/ipsascii.html?limit=10000"
+
+    def __loadData(fname, age=0):
+        cnt = 0
+        self.__iphash.clear()
+
+        for line in open(fname, "r"):
+            if line[0] != '#':
+                self.__iphash[line.split('\t')[0]] = True
+                cnt = cnt + 1
+
+        Timer(self.__reload - age, self.__retrieveData)
+
+    def __retrieveData(self, timer=None):
+        fname = siteconfig.lib_dir + "/dshield.dat"
+
+        try:
+            st = os.stat(fname)
+            if time.time() - st.st_mtime < self.__reload:
+                return self.__loadData(fname, time.time() - st.st_mtime)
+        except:
+            pass
+
+        print("Downloading host list from dshield, this might take some time...")
+        con = httplib.HTTPConnection(self.__server)
+        con.request("GET", self.__uri)
+        r = con.getresponse()
+        if r.status != 200:
+            return
+
+        fd = open(fname, "w")
+        fd.write(r.read())
+        fd.close()
+
+        print("Downloading done, processing data.")
+        self.__loadData(fname)
+
+
+    def __init__(self):
+        print "init"
+
+        self.__iphash = { }
+        self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
+        self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
+        self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
+
+        print "retr"
+        self.__retrieveData()
+
     def run(self, idmef):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
-            if iphash.has_key(source):
+            if self.__iphash.has_key(source):
                 ca = IDMEF()
                 ca.Set("alert.source(>>)", idmef.Get("alert.source"))
                 ca.Set("alert.target(>>)", idmef.Get("alert.target"))

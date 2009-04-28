@@ -30,7 +30,7 @@ class DshieldPlugin(Plugin):
     DSHIELD_SERVER = "www.dshield.org"
     DSHIELD_URI = "www.dshield.org/ipsascii.html?limit=10000"
 
-    def __loadData(fname, age=0):
+    def __loadData(self, fname, age=0):
         cnt = 0
         self.__iphash.clear()
 

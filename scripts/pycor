@@ -36,7 +36,8 @@ class PreludeClient:
                 self._pm = plugins.PluginManager()
                 print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
-                self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE, "prelude-correlator", "Correlator")
+                self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
+                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies", siteconfig.version)
                 self._client.Start()
 
 

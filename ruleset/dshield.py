@@ -67,14 +67,11 @@ class DshieldPlugin(Plugin):
 
 
     def __init__(self):
-        print "init"
-
         self.__iphash = { }
         self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
         self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
         self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
 
-        print "retr"
         self.__retrieveData()
 
     def run(self, idmef):

@@ -17,16 +17,39 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import sys, os, traceback
 from pycor import siteconfig
+import ConfigParser, sys, os, traceback
+
+
+config = ConfigParser.ConfigParser()
+config.read(siteconfig.conf_dir + '/plugins.conf')
 
 
 class Plugin(object):
+    enable = True
+
+    def getConfigValue(self, key, replacement=None):
+        if not config.has_section(self.__module__):
+            return replacement
+
+        try:
+            return config.get(self.__module__, key)
+        except ConfigParser.NoOptionError:
+            return replacement
+
     def run(self, idmef):
         pass
 
+
 class PluginManager:
-    _instances = []
+    __instances = []
+
+    def __initPlugin(self, plugin):
+        p = plugin()
+        if p.enable:
+            self.__instances.append(p)
+
+        self._count = self._count + 1
 
     def __init__(self):
         self._count = 0
@@ -37,14 +60,13 @@ class PluginManager:
             pl = __import__(os.path.splitext(file)[0], None, None, [''])
 
         for plugin in Plugin.__subclasses__():
-            self._instances.append(plugin())
-            self._count = self._count + 1
+            self.__initPlugin(plugin)
 
     def getPluginCount(self):
         return self._count
 
     def run(self, idmef):
-        for plugin in self._instances:
+        for plugin in self.__instances:
             try:
                 plugin.run(idmef)
             except Exception, e:

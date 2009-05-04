@@ -18,8 +18,8 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import re
-from pycor.plugins import Plugin
-from pycor.context import Context
+from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.context import Context
 
 class BrutePlugin(Plugin):
     def _BruteForce(self, idmef):

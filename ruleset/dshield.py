@@ -19,10 +19,10 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
-from pycor import siteconfig
-from pycor.idmef import IDMEF
-from pycor.plugins import Plugin
-from pycor.context import Context, Timer
+from PreludeCorrelator import siteconfig
+from PreludeCorrelator.idmef import IDMEF
+from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.context import Context, Timer
 
 
 class DshieldPlugin(Plugin):

@@ -22,8 +22,8 @@
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.
 
-from pycor import context
-from pycor.plugins import Plugin
+from PreludeCorrelator import context
+from PreludeCorrelator.plugins import Plugin
 
 class WormPlugin(Plugin):
     def run(self, idmef):

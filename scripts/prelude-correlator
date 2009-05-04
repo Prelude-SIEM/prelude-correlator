@@ -20,7 +20,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import sys, os, time, signal
-from pycor import idmef, plugins, context, siteconfig
+from PreludeCorrelator import idmef, plugins, context, siteconfig
 from optparse import OptionParser
 from PreludeEasy import ClientEasy
 

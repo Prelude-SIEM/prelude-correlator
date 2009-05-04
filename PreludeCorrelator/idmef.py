@@ -19,7 +19,7 @@
 
 import tempfile, re
 import PreludeEasy
-from pycor import utils
+from PreludeCorrelator import utils
 
 _RegexType = type(re.compile(""))
 

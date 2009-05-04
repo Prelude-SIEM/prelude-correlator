@@ -18,8 +18,8 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import re
-from pycor import context
-from pycor.plugins import Plugin
+from PreludeCorrelator import context
+from PreludeCorrelator.plugins import Plugin
 
 class FirewallPlugin(Plugin):
     def run(self, idmef):

@@ -18,7 +18,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, time, StringIO, pickle
-from pycor import idmef, siteconfig
+from PreludeCorrelator import idmef, siteconfig
 
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }

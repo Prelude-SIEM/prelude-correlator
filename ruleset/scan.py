@@ -20,8 +20,8 @@
 # Detect Eventscan:
 # Playing multiple events from a single host against another single host
 
-from pycor.context import Context
-from pycor.plugins import Plugin
+from PreludeCorrelator.context import Context
+from PreludeCorrelator.plugins import Plugin
 
 class EventScanPlugin(Plugin):
     def run(self, idmef):

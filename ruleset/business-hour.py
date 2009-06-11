@@ -27,7 +27,8 @@ class BusinessHourPlugin(Plugin):
     def run(self, idmef):
 
         t = time.localtime(int(idmef.Get("alert.create_time")))
-        if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour >= 9 or t.tm_hour <= 18):
+
+        if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour < 9 or t.tm_hour > 17):
                 return
 
         if idmef.Get("alert.assessment.impact.completion") != "succeeded":

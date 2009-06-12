@@ -15,10 +15,10 @@ class my_install(install):
 
                 if not os.path.exists(self.prefix + "/var/lib/prelude-correlator"):
                         os.makedirs(self.prefix + "/var/lib/prelude-correlator")
-                        
+
                 self.init_siteconfig()
                 install.run(self)
-                
+
         def init_siteconfig(self):
                 config = open("PreludeCorrelator/siteconfig.py", "w")
                 print >> config, "conf_dir = '%s'" % os.path.abspath(self.conf_prefix)

@@ -88,7 +88,7 @@ class Context(idmef.IDMEF, Timer):
                 if update and _CONTEXT_TABLE.has_key(name):
                         return _CONTEXT_TABLE[name]
 
-                return super(Context, cls).__new__(cls, name, options, update)
+                return super(Context, cls).__new__(cls)
 
 
         def CheckAndDecThreshold(self):

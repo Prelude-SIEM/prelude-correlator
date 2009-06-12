@@ -22,7 +22,10 @@
 import sys, os, time, signal
 from PreludeCorrelator import idmef, plugins, context, siteconfig
 from optparse import OptionParser
-from PreludeEasy import ClientEasy
+from PreludeEasy import ClientEasy, CheckVersion
+
+if not CheckVersion(siteconfig.libprelude_required_version):
+        raise Exception, ("Libprelude version '%s' is required" % siteconfig.libprelude_required_version)
 
 class PreludeClient:
         def __init__(self, print_input=None, print_output=None, dry_run=False):

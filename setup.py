@@ -5,6 +5,7 @@ from distutils.command.install import install
 from distutils.core import setup
 
 PRELUDE_CORRELATOR_VERSION = "0.1"
+LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
 
 class my_install(install):
         def run(self):
@@ -25,6 +26,7 @@ class my_install(install):
                 print >> config, "ruleset_dir = '%s'" % os.path.abspath(self.conf_prefix + "/ruleset")
                 print >> config, "lib_dir = '%s'" % os.path.abspath(self.prefix + "/var/lib/prelude-correlator")
                 print >> config, "version = '%s'" % PRELUDE_CORRELATOR_VERSION
+                print >> config, "libprelude_required_version = '%s'" % LIBPRELUDE_REQUIRED_VERSION
                 config.close()
 
 setup(name="pycor",

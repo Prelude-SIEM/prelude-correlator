@@ -29,7 +29,7 @@ class my_install(install):
                 print >> config, "libprelude_required_version = '%s'" % LIBPRELUDE_REQUIRED_VERSION
                 config.close()
 
-setup(name="pycor",
+setup(name="prelude-corelator",
       version=PRELUDE_CORRELATOR_VERSION,
       maintainer = "Yoann Vandoorselaere",
       maintainer_email = "yoann.v@prelude-ids.com",

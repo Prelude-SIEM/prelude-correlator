@@ -21,7 +21,7 @@
 import os, httplib, time
 from PreludeCorrelator import siteconfig
 from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 from PreludeCorrelator.context import Context, Timer
 
 

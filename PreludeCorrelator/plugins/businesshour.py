@@ -19,7 +19,7 @@
 
 import time
 from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 
 # Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
 

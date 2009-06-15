@@ -1,0 +1,14 @@
+[PreludeCorrelator.plugins]
+OpenSSHAuthPlugin = PreludeCorrelator.plugins.opensshauth:OpenSSHAuthPlugin
+EventSweepPlugin = PreludeCorrelator.plugins.scan:EventSweepPlugin
+BusinessHourPlugin = PreludeCorrelator.plugins.businesshour:BusinessHourPlugin
+WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin
+FirewallPlugin = PreludeCorrelator.plugins.firewall:FirewallPlugin
+BruteForcePlugin = PreludeCorrelator.plugins.bruteforce:BruteForcePlugin
+EventStormPlugin = PreludeCorrelator.plugins.scan:EventStormPlugin
+DshieldPlugin = PreludeCorrelator.plugins.dshield:DshieldPlugin
+EventScanPlugin = PreludeCorrelator.plugins.scan:EventScanPlugin
+
+[console_scripts]
+prelude-correlator = PreludeCorrelator.main:main
+

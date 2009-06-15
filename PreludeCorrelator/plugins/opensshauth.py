@@ -18,11 +18,11 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 from PreludeCorrelator.context import Context
 
 
-class OpenSSHMultipleAuthTypesPlugin(Plugin):
+class OpenSSHAuthPlugin(Plugin):
     def run(self, idmef):
         if idmef.Get("alert.analyzer(-1).manufacturer") != "OpenSSH":
                 return

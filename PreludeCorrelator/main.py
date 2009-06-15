@@ -19,10 +19,16 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+import pkg_resources
 import sys, os, time, signal
-from PreludeCorrelator import idmef, plugins, context, siteconfig
+from PreludeCorrelator import idmef, pluginmanager, context, siteconfig
 from optparse import OptionParser
 from PreludeEasy import ClientEasy, CheckVersion
+
+
+prelude_client = None
+VERSION = pkg_resources.get_distribution('prelude-correlator').version
+
 
 if not CheckVersion(siteconfig.libprelude_required_version):
         raise Exception, ("Libprelude version '%s' is required" % siteconfig.libprelude_required_version)
@@ -36,11 +42,11 @@ class PreludeClient:
                 self._continue = True
                 self._dry_run = dry_run
 
-                self._pm = plugins.PluginManager()
+                self._pm = pluginmanager.PluginManager()
                 print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
                 self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
-                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies", siteconfig.version)
+                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies", VERSION)
                 self._client.Start()
 
 
@@ -86,48 +92,6 @@ class PreludeClient:
         def stop(self):
                 self._continue = False
 
-parser = OptionParser(usage="%prog", version="%%prog %s" % siteconfig.version)
-parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
-parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
-parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
-parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
-parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
-parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
-parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
-(options, args) = parser.parse_args()
-
-ifd = None
-if options.print_input:
-        if options.print_input == "-":
-                ifd = sys.stdout
-        else:
-                ifd = open(options.print_input, "w")
-
-ofd = None
-if options.print_output:
-        if options.print_output == "-":
-                ofd = sys.stdout
-        else:
-                ofd = open(options.print_output, "w")
-
-if options.daemon:
-    if os.fork():
-        os._exit(0)
-
-    os.setsid()
-    if os.fork():
-        os._exit(0)
-
-    os.umask(077)
-
-    fd = os.open('/dev/null', os.O_RDWR)
-    for i in xrange(3):
-        os.dup2(fd, i)
-
-    os.close(fd)
-    if options.pidfile:
-        open(pidfile, "w").write(str(os.getpid()))
-
 
 def handle_signal(signum, frame):
         print 'Signal handler called with signal', signum
@@ -137,17 +101,63 @@ def handle_signal(signum, frame):
         else:
                 prelude_client.stop()
 
-signal.signal(signal.SIGTERM, handle_signal)
-signal.signal(signal.SIGINT, handle_signal)
-signal.signal(signal.SIGQUIT, handle_signal)
+def main():
+        global prelude_client
 
-# restore previous context.
-context.load()
+        parser = OptionParser(usage="%prog", version="%prog " + VERSION)
+        parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
+        parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
+        parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
+        parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
+        parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
+        parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
+        parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
+        (options, args) = parser.parse_args()
 
-prelude_client = PreludeClient(print_input=ifd, print_output=ofd, dry_run=options.dry_run)
-idmef.set_prelude_client(prelude_client)
-prelude_client.recvEvent()
+        ifd = None
+        if options.print_input:
+                if options.print_input == "-":
+                        ifd = sys.stdout
+                else:
+                        ifd = open(options.print_input, "w")
 
-# save existing context
-context.save()
+        ofd = None
+        if options.print_output:
+                if options.print_output == "-":
+                        ofd = sys.stdout
+                else:
+                        ofd = open(options.print_output, "w")
+
+        if options.daemon:
+            if os.fork():
+                os._exit(0)
+
+            os.setsid()
+            if os.fork():
+                os._exit(0)
+
+            os.umask(077)
+
+            fd = os.open('/dev/null', os.O_RDWR)
+            for i in xrange(3):
+                os.dup2(fd, i)
+
+            os.close(fd)
+            if options.pidfile:
+                open(pidfile, "w").write(str(os.getpid()))
+
+        prelude_client = PreludeClient(print_input=ifd, print_output=ofd, dry_run=options.dry_run)
+        idmef.set_prelude_client(prelude_client)
+
+        signal.signal(signal.SIGTERM, handle_signal)
+        signal.signal(signal.SIGINT, handle_signal)
+        signal.signal(signal.SIGQUIT, handle_signal)
+
+        # restore previous context.
+        context.load()
+
+        prelude_client.recvEvent()
+
+        # save existing context
+        context.save()
 

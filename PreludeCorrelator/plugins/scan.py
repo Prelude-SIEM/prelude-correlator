@@ -21,7 +21,7 @@
 # Playing multiple events from a single host against another single host
 
 from PreludeCorrelator.context import Context
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 
 class EventScanPlugin(Plugin):
     def run(self, idmef):

@@ -18,10 +18,10 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import re
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 from PreludeCorrelator.context import Context
 
-class BrutePlugin(Plugin):
+class BruteForcePlugin(Plugin):
     def _BruteForce(self, idmef):
         sadd = idmef.Get("alert.source(*).node.address(*).address")
         tadd = idmef.Get("alert.target(*).node.address(*).address")

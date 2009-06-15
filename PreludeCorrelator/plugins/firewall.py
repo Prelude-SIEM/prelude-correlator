@@ -19,7 +19,7 @@
 
 import re
 from PreludeCorrelator import context
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 
 class FirewallPlugin(Plugin):
     def run(self, idmef):

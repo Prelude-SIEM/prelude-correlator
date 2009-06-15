@@ -23,7 +23,7 @@
 # other hosts multiple times, an event is generated.
 
 from PreludeCorrelator import context
-from PreludeCorrelator.plugins import Plugin
+from PreludeCorrelator.pluginmanager import Plugin
 
 class WormPlugin(Plugin):
     def run(self, idmef):

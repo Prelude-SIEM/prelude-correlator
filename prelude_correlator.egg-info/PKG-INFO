@@ -1,0 +1,34 @@
+Metadata-Version: 1.0
+Name: prelude-correlator
+Version: 0.1
+Summary: Prelude-Correlator perform real time correlation of events received by Prelude
+Home-page: http://www.prelude-ids.com
+Author: Yoann Vandoorselaere
+Author-email: yoann.v@prelude-ids.com
+License: UNKNOWN
+Download-URL: http://www.prelude-ids.com/development/download/
+Description: 
+        Prelude-Correlator perform real time correlation of events received by Prelude.
+        
+        Several isolated alerts, generated from different sensors, can thus
+        trigger a single CorrelationAlert should the events be related. This
+        CorrelationAlert then appears within the Prewikka interface and
+        indicates the potential target information via the set of correlation
+        rules.
+        
+        Signature creation with Prelude-Correlator is based on the Python
+        programming language. Prelude's integrated correlation engine is
+        distributed with a default set of correlation rules, yet you still
+        have the opportunity to modify and create any correlation rule that
+        suits your needs.
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Security
+Classifier: Topic :: System :: Monitoring

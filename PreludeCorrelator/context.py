@@ -66,13 +66,13 @@ class Context(idmef.IDMEF, Timer):
                 idmef.IDMEF.__setstate__(self, dict)
 
         def __init__(self, name, options={}, update=False):
-                self._threshold = options.get("threshold", -1)
-                self._alert_on_expire = options.get("alert_on_expire", False)
-
                 if update and _CONTEXT_TABLE.has_key(name):
                         if Timer.running(self):
                                 Timer.reset(self)
                         return
+
+                self._threshold = options.get("threshold", -1)
+                self._alert_on_expire = options.get("alert_on_expire", False)
 
                 self._name = name
                 _CONTEXT_TABLE[name] = self

@@ -28,7 +28,7 @@ from PreludeCorrelator.context import Context, Timer
 class DshieldPlugin(Plugin):
     DSHIELD_RELOAD = 7 * 24 * 60 * 60
     DSHIELD_SERVER = "www.dshield.org"
-    DSHIELD_URI = "www.dshield.org/ipsascii.html?limit=10000"
+    DSHIELD_URI = "/ipsascii.html?limit=10000"
 
     def __loadData(self, fname, age=0):
         cnt = 0
@@ -56,7 +56,7 @@ class DshieldPlugin(Plugin):
         con.request("GET", self.__uri)
         r = con.getresponse()
         if r.status != 200:
-            return
+            raise Exception, "Could not download DShield host list, error %d" % r.status
 
         fd = open(fname, "w")
         fd.write(r.read())

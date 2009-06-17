@@ -75,7 +75,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 if not isinstance(needle, _RegexType):
                         ret = value == needle
                 else:
-                        m = needle.match(value or "")
+                        m = needle.search(value or "")
                         if not m:
                                 return False
 
@@ -92,7 +92,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 i = 0
                 while i < len(args):
                         r = self._match(args[i], args[i + 1])
-                        if not r:
+                        if r is False:
                                 return None
 
                         elif isinstance(r, tuple):
@@ -100,7 +100,10 @@ class IDMEF(PreludeEasy.IDMEF):
 
                         i += 2
 
-                return ret
+                if ret:
+                        return ret
+
+                return True
 
         def reset(self):
                 return

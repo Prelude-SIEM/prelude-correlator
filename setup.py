@@ -6,9 +6,19 @@ use_setuptools()
 import os
 from setuptools import setup, find_packages
 from setuptools.command.install import install
+from setuptools.command.sdist import sdist
 
 PRELUDE_CORRELATOR_VERSION = "0.1"
 LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
+
+
+class my_sdist(sdist):
+        def __init__(self, *args, **kwargs):
+                fin = os.popen('git log --summary --stat --no-merges --date=short', 'r')
+                fout = open('ChangeLog', 'w')
+                fout.write(fin.read())
+                fout.close()
+                sdist.__init__(self, *args)
 
 class my_install(install):
         def run(self):
@@ -85,5 +95,5 @@ suits your needs.
                 ]
         },
 
-        cmdclass = { 'install': my_install }
+        cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

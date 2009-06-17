@@ -1,3 +1,4 @@
+ChangeLog
 README
 ez_setup.py
 setup.py

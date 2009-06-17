@@ -109,6 +109,13 @@ class IDMEF(PreludeEasy.IDMEF):
                 global prelude_client
                 prelude_client.correlationAlert(self)
 
+        def addAlertReference(self, idmef):
+                self.Set("alert.source(>>)", idmef.Get("alert.source"))
+                self.Set("alert.target(>>)", idmef.Get("alert.target"))
+                self.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
+                self.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+
+
 
 def set_prelude_client(client):
         global prelude_client

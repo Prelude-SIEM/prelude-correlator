@@ -90,7 +90,6 @@ class Context(idmef.IDMEF, Timer):
 
                 return super(Context, cls).__new__(cls)
 
-
         def CheckAndDecThreshold(self):
                 self._threshold = self._threshold - 1
                 if self._threshold == 0:

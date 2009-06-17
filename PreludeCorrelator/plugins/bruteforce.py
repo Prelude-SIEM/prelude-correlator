@@ -31,10 +31,7 @@ class BruteForcePlugin(Plugin):
         for source in sadd:
             for target in tadd:
                 ctx = Context("BRUTE_ST_" + source + target, { "expire": 2, "threshold": 5 }, update = True)
-                ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-                ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-                ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+                ctx.addAlertReference(idmef)
 
                 if ctx.CheckAndDecThreshold():
                     ctx.Set("alert.classification.text", "Brute force attack")
@@ -51,10 +48,7 @@ class BruteForcePlugin(Plugin):
 
         for user in userid:
             ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 2 }, update = True)
-            ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-            ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-            ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-            ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+            ctx.addAlertReference(idmef)
 
             if ctx.CheckAndDecThreshold():
                 ctx.Set("alert.classification.text", "Brute force attack")

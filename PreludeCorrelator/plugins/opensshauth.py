@@ -40,10 +40,7 @@ class OpenSSHAuthPlugin(Plugin):
         for username in idmef.Get("alert.target(*).user.user_id(*).name"):
             for target in idmef.Get("alert.target(*).node.address(*).address"):
                 ctx = Context("SSH_MAT_" + target + username, {"threshold": 1}, update = True)
-                ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-                ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-                ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+                ctx.addAlertReference(idmef)
 
                 if not hasattr(ctx, "authtype"):
                     ctx.authtype = data

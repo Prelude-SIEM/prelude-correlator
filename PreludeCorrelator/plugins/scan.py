@@ -34,10 +34,7 @@ class EventScanPlugin(Plugin):
         for saddr in source:
             for daddr in target:
                 ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30 }, update = True)
-                ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
-                ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-                ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
+                ctx.addAlertReference(idmef)
 
                 if ctx.CheckAndDecThreshold():
                     ctx.Set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
@@ -70,10 +67,7 @@ class EventSweepPlugin(Plugin):
                         break
 
             if insert:
-                ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-                ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-                ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+                ctx.addAlertReference(idmef)
 
                 if ctx.CheckAndDecThreshold():
                     ctx.Set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
@@ -96,10 +90,7 @@ class EventStormPlugin(Plugin):
         for saddr in source:
             ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150 }, update = True)
 
-            ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-            ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-            ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-            ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+            ctx.addAlertReference(idmef)
 
             if ctx.CheckAndDecThreshold():
                 ctx.Set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")

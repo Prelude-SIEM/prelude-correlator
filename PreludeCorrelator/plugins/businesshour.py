@@ -35,10 +35,7 @@ class BusinessHourPlugin(Plugin):
                 return
 
         ca = IDMEF()
-        ca.Set("alert.source", idmef.Get("alert.source"))
-        ca.Set("alert.target", idmef.Get("alert.target"))
+        ca.addAlertReference(idmef)
         ca.Set("alert.classification", idmef.Get("alert.classification"))
-        ca.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-        ca.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
         ca.Set("alert.correlation_alert.name", "Critical system activity on day off")
         ca.alert()

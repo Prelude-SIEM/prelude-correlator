@@ -43,10 +43,7 @@ class WormPlugin(Plugin):
             if not ctx:
                 continue
 
-            ctx.Set("alert.source(>>)", idmef.Get("alert.source"))
-            ctx.Set("alert.target(>>)", idmef.Get("alert.target"))
-            ctx.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-            ctx.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+            ctx.addAlertReference(idmef)
 
             # Increase and check the context threshold.
             if ctx.CheckAndDecThreshold():

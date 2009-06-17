@@ -78,10 +78,7 @@ class DshieldPlugin(Plugin):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             if self.__iphash.has_key(source):
                 ca = IDMEF()
-                ca.Set("alert.source(>>)", idmef.Get("alert.source"))
-                ca.Set("alert.target(>>)", idmef.Get("alert.target"))
-                ca.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                ca.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+                ca.addAlertReference(idmef)
                 ca.Set("alert.classification.text", "IP source matching Dshield database")
                 ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
                 ca.Set("alert.assessment.impact.description", "Dshield gather IP addresses tagged from firewall logs drops")

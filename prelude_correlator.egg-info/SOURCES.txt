@@ -1,4 +1,8 @@
+AUTHORS
+COPYING
 ChangeLog
+HACKING.README
+NEWS
 README
 ez_setup.py
 setup.py

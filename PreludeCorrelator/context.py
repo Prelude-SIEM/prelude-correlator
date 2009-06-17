@@ -37,7 +37,10 @@ class Timer:
 
         def _timerExpireCallback(self):
                 self.stop()
-                self._cb(self)
+                try:
+                        self._cb(self)
+                except:
+                        pass
 
         def running(self):
                 return self._start != None

@@ -1,0 +1,50 @@
+* 2009-06-17, prelude-correlator-0.9.0-beta4:
+
+- Initial Python Correlator version. Rationale for the switch available here:
+  http://lists.prelude-ids.org/pipermail/prelude-user/2009-April/005163.html
+
+- Support DShield <http://www.dshield.org/> correlation!
+
+
+* 2008-07-11, prelude-correlator-0.9.0-beta3:
+
+- Add missing AUTHORS file.
+
+- Allow setting 'nil' IDMEF value using IDMEF:set() (#297). 
+
+- Fix ctx:set() typo in the business-hour.lua rulese (#297).
+
+
+* 2008-07-03, prelude-correlator-0.9.0-beta2:
+
+- Fix issues with the business-hour ruleset, that tried updating a non
+  existing context. This rule does not need a context at all, rather a
+  simple IDMEF object is sufficiant.
+
+- Always return a table when retrieving multiple path (even
+  with empty path). Fix #295.
+
+- Correct multi-path detection (was not working with exactly two IDMEF
+  path).
+    
+- Fix invalid installation path under certain conditions, thanks
+  to Steve Grubb <sgrubb@redhat.com> for pointing that out.
+
+
+* 2008-06-27, prelude-correlator-0.9.0-beta1b:
+
+- Fix invalid installation path under certain conditions.
+
+
+* 2008-06-27, prelude-correlator-0.9.0-beta1a:
+
+- Always use $(DESTDIR) when installing files.
+
+- Check for lua.pc as well as lua5.1.pc, since different distribution
+  seems to be using different default.
+
+
+* 2008-06-27, prelude-correlator-0.9.0-beta1:
+
+- First Prelude-Correlator release.
+

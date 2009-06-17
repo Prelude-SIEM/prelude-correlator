@@ -46,12 +46,12 @@ class Plugin(object):
 class PluginManager:
     def __init__(self):
         self._count = 0
-        self.__instance = []
+        self.__instances = []
 
         for entrypoint in pkg_resources.iter_entry_points(ENTRYPOINT):
             plugin_class = entrypoint.load()
 
-            self.__instance.append(plugin_class())
+            self.__instances.append(plugin_class())
             self._count += 1
 
     def getPluginCount(self):

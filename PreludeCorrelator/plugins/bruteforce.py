@@ -64,5 +64,5 @@ class BruteForcePlugin(Plugin):
                            "alert.assessment.impact.completion", "failed"):
             return
 
-        self._BruteForce()
-        self._BruteUserForce()
+        self._BruteForce(idmef)
+        self._BruteUserForce(idmef)

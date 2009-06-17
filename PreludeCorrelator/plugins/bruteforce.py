@@ -47,7 +47,7 @@ class BruteForcePlugin(Plugin):
             return
 
         for user in userid:
-            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 2 }, update = True)
+            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5 }, update = True)
             ctx.addAlertReference(idmef)
 
             if ctx.CheckAndDecThreshold():

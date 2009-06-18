@@ -75,7 +75,7 @@ class DshieldPlugin(Plugin):
         self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
         self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
         self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
-        self.__timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT)
+        self.__timeout = float(self.getConfigValue("timeout", self.DSHIELD_TIMEOUT))
         self.__retrieveData()
 
     def run(self, idmef):

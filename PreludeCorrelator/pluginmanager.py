@@ -54,7 +54,13 @@ class PluginManager:
         for entrypoint in pkg_resources.iter_entry_points(ENTRYPOINT):
             plugin_class = entrypoint.load()
 
-            self.__instances.append(plugin_class(env))
+            try:
+                pi = plugin_class(env)
+            except Exception, e:
+                env.logger.warning("Exception occurred while loading %s: %s" % (plugin_class.__name__, e))
+                continue
+
+            self.__instances.append(pi)
             self._count += 1
 
     def getPluginCount(self):

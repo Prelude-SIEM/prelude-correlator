@@ -7,6 +7,7 @@ README
 ez_setup.py
 setup.py
 PreludeCorrelator/__init__.py
+PreludeCorrelator/config.py
 PreludeCorrelator/context.py
 PreludeCorrelator/idmef.py
 PreludeCorrelator/log.py

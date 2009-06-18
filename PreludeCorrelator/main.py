@@ -24,11 +24,13 @@ import sys, os, time, signal
 from optparse import OptionParser
 from PreludeEasy import ClientEasy, CheckVersion
 from PreludeCorrelator import __version__ as VERSION
-from PreludeCorrelator import idmef, pluginmanager, context, siteconfig, log
+from PreludeCorrelator import idmef, pluginmanager, context, siteconfig, log, config
+
 
 class Env:
         def __init__(self):
                 self.logger = log.Log()
+                self.config = config.Config(siteconfig.conf_dir + '/prelude-correlator.conf')
 
 
 class SignalHandler:

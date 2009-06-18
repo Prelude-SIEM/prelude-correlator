@@ -17,61 +17,42 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import pkg_resources
-import ConfigParser, sys, os, traceback
+import pkg_resources, sys, os, traceback, ConfigParser
 from PreludeCorrelator import siteconfig
 
-
-config = ConfigParser.ConfigParser()
-config.read(siteconfig.conf_dir + '/prelude-correlator.conf')
-
-ENTRYPOINT = 'PreludeCorrelator.plugins'
 
 class Plugin(object):
     enable = True
 
+    def getConfigValue(self, option, default=None):
+        return self.env.config.get(self.__class__.__name__, option, default=default)
+
     def __init__(self, env):
         self.env = env
-
-    def getConfigValue(self, key, replacement=None):
-        if not config.has_section(self.__class__.__name__):
-            return replacement
-
-        try:
-            return config.get(self.__class__.__name__, key)
-        except ConfigParser.NoOptionError:
-            return replacement
 
     def run(self, idmef):
         pass
 
 
 class PluginManager:
-    def _parseBoolean(self, b):
-        if type(b) is bool:
-                return b
-
-        b = b.strip().lower()
-        if b == "true" or b == "yes":
-                return True
-
-        return False
+    __ENTRYPOINT = 'PreludeCorrelator.plugins'
 
     def __init__(self, env):
         self._count = 0
         self.__instances = []
 
-        for entrypoint in pkg_resources.iter_entry_points(ENTRYPOINT):
+        for entrypoint in pkg_resources.iter_entry_points(self.__ENTRYPOINT):
             plugin_class = entrypoint.load()
+            pname = plugin_class.__name__
+
+            if env.config.getAsBool(pname, "disable", default=False) is True:
+                env.logger.info("%s disabled on user request" % (pname))
+                continue
 
             try:
                 pi = plugin_class(env)
             except Exception, e:
-                env.logger.warning("Exception occurred while loading %s: %s" % (plugin_class.__name__, e))
-                continue
-
-            if self._parseBoolean(pi.getConfigValue("disable", False)) is True:
-                env.logger.info("%s disabled on user request" % (plugin_class.__name__))
+                env.logger.warning("Exception occurred while loading %s: %s" % (pname, e))
                 continue
 
             self.__instances.append(pi)

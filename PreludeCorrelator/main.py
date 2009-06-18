@@ -155,7 +155,7 @@ def main():
 
             os.close(fd)
             if options.pidfile:
-                open(pidfile, "w").write(str(os.getpid()))
+                open(options.pidfile, "w").write(str(os.getpid()))
 
         env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
         idmef.set_prelude_client(env.prelude_client)

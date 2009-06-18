@@ -23,7 +23,7 @@ from PreludeCorrelator import siteconfig
 
 
 config = ConfigParser.ConfigParser()
-config.read(siteconfig.conf_dir + '/plugins.conf')
+config.read(siteconfig.conf_dir + '/prelude-correlator.conf')
 
 ENTRYPOINT = 'PreludeCorrelator.plugins'
 

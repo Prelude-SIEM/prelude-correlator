@@ -29,6 +29,7 @@ class DshieldPlugin(Plugin):
     DSHIELD_RELOAD = 7 * 24 * 60 * 60
     DSHIELD_SERVER = "www.dshield.org"
     DSHIELD_URI = "/ipsascii.html?limit=10000"
+    DSHIELD_TIMEOUT = 10
 
     def __loadData(self, fname, age=0):
         cnt = 0
@@ -53,7 +54,7 @@ class DshieldPlugin(Plugin):
 
         self.env.logger.info("Downloading host list from dshield, this might take some time...")
 
-        con = httplib.HTTPConnection(self.__server)
+        con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
         con.request("GET", self.__uri)
         r = con.getresponse()
         if r.status != 200:
@@ -74,7 +75,7 @@ class DshieldPlugin(Plugin):
         self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
         self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
         self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
-
+        self.__timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT)
         self.__retrieveData()
 
     def run(self, idmef):

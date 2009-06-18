@@ -1,3 +1,31 @@
+* 2009-06-18, prelude-correlator-0.9.0-beta4:
+
+- A bug prevented prelude-correlator from starting in daemon mode when
+  using the '--pidfile' option. Fixes #355.
+
+- Prevent prelude-correlator from abording if a plugin fail. Emit
+  a warning explaining why a given plugin couldn't load, and continue
+  processing.
+
+- Implement a timeout for Dshield.org server connection. The default
+  is 10 seconds, and might be modified from the prelude-correlator.conf
+  configuration file. This prevent Dshield host list loading from
+  blocking forever, and fixes #353.
+
+- Make it possible to disable plugin (fixes #354), by adding the following setting 
+  in prelude-correlator.conf:
+
+  [PluginClassName]
+  disable = true
+
+- Read plugin configuration from prelude-correlator.conf
+
+- Use the Python logging facility.
+
+- Correct copyright notice, add missing AUTHORS, COPYING, HACKING.README files.
+
+
+
 * 2009-06-17, prelude-correlator-0.9.0-beta4:
 
 - Initial Python Correlator version. Rationale for the switch available here:

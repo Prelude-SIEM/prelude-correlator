@@ -47,6 +47,16 @@ class Plugin(object):
 
 
 class PluginManager:
+    def _parseBoolean(self, b):
+        if type(b) is bool:
+                return b
+
+        b = b.strip().lower()
+        if b == "true" or b == "yes":
+                return True
+
+        return False
+
     def __init__(self, env):
         self._count = 0
         self.__instances = []
@@ -58,6 +68,10 @@ class PluginManager:
                 pi = plugin_class(env)
             except Exception, e:
                 env.logger.warning("Exception occurred while loading %s: %s" % (plugin_class.__name__, e))
+                continue
+
+            if self._parseBoolean(pi.getConfigValue("disable", False)) is True:
+                env.logger.info("%s disabled on user request" % (plugin_class.__name__))
                 continue
 
             self.__instances.append(pi)

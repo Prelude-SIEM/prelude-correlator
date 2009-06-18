@@ -30,6 +30,9 @@ ENTRYPOINT = 'PreludeCorrelator.plugins'
 class Plugin(object):
     enable = True
 
+    def __init__(self, env):
+        self.env = env
+
     def getConfigValue(self, key, replacement=None):
         if not config.has_section(self.__class__.__name__):
             return replacement
@@ -44,14 +47,14 @@ class Plugin(object):
 
 
 class PluginManager:
-    def __init__(self):
+    def __init__(self, env):
         self._count = 0
         self.__instances = []
 
         for entrypoint in pkg_resources.iter_entry_points(ENTRYPOINT):
             plugin_class = entrypoint.load()
 
-            self.__instances.append(plugin_class())
+            self.__instances.append(plugin_class(env))
             self._count += 1
 
     def getPluginCount(self):

@@ -137,10 +137,10 @@ def wakeup(now):
                         timer._timerExpireCallback()
 
 
-def stats():
+def stats(logger):
         now = time.time()
         for ctx in _CONTEXT_TABLE.values():
                 if not ctx._start:
-                        print("[%s]: threshold=%d" % (ctx._name, ctx._threshold))
+                        logger.info("[%s]: threshold=%d" % (ctx._name, ctx._threshold))
                 else:
-                        print("[%s]: threshold=%d expire=%d" % (ctx._name, ctx._threshold, ctx._expire - (now - ctx._start)))
+                        logger.info("[%s]: threshold=%d expire=%d" % (ctx._name, ctx._threshold, ctx._expire - (now - ctx._start)))

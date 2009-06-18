@@ -9,6 +9,7 @@ setup.py
 PreludeCorrelator/__init__.py
 PreludeCorrelator/context.py
 PreludeCorrelator/idmef.py
+PreludeCorrelator/log.py
 PreludeCorrelator/main.py
 PreludeCorrelator/pluginmanager.py
 PreludeCorrelator/siteconfig.py

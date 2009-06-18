@@ -21,20 +21,38 @@
 
 import pkg_resources
 import sys, os, time, signal
-from PreludeCorrelator import idmef, pluginmanager, context, siteconfig
 from optparse import OptionParser
 from PreludeEasy import ClientEasy, CheckVersion
+from PreludeCorrelator import idmef, pluginmanager, context, siteconfig, log
 
 
-prelude_client = None
 VERSION = pkg_resources.get_distribution('prelude-correlator').version
 
 
-if not CheckVersion(siteconfig.libprelude_required_version):
-        raise Exception, ("Libprelude version '%s' is required" % siteconfig.libprelude_required_version)
+class Env:
+        def __init__(self):
+                self.logger = log.Log()
+
+
+class SignalHandler:
+        def __init__(self, env):
+                self._env = env
+                signal.signal(signal.SIGTERM, self._handle_signal)
+                signal.signal(signal.SIGINT, self._handle_signal)
+                signal.signal(signal.SIGQUIT, self._handle_signal)
+
+        def _handle_signal(self, signum, frame):
+                self._env.logger.info("caught signal %d" % signum)
+                if signum == signal.SIGQUIT:
+                        self._env.prelude_client.stats()
+                        context.stats(self._env.logger)
+                else:
+                        self._env.prelude_client.stop()
+
 
 class PreludeClient:
-        def __init__(self, print_input=None, print_output=None, dry_run=False):
+        def __init__(self, env, print_input=None, print_output=None, dry_run=False):
+                self._env = env
                 self._message_processed = 0
                 self._alert_generated = 0
                 self._print_input = print_input
@@ -42,11 +60,12 @@ class PreludeClient:
                 self._continue = True
                 self._dry_run = dry_run
 
-                self._pm = pluginmanager.PluginManager()
-                print ("%d plugin have been loaded." % (self._pm.getPluginCount()))
+                self._pm = pluginmanager.PluginManager(env)
+                self._env.logger.info("%d plugin have been loaded." % (self._pm.getPluginCount()))
 
                 self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
-                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies", VERSION)
+                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies",
+                                          VERSION)
                 self._client.Start()
 
 
@@ -58,7 +77,7 @@ class PreludeClient:
                 self._message_processed += 1
 
         def stats(self):
-                print("%d message received, %d correlationAlert generated." % (self._message_processed, self._alert_generated))
+                self._env.logger.info("%d message received, %d correlationAlert generated." % (self._message_processed, self._alert_generated))
 
         def correlationAlert(self, idmef):
                 self._alert_generated = self._alert_generated + 1
@@ -93,16 +112,11 @@ class PreludeClient:
                 self._continue = False
 
 
-def handle_signal(signum, frame):
-        print 'Signal handler called with signal', signum
-        if signum == signal.SIGQUIT:
-                prelude_client.stats()
-                context.stats()
-        else:
-                prelude_client.stop()
-
 def main():
-        global prelude_client
+        if not CheckVersion(siteconfig.libprelude_required_version):
+                raise Exception, ("Libprelude version '%s' is required" % siteconfig.libprelude_required_version)
+
+        env = Env()
 
         parser = OptionParser(usage="%prog", version="%prog " + VERSION)
         parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
@@ -146,18 +160,15 @@ def main():
             if options.pidfile:
                 open(pidfile, "w").write(str(os.getpid()))
 
-        prelude_client = PreludeClient(print_input=ifd, print_output=ofd, dry_run=options.dry_run)
-        idmef.set_prelude_client(prelude_client)
+        env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
+        idmef.set_prelude_client(env.prelude_client)
 
-        signal.signal(signal.SIGTERM, handle_signal)
-        signal.signal(signal.SIGINT, handle_signal)
-        signal.signal(signal.SIGQUIT, handle_signal)
+        SignalHandler(env)
 
         # restore previous context.
         context.load()
 
-        prelude_client.recvEvent()
+        env.prelude_client.recvEvent()
 
         # save existing context
         context.save()
-

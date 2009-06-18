@@ -23,11 +23,8 @@ import pkg_resources
 import sys, os, time, signal
 from optparse import OptionParser
 from PreludeEasy import ClientEasy, CheckVersion
+from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, siteconfig, log
-
-
-VERSION = pkg_resources.get_distribution('prelude-correlator').version
-
 
 class Env:
         def __init__(self):

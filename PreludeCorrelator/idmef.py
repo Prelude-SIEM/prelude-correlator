@@ -52,7 +52,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 value = path.Get(self)
                 if not value:
                         if path.IsAmbiguous() and flatten:
-                                return replacement or []
+                                return replacement or ()
 
                         return replacement
 

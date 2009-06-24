@@ -42,6 +42,16 @@ class Timer:
                 except:
                         pass
 
+        def hasExpired(self, now=time.time()):
+                return self.elapsed(now) >= self._expire
+
+        def check(self, now=time.time()):
+                if self.hasExpired(now):
+                        self._timerExpireCallback()
+
+        def elapsed(self, now=time.time()):
+                return now - self._start
+
         def running(self):
                 return self._start != None
 
@@ -133,9 +143,7 @@ def load():
 
 def wakeup(now):
         for timer in _TIMER_LIST:
-                if now - timer._start >= timer._expire:
-                        timer._timerExpireCallback()
-
+                timer.check(now)
 
 def stats(logger):
         now = time.time()

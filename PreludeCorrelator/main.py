@@ -31,6 +31,9 @@ class Env:
         def __init__(self):
                 self.logger = log.Log()
                 self.config = config.Config(siteconfig.conf_dir + '/prelude-correlator.conf')
+                self.pluginmanager = pluginmanager.PluginManager(self)
+
+                self.logger.info("%d plugin have been loaded." % (self.pluginmanager.getPluginCount()))
 
 
 class SignalHandler:
@@ -42,6 +45,8 @@ class SignalHandler:
 
         def _handle_signal(self, signum, frame):
                 self._env.logger.info("caught signal %d" % signum)
+                self._env.pluginmanager.signal(signum, frame)
+
                 if signum == signal.SIGQUIT:
                         self._env.prelude_client.stats()
                         context.stats(self._env.logger)
@@ -59,9 +64,6 @@ class PreludeClient:
                 self._continue = True
                 self._dry_run = dry_run
 
-                self._pm = pluginmanager.PluginManager(env)
-                self._env.logger.info("%d plugin have been loaded." % (self._pm.getPluginCount()))
-
                 self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
                                           "Prelude-Correlator", "Correlator", "PreludeIDS Technologies",
                                           VERSION)
@@ -72,7 +74,7 @@ class PreludeClient:
                 if self._print_input:
                         self._print_input.write(str(idmef))
 
-                self._pm.run(idmef)
+                self._env.pluginmanager.run(idmef)
                 self._message_processed += 1
 
         def stats(self):

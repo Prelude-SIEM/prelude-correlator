@@ -30,6 +30,9 @@ class Plugin(object):
     def __init__(self, env):
         self.env = env
 
+    def signal(self, signo, frame):
+        pass
+
     def run(self, idmef):
         pass
 
@@ -60,6 +63,13 @@ class PluginManager:
 
     def getPluginCount(self):
         return self._count
+
+    def signal(self, signo, frame):
+        for plugin in self.__instances:
+            try:
+                plugin.signal(signo, frame)
+            except Exception, e:
+                traceback.print_exc()
 
     def run(self, idmef):
         for plugin in self.__instances:

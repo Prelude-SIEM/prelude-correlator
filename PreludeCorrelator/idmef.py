@@ -67,6 +67,12 @@ class IDMEF(PreludeEasy.IDMEF):
                         if cur and value.Match(cur, PreludeEasy.IDMEFCriterion.OPERATOR_EQUAL) > 0:
                                 return
 
+                elif type(value) is tuple or type(value) is list:
+                        if value: # not empty
+                                raise Exception, "Invalid input value"
+
+                        value = None
+
                 PreludeEasy.IDMEF.Set(self, path, value)
 
         def _match(self, path, needle):

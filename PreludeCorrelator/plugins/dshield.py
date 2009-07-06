@@ -30,49 +30,50 @@ class DshieldPlugin(Plugin):
     DSHIELD_SERVER = "www.dshield.org"
     DSHIELD_URI = "/ipsascii.html?limit=10000"
     DSHIELD_TIMEOUT = 10
+    DSHIELD_FILENAME = siteconfig.lib_dir + "/dshield.dat"
 
     def __ipNormalize(self, ip):
         return ".".join([ i.lstrip("0") for i in ip.split(".") ])
 
-    def __loadData(self, fname, age=0):
-        cnt = 0
+    def __loadData(self, age=0):
         self.__iphash.clear()
 
-        for line in open(fname, "r"):
+        for line in open(self.__filename, "r"):
             if line[0] == '#':
                 continue
 
             ip, reports, attacks, first_seen, last_seen = line.split('\t')
             self.__iphash[self.__ipNormalize(ip)] = (int(reports), int(attacks), first_seen, last_seen)
 
-            cnt = cnt + 1
+        if self.__reload > 0:
+            Timer(self.__reload - age, self.__retrieveData).start()
 
-        Timer(self.__reload - age, self.__retrieveData).start()
-
-    def __retrieveData(self, timer=None):
-        fname = siteconfig.lib_dir + "/dshield.dat"
-
-        try:
-            st = os.stat(fname)
-            if time.time() - st.st_mtime < self.__reload:
-                return self.__loadData(fname, time.time() - st.st_mtime)
-        except:
-            pass
-
+    def __downloadData(self):
         self.info("Downloading host list, this might take some time...")
 
         con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
+
         con.request("GET", self.__uri)
         r = con.getresponse()
         if r.status != 200:
             raise Exception, "Could not download DShield host list, error %d" % r.status
 
-        fd = open(fname, "w")
+        fd = open(self.__filename, "w")
         fd.write(r.read())
         fd.close()
 
         self.info("Downloading done, processing data.")
-        self.__loadData(fname)
+
+    def __retrieveData(self, timer=None):
+        try:
+            st = os.stat(self.__filename)
+            if self.__reload <= 0 or time.time() - st.st_mtime < self.__reload:
+                return self.__loadData(time.time() - st.st_mtime)
+        except OSError:
+            pass
+
+        self.__downloadData()
+        self.__loadData()
 
 
     def __init__(self, env):
@@ -80,6 +81,7 @@ class DshieldPlugin(Plugin):
 
         self.__iphash = { }
         self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
+        self.__filename = self.getConfigValue("filename", self.DSHIELD_FILENAME)
         self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
         self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
         self.__timeout = float(self.getConfigValue("timeout", self.DSHIELD_TIMEOUT))

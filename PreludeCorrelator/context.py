@@ -132,6 +132,7 @@ def search(name):
 def save():
         fd = open(siteconfig.lib_dir + "/context.dat", "w")
         pickle.dump(_CONTEXT_TABLE, fd)
+        fd.close()
 
 def load():
         if os.path.exists(siteconfig.lib_dir + "/context.dat"):

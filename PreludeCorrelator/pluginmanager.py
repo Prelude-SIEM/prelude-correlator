@@ -21,7 +21,28 @@ import pkg_resources, sys, os, traceback, ConfigParser
 from PreludeCorrelator import siteconfig
 
 
-class Plugin(object):
+class PluginLog:
+    def __init__(self, env):
+        self.__logger = env.logger
+        self.__prefix = "[" + self.__class__.__name__ + "]: "
+
+    def debug(self, log):
+        self.__logger.debug(self.__prefix + log)
+
+    def info(self, log):
+        self.__logger.info(self.__prefix + log)
+
+    def warning(self, log):
+        self.__logger.warning(self.__prefix + log)
+
+    def error(self, log):
+        self.__logger.error(self.__prefix + log)
+
+    def critical(self, log):
+        self.__logger.critical(self.__prefix + log)
+
+
+class Plugin(object, PluginLog):
     enable = True
 
     def getConfigValue(self, option, default=None):
@@ -29,6 +50,7 @@ class Plugin(object):
 
     def __init__(self, env):
         self.env = env
+        PluginLog.__init__(self, env)
 
     def signal(self, signo, frame):
         pass

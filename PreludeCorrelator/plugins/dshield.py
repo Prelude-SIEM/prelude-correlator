@@ -59,7 +59,7 @@ class DshieldPlugin(Plugin):
         except:
             pass
 
-        self.env.logger.info("Downloading host list from dshield, this might take some time...")
+        self.info("Downloading host list, this might take some time...")
 
         con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
         con.request("GET", self.__uri)
@@ -71,7 +71,7 @@ class DshieldPlugin(Plugin):
         fd.write(r.read())
         fd.close()
 
-        self.env.logger.info("Downloading done, processing data.")
+        self.info("Downloading done, processing data.")
         self.__loadData(fname)
 
 

@@ -17,11 +17,38 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-
+import PreludeEasy
 import logging, logging.config, logging.handlers, sys, os, siteconfig
 
 class Log(logging.Logger):
+    def __log_callback(self, level, log):
+        log = log.rstrip('\n')
+
+        if level == PreludeEasy.PreludeLog.DEBUG:
+            self.debug(log)
+
+        elif level == PreludeEasy.PreludeLog.INFO:
+            self.info(log)
+
+        elif level == PreludeEasy.PreludeLog.WARNING:
+            self.warning(log)
+
+        elif level == PreludeEasy.PreludeLog.ERROR:
+            self.error(log)
+
+        elif level == PreludeEasy.PreludeLog.CRITICAL:
+            self.critical(log)
+
+        else:
+            self.warnings(("[unknown:%d] " % level) + log)
+
     def __init__(self):
+        try:
+                PreludeEasy.PreludeLog.SetCallback(self.__log_callback)
+        except:
+                # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
+                pass
+
         try:
                 logging.config.fileConfig(siteconfig.conf_dir + "/prelude-correlator.conf")
         except Exception, e:
@@ -39,6 +66,9 @@ class Log(logging.Logger):
 
     def warning(self, log):
         self._logger.warning(log, extra = { "pid": os.getpid() })
+
+    def error(self, log):
+        self._logger.error(log, extra = { "pid": os.getpid() })
 
     def critical(self, log):
         self._logger.critical(log, extra = { "pid": os.getpid() })

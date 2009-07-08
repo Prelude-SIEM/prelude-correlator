@@ -51,7 +51,10 @@ class DshieldPlugin(Plugin):
     def __downloadData(self):
         self.info("Downloading host list, this might take some time...")
 
-        con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
+        try:
+            con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
+        except TypeError:
+            con = httplib.HTTPConnection(self.__server)
 
         con.request("GET", self.__uri)
         r = con.getresponse()

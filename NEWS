@@ -12,7 +12,7 @@
   configuration file. This prevent Dshield host list loading from
   blocking forever, and fixes #353.
 
-- Make it possible to disable plugin (fixes #354), by adding the following setting 
+- Make it possible to disable plugin (fixes #354), by adding the following setting
   in prelude-correlator.conf:
 
   [PluginClassName]
@@ -38,7 +38,7 @@
 
 - Add missing AUTHORS file.
 
-- Allow setting 'nil' IDMEF value using IDMEF:set() (#297). 
+- Allow setting 'nil' IDMEF value using IDMEF:set() (#297).
 
 - Fix ctx:set() typo in the business-hour.lua rulese (#297).
 
@@ -54,7 +54,7 @@
 
 - Correct multi-path detection (was not working with exactly two IDMEF
   path).
-    
+
 - Fix invalid installation path under certain conditions, thanks
   to Steve Grubb <sgrubb@redhat.com> for pointing that out.
 

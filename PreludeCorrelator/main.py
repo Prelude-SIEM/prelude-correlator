@@ -31,10 +31,10 @@ LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
 
 
 class Env:
-        def __init__(self):
-                self.logger = log.Log()
+        def __init__(self, conf_filename):
+                self.logger = log.Log(conf_filename)
 
-                self.config = config.Config(require.get_config_filename(None, "prelude-correlator.conf"))
+                self.config = config.Config(conf_filename)
                 self.pluginmanager = pluginmanager.PluginManager(self)
 
                 self.logger.info("%d plugin have been loaded." % (self.pluginmanager.getPluginCount()))
@@ -121,10 +121,10 @@ def main():
         if not CheckVersion(LIBPRELUDE_REQUIRED_VERSION):
                 raise Exception, ("Libprelude version '%s' is required" % LIBPRELUDE_REQUIRED_VERSION)
 
-        env = Env()
+        config_filename = require.get_config_filename(None, "prelude-correlator.conf")
 
         parser = OptionParser(usage="%prog", version="%prog " + VERSION)
-        parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE")
+        parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE", default=config_filename)
         parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
         parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
         parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
@@ -132,6 +132,8 @@ def main():
         parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
         parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
         (options, args) = parser.parse_args()
+
+        env = Env(options.config)
 
         ifd = None
         if options.print_input:

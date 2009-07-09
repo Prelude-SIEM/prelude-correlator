@@ -21,22 +21,40 @@ class my_sdist(sdist):
                 sdist.__init__(self, *args)
 
 class my_install(install):
-        def run(self):
-                if self.prefix:
-                        self.conf_prefix = self.prefix + "/etc/prelude-correlator"
+        def __install_data(self):
+                data_files = self.distribution.data_files
+                self.distribution.data_files = []
+
+                if self.prefix == "/usr":
+                        prefix = "/"
                 else:
-                        self.conf_prefix = "/etc/prelude-correlator"
+                        prefix = self.prefix or ""
 
-                if not os.path.exists(self.prefix + "/var/lib/prelude-correlator"):
-                        os.makedirs(self.prefix + "/var/lib/prelude-correlator")
+                root = self.root or ""
+                for dir, files in data_files:
+                        dir = os.path.abspath(os.path.join(root, prefix, dir))
 
-                self.init_siteconfig()
+                        self.mkpath(dir)
+                        for f in files:
+                                dest = os.path.join(dir, os.path.basename(f))
+                                if dest[-4:] == "conf" and os.path.exists(dest):
+                                        dest += "-dist"
+
+                                self.copy_file(f, dest)
+
+        def run(self):
+                prefix = self.prefix
+                if prefix == "/usr":
+                        prefix = ""
+
+                self.init_siteconfig(prefix)
+                self.__install_data()
                 install.run(self)
 
-        def init_siteconfig(self):
+        def init_siteconfig(self, prefix):
                 config = open("PreludeCorrelator/siteconfig.py", "w")
-                print >> config, "conf_dir = '%s'" % os.path.abspath(self.conf_prefix)
-                print >> config, "lib_dir = '%s'" % os.path.abspath(self.prefix + "/var/lib/prelude-correlator")
+                print >> config, "conf_dir = '%s'" % os.path.abspath(prefix + "/etc/prelude-correlator")
+                print >> config, "lib_dir = '%s'" % os.path.abspath(prefix + "/var/lib/prelude-correlator")
                 print >> config, "libprelude_required_version = '%s'" % LIBPRELUDE_REQUIRED_VERSION
                 config.close()
 

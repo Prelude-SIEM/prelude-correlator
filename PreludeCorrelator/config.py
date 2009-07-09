@@ -24,9 +24,9 @@ class Config(ConfigParser.ConfigParser):
                 ConfigParser.ConfigParser.__init__(self)
                 self.read(filename)
 
-        def get(self, section, option, raw=None, vars=None, default=None):
+        def get(self, section, option, raw=None, vars=None, default=None, type=str):
                 try:
-                        return ConfigParser.ConfigParser.get(self, section, option, raw, vars)
+                        return type(ConfigParser.ConfigParser.get(self, section, option, raw, vars))
 
                 except ConfigParser.NoSectionError:
                         return default

@@ -44,8 +44,8 @@ class PluginLog:
 class Plugin(object, PluginLog):
     enable = True
 
-    def getConfigValue(self, option, default=None):
-        return self.env.config.get(self.__class__.__name__, option, default=default)
+    def getConfigValue(self, option, default=None, type=str):
+        return self.env.config.get(self.__class__.__name__, option, default=default, type=type)
 
     def __init__(self, env):
         self.env = env

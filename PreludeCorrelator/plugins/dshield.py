@@ -83,11 +83,11 @@ class DshieldPlugin(Plugin):
         Plugin.__init__(self, env)
 
         self.__iphash = { }
-        self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD)
+        self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD, type=int)
         self.__filename = self.getConfigValue("filename", self.DSHIELD_FILENAME)
         self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
         self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
-        self.__timeout = float(self.getConfigValue("timeout", self.DSHIELD_TIMEOUT))
+        self.__timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT, type=float)
         self.__retrieveData()
 
     def run(self, idmef):

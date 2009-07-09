@@ -18,7 +18,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, time, StringIO, pickle
-from PreludeCorrelator import idmef, siteconfig
+from PreludeCorrelator import idmef, require
 
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
@@ -129,14 +129,17 @@ def search(name):
 
     return None
 
+
+_ctxt_filename = require.get_data_filename(None, "context.dat")
+
 def save():
-        fd = open(siteconfig.lib_dir + "/context.dat", "w")
+        fd = open(_ctxt_filename, "w")
         pickle.dump(_CONTEXT_TABLE, fd)
         fd.close()
 
 def load():
-        if os.path.exists(siteconfig.lib_dir + "/context.dat"):
-                fd = open(siteconfig.lib_dir + "/context.dat", "r")
+        if os.path.exists(_ctxt_filename):
+                fd = open(_ctxt_filename, "r")
                 try:
                         _CONTEXT_TABLE.update(pickle.load(fd))
                 except EOFError:

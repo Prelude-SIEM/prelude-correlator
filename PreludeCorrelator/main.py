@@ -19,18 +19,22 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import pkg_resources
+import require
 import sys, os, time, signal
 from optparse import OptionParser
 from PreludeEasy import ClientEasy, CheckVersion
 from PreludeCorrelator import __version__ as VERSION
-from PreludeCorrelator import idmef, pluginmanager, context, siteconfig, log, config
+from PreludeCorrelator import idmef, pluginmanager, context, log, config
+
+
+LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
 
 
 class Env:
         def __init__(self):
                 self.logger = log.Log()
-                self.config = config.Config(siteconfig.conf_dir + '/prelude-correlator.conf')
+
+                self.config = config.Config(require.get_config_filename(None, "prelude-correlator.conf"))
                 self.pluginmanager = pluginmanager.PluginManager(self)
 
                 self.logger.info("%d plugin have been loaded." % (self.pluginmanager.getPluginCount()))
@@ -114,8 +118,8 @@ class PreludeClient:
 
 
 def main():
-        if not CheckVersion(siteconfig.libprelude_required_version):
-                raise Exception, ("Libprelude version '%s' is required" % siteconfig.libprelude_required_version)
+        if not CheckVersion(LIBPRELUDE_REQUIRED_VERSION):
+                raise Exception, ("Libprelude version '%s' is required" % LIBPRELUDE_REQUIRED_VERSION)
 
         env = Env()
 

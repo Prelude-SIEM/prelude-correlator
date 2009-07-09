@@ -18,7 +18,6 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import pkg_resources, sys, os, traceback, ConfigParser
-from PreludeCorrelator import siteconfig
 
 
 class PluginLog:

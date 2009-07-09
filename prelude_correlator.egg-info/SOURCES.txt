@@ -5,6 +5,7 @@ HACKING.README
 NEWS
 README
 ez_setup.py
+prelude-correlator.conf
 setup.py
 PreludeCorrelator/__init__.py
 PreludeCorrelator/config.py
@@ -13,11 +14,13 @@ PreludeCorrelator/idmef.py
 PreludeCorrelator/log.py
 PreludeCorrelator/main.py
 PreludeCorrelator/pluginmanager.py
+PreludeCorrelator/require.py
 PreludeCorrelator/siteconfig.py
 PreludeCorrelator/utils.py
 PreludeCorrelator/plugins/__init__.py
 PreludeCorrelator/plugins/bruteforce.py
 PreludeCorrelator/plugins/businesshour.py
+PreludeCorrelator/plugins/dshield.dat
 PreludeCorrelator/plugins/dshield.py
 PreludeCorrelator/plugins/firewall.py
 PreludeCorrelator/plugins/opensshauth.py
@@ -27,4 +30,5 @@ prelude_correlator.egg-info/PKG-INFO
 prelude_correlator.egg-info/SOURCES.txt
 prelude_correlator.egg-info/dependency_links.txt
 prelude_correlator.egg-info/entry_points.txt
+prelude_correlator.egg-info/not-zip-safe
 prelude_correlator.egg-info/top_level.txt

@@ -18,7 +18,8 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import PreludeEasy
-import logging, logging.config, logging.handlers, sys, os, siteconfig
+from PreludeCorrelator import require
+import logging, logging.config, logging.handlers, sys, os
 
 class Log(logging.Logger):
     def __log_callback(self, level, log):
@@ -50,7 +51,7 @@ class Log(logging.Logger):
                 pass
 
         try:
-                logging.config.fileConfig(siteconfig.conf_dir + "/prelude-correlator.conf")
+                logging.config.fileConfig(require.get_config_filename(None, "prelude-correlator.conf"))
         except Exception, e:
                 DATEFMT = "%d %b %H:%M:%S"
                 FORMAT="%(asctime)s (process:%(pid)d) %(levelname)s: %(message)s"

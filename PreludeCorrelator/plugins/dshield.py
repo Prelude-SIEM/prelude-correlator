@@ -19,7 +19,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
-from PreludeCorrelator import siteconfig
+from PreludeCorrelator import require
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator.pluginmanager import Plugin
 from PreludeCorrelator.context import Context, Timer
@@ -30,7 +30,7 @@ class DshieldPlugin(Plugin):
     DSHIELD_SERVER = "www.dshield.org"
     DSHIELD_URI = "/ipsascii.html?limit=10000"
     DSHIELD_TIMEOUT = 10
-    DSHIELD_FILENAME = siteconfig.lib_dir + "/dshield.dat"
+    DSHIELD_FILENAME = require.get_data_filename(__name__, "dshield.dat")
 
     def __ipNormalize(self, ip):
         return ".".join([ i.lstrip("0") for i in ip.split(".") ])

@@ -3,22 +3,38 @@
 from ez_setup import use_setuptools
 use_setuptools()
 
-import os
+import os, sys, shutil
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
 PRELUDE_CORRELATOR_VERSION = "0.9.0-beta5"
-LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
 
 
 class my_sdist(sdist):
         def __init__(self, *args, **kwargs):
+                import httplib
+
                 fin = os.popen('git log --summary --stat --no-merges --date=short', 'r')
                 fout = open('ChangeLog', 'w')
                 fout.write(fin.read())
                 fout.close()
+
+                print "Downloading DShield database, this might take a while..."
+
+                con = httplib.HTTPConnection("www.dshield.org")
+                con.request("GET", "/ipsascii.html?limit=10000")
+                r = con.getresponse()
+                if r.status != 200:
+                        raise Exception, "Could not download DShield host list, error %d" % r.status
+
+                fd = open("PreludeCorrelator/plugins/dshield.dat", "w")
+                fd.write(r.read())
+                fd.close()
+
                 sdist.__init__(self, *args)
+
+
 
 class my_install(install):
         def __install_data(self):
@@ -50,14 +66,26 @@ class my_install(install):
                 self.init_siteconfig(prefix)
                 self.__install_data()
                 install.run(self)
+                os.remove("PreludeCorrelator/siteconfig.py")
 
         def init_siteconfig(self, prefix):
                 config = open("PreludeCorrelator/siteconfig.py", "w")
                 print >> config, "conf_dir = '%s'" % os.path.abspath(prefix + "/etc/prelude-correlator")
                 print >> config, "lib_dir = '%s'" % os.path.abspath(prefix + "/var/lib/prelude-correlator")
-                print >> config, "libprelude_required_version = '%s'" % LIBPRELUDE_REQUIRED_VERSION
                 config.close()
 
+
+is_egg = "bdist_egg" in sys.argv
+if is_egg:
+        # Make sure we remove any trace of siteconfig.py
+        try: shutil.rmtree("build")
+        except: pass
+        package_data = { '': [ "*.dat"] }
+        data_files = [ ("", ["prelude-correlator.conf"]) ]
+else:
+        package_data = {}
+        data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
+                       ("var/lib/prelude-correlator", ["PreludeCorrelator/plugins/dshield.dat"]) ]
 
 setup(
         name="prelude-correlator",
@@ -112,6 +140,10 @@ suits your needs.
                         'WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin'
                 ]
         },
+
+        zip_safe = False,
+        data_files = data_files,
+        package_data = package_data,
 
         cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

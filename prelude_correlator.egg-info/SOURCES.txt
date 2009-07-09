@@ -15,7 +15,6 @@ PreludeCorrelator/log.py
 PreludeCorrelator/main.py
 PreludeCorrelator/pluginmanager.py
 PreludeCorrelator/require.py
-PreludeCorrelator/siteconfig.py
 PreludeCorrelator/utils.py
 PreludeCorrelator/plugins/__init__.py
 PreludeCorrelator/plugins/bruteforce.py

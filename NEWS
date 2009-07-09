@@ -1,4 +1,39 @@
-* 2009-06-18, prelude-correlator-0.9.0-beta4:
+* 2009-07-09, prelude-correlator-0.9.0-beta6:
+
+- Provide a default configuration file, and fixes the prelude-correlator
+  --config option.
+
+- A rare exception could occur when IDMEF:Set() was called with
+  an empty list/tuple as the value argument.
+
+- Normalize libprelude logging through our own log callback (only
+  enabled if libprelude >= 0.9.24 is installed).
+
+- The DShield plugin didn't report any events since address loaded
+  from the DShield database weren't correctly normalized.
+
+- Automatic download + reloading of the DShield database was fixed.
+
+- DShield generated alerts now include additional details.
+
+- Make it possible to specify your own DShield database file, and to
+  prevent automatic download. This is useful on system with no direct
+  internet access.
+
+- Handle both standard installation, and EGG installation method (in EGG
+  mode, configuration and data files are self contained).
+
+- Introduce a new plugin logging mechanism.
+
+- Add some utility method to the Timer class.
+
+- Make it possible for plugin to define a 'signal' method that will
+  get called when prelude-correlator handle a signal (can be used to
+  perform special handling before exit, statistics or debugging
+  purposes).
+
+
+* 2009-06-18, prelude-correlator-0.9.0-beta5:
 
 - A bug prevented prelude-correlator from starting in daemon mode when
   using the '--pidfile' option. Fixes #355.

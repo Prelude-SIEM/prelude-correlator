@@ -48,7 +48,7 @@ class my_install(install):
 
                 root = self.root or ""
                 for dir, files in data_files:
-                        dir = os.path.abspath(os.path.join(root, prefix, dir))
+                        dir = os.path.abspath(root + os.sep + os.path.join(prefix, dir))
 
                         self.mkpath(dir)
                         for f in files:

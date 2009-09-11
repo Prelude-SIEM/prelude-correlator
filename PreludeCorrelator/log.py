@@ -49,26 +49,37 @@ class Log(logging.Logger):
                 # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
                 pass
 
+        self._have_extra = sys.version_info > (2, 4)
         try:
                 logging.config.fileConfig(conf_filename)
         except Exception, e:
                 DATEFMT = "%d %b %H:%M:%S"
-                FORMAT="%(asctime)s (process:%(pid)d) %(levelname)s: %(message)s"
+                if not self._have_extra:
+                        FORMAT="%(asctime)s %(levelname)s: %(message)s"
+                else:
+                        FORMAT="%(asctime)s (process:%(pid)d) %(levelname)s: %(message)s"
+
                 logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
 
         self._logger = logging.getLogger("prelude-correlator")
 
+    def _log(self, log_func, log, extra):
+        if self._have_extra:
+                log_func(log, extra=extra)
+        else:
+                log_func(log)
+
     def debug(self, log):
-        self._logger.debug(log, extra = { "pid": os.getpid() })
+        self._log(self._logger.debug, log, extra = { "pid": os.getpid() })
 
     def info(self, log):
-        self._logger.info(log, extra = { "pid": os.getpid() })
+        self._log(self._logger.info, log, extra = { "pid": os.getpid() })
 
     def warning(self, log):
-        self._logger.warning(log, extra = { "pid": os.getpid() })
+        self._log(self._logger.warning, log, extra = { "pid": os.getpid() })
 
     def error(self, log):
-        self._logger.error(log, extra = { "pid": os.getpid() })
+        self._log(self._logger.error, log, extra = { "pid": os.getpid() })
 
     def critical(self, log):
-        self._logger.critical(log, extra = { "pid": os.getpid() })
+        self._log(self._logger.critical, log, extra = { "pid": os.getpid() })

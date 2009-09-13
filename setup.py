@@ -12,25 +12,29 @@ PRELUDE_CORRELATOR_VERSION = "0.9.0-beta6"
 
 
 class my_sdist(sdist):
-        def __init__(self, *args, **kwargs):
+        def _downloadDatabase(self, dname, server, url, filename):
                 import httplib
 
+                print "Downloading %s database, this might take a while..." % (dname)
+
+                con = httplib.HTTPConnection(server)
+                con.request("GET", url)
+                r = con.getresponse()
+                if r.status != 200:
+                        raise Exception, "Could not download %s host list, error %d" % (dname, r.status)
+
+                fd = open(filename, "w")
+                fd.write(r.read())
+                fd.close()
+
+        def __init__(self, *args, **kwargs):
                 fin = os.popen('git log --summary --stat --no-merges --date=short', 'r')
                 fout = open('ChangeLog', 'w')
                 fout.write(fin.read())
                 fout.close()
 
-                print "Downloading DShield database, this might take a while..."
-
-                con = httplib.HTTPConnection("www.dshield.org")
-                con.request("GET", "/ipsascii.html?limit=10000")
-                r = con.getresponse()
-                if r.status != 200:
-                        raise Exception, "Could not download DShield host list, error %d" % r.status
-
-                fd = open("PreludeCorrelator/plugins/dshield.dat", "w")
-                fd.write(r.read())
-                fd.close()
+                self._downloadDatabase("DShield", "www.dshield.org", "/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
+                self._downloadDatabase("Spamhaus", "www.spamhaus.org", "/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
 
                 sdist.__init__(self, *args)
 
@@ -85,7 +89,7 @@ if is_egg:
 else:
         package_data = {}
         data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
-                       ("var/lib/prelude-correlator", ["PreludeCorrelator/plugins/dshield.dat"]) ]
+                       ("var/lib/prelude-correlator", ["PreludeCorrelator/plugins/dshield.dat", "PreludeCorrelator/plugins/spamhaus_drop.dat"]) ]
 
 setup(
         name="prelude-correlator",
@@ -137,7 +141,8 @@ suits your needs.
                         'EventScanPlugin = PreludeCorrelator.plugins.scan:EventScanPlugin',
                         'EventStormPlugin = PreludeCorrelator.plugins.scan:EventStormPlugin',
                         'EventSweepPlugin = PreludeCorrelator.plugins.scan:EventSweepPlugin',
-                        'WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin'
+                        'WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin',
+                        'SpamhausDropPlugin = PreludeCorrelator.plugins.spamhausdrop:SpamhausDropPlugin'
                 ]
         },
 

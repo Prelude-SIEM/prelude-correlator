@@ -6,6 +6,7 @@ WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin
 FirewallPlugin = PreludeCorrelator.plugins.firewall:FirewallPlugin
 BruteForcePlugin = PreludeCorrelator.plugins.bruteforce:BruteForcePlugin
 EventStormPlugin = PreludeCorrelator.plugins.scan:EventStormPlugin
+SpamhausDropPlugin = PreludeCorrelator.plugins.spamhausdrop:SpamhausDropPlugin
 DshieldPlugin = PreludeCorrelator.plugins.dshield:DshieldPlugin
 EventScanPlugin = PreludeCorrelator.plugins.scan:EventScanPlugin
 

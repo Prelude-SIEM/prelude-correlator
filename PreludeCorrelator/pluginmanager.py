@@ -66,7 +66,12 @@ class PluginManager:
         self.__instances = []
 
         for entrypoint in pkg_resources.iter_entry_points(self.__ENTRYPOINT):
-            plugin_class = entrypoint.load()
+            try:
+                plugin_class = entrypoint.load()
+            except Exception, e:
+                env.logger.warning("%s: %s" % (entrypoint, e))
+                continue
+
             pname = plugin_class.__name__
 
             if env.config.getAsBool(pname, "disable", default=False) is True:

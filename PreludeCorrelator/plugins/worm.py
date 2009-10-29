@@ -26,15 +26,26 @@ from PreludeCorrelator import context
 from PreludeCorrelator.pluginmanager import Plugin
 
 class WormPlugin(Plugin):
+    REPEAT = 5
+
+    def __init__(self, env):
+        Plugin.__init__(self, env)
+        self.__repeat_target = self.getConfigValue("repeat-target", self.REPEAT, type=int)
+
     def run(self, idmef):
         ctxt = idmef.Get("alert.classification.text")
         if not ctxt:
             return
 
         # Create context for classification combined with all the target.
+        tlist = {}
         for target in idmef.Get("alert.target(*).node.address(*).address"):
-            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300, "threshold": 5 }, update = True)
+            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300 }, update = True)
             ctx.addAlertReference(idmef)
+
+            tlist[target] = True
+            if not hasattr(ctx, "_target_list"):
+                ctx._target_list = {}
 
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             # We are trying to see whether a previous target is now attacking other hosts
@@ -44,12 +55,12 @@ class WormPlugin(Plugin):
             if not ctx:
                 continue
 
+            ctx._target_list.update(tlist)
             ctx.addAlertReference(idmef)
 
-            # Increase and check the context threshold.
-            if ctx.CheckAndDecThreshold():
+            if len(ctx._target_list) > self.__repeat_target:
                 ctx.Set("alert.classification.text", "Possible Worm Activity")
-                ctx.Set("alert.correlation_alert.name", "Source host repeating actions taken against it recently")
+                ctx.Set("alert.correlation_alert.name", "Source host is repeating actions taken against it recently")
                 ctx.Set("alert.assessment.impact.severity", "high")
                 ctx.Set("alert.assessment.impact.description", source + " has repeated actions taken against it recently at least 5 times. It may have been infected with a worm.")
                 ctx.alert()

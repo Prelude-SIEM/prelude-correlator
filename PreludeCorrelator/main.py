@@ -61,7 +61,7 @@ class SignalHandler:
 class PreludeClient:
         def __init__(self, env, print_input=None, print_output=None, dry_run=False):
                 self._env = env
-                self._message_processed = 0
+                self._events_processed = 0
                 self._alert_generated = 0
                 self._print_input = print_input
                 self._print_output = print_output
@@ -79,10 +79,10 @@ class PreludeClient:
                         self._print_input.write(str(idmef))
 
                 self._env.pluginmanager.run(idmef)
-                self._message_processed += 1
+                self._events_processed += 1
 
         def stats(self):
-                self._env.logger.info("%d message received, %d correlationAlert generated." % (self._message_processed, self._alert_generated))
+                self._env.logger.info("%d events received, %d correlationAlert generated." % (self._events_processed, self._alert_generated))
 
         def correlationAlert(self, idmef):
                 self._alert_generated = self._alert_generated + 1

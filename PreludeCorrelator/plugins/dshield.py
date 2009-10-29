@@ -19,10 +19,10 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, httplib, time
+from PreludeCorrelator import context
 from PreludeCorrelator import require
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator.pluginmanager import Plugin
-from PreludeCorrelator.context import Context, Timer
 
 
 class DshieldPlugin(Plugin):
@@ -46,7 +46,7 @@ class DshieldPlugin(Plugin):
             self.__iphash[self.__ipNormalize(ip)] = (int(reports), int(attacks), first_seen, last_seen)
 
         if self.__reload > 0:
-            Timer(self.__reload - age, self.__retrieveData).start()
+            context.Timer(self.__reload - age, self.__retrieveData).start()
 
     def __downloadData(self):
         self.info("Downloading host list, this might take some time...")
@@ -94,11 +94,14 @@ class DshieldPlugin(Plugin):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             entry = self.__iphash.get(source, None)
             if entry:
-                ca = IDMEF()
+                ca = context.search("DSHIELD_" + source)
+                if not ca:
+                    ca = context.Context("DSHIELD_" + source, { "expire": 300, "alert_on_expire": True }, update = True)
+                    ca.Set("alert.classification.text", "IP source matching Dshield database")
+                    ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
+                    ca.Set("alert.detect_time", entry[2] + " 00:00:00Z")
+                    ca.Set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
+                    ca.Set("alert.assessment.impact.severity", "high")
+
                 ca.addAlertReference(idmef)
-                ca.Set("alert.classification.text", "IP source matching Dshield database")
-                ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
-                ca.Set("alert.detect_time", entry[2] + " 00:00:00Z")
-                ca.Set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
-                ca.Set("alert.assessment.impact.severity", "high")
-                ca.alert()
+                ca.reset()

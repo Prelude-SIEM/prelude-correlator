@@ -34,6 +34,7 @@ class WormPlugin(Plugin):
         # Create context for classification combined with all the target.
         for target in idmef.Get("alert.target(*).node.address(*).address"):
             ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300, "threshold": 5 }, update = True)
+            ctx.addAlertReference(idmef)
 
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             # We are trying to see whether a previous target is now attacking other hosts

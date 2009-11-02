@@ -1,3 +1,29 @@
+* 2009-11-02, prelude-correlator-0.9.0-beta7:
+
+- Initial SpamhausDrop plugin implementation, by
+  Wes Young <wes@barely3am.com> (closes #363)
+
+- Do not discard --root parameters if prefix is absolute.
+
+- Python 2.4 backward compatibility fixes.
+
+- Handle plugin loading error gracefully.
+
+- Improve WormPlugin accuracy, and make it carry a reference to the
+  initial event. The plugin used to alert when seeing an alert to a
+  given target, and this same alert going back to the source. This can
+  happen in a number of case (example: Netbios alert triggered by Snort)
+
+  As of now, the plugin will wait for the events to be repeated against
+  at least 5 differents hosts.
+
+- Dshield CorrelationAlert now handle multiples events. Previously, we
+  used to generate a single Dshield CorrelationAlert for each events
+  where the source address would match the Dshield database. The plugin
+  now generate CorrelationAlert for multiples events received from the
+  same source.
+
+
 * 2009-07-09, prelude-correlator-0.9.0-beta6:
 
 - Provide a default configuration file, and fixes the prelude-correlator

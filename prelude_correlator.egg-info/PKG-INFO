@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: prelude-correlator
-Version: 0.9.0-beta7
+Version: 0.9.0-beta8
 Summary: Prelude-Correlator perform real time correlation of events received by Prelude
 Home-page: http://www.prelude-ids.com
 Author: Yoann Vandoorselaere

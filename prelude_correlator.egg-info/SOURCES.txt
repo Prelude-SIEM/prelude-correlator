@@ -24,6 +24,7 @@ PreludeCorrelator/plugins/dshield.py
 PreludeCorrelator/plugins/firewall.py
 PreludeCorrelator/plugins/opensshauth.py
 PreludeCorrelator/plugins/scan.py
+PreludeCorrelator/plugins/spamhaus_drop.dat
 PreludeCorrelator/plugins/spamhausdrop.py
 PreludeCorrelator/plugins/worm.py
 prelude_correlator.egg-info/PKG-INFO

@@ -112,7 +112,10 @@ class Context(idmef.IDMEF, Timer):
 
         def _timerExpireCallback(self):
                 if self._alert_on_expire:
-                        self.alert()
+                        if callable(self._alert_on_expire):
+                                self._alert_on_expire(self)
+                        else:
+                                self.alert()
 
                 self.destroy()
 

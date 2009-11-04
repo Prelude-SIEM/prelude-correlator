@@ -33,9 +33,7 @@ class EventScanPlugin(Plugin):
 
         for saddr in source:
             for daddr in target:
-                ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30 }, update = True)
-                ctx.addAlertReference(idmef)
-
+                ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30 }, update = True, idmef=idmef)
                 if ctx.CheckAndDecThreshold():
                     ctx.Set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
                     ctx.Set("alert.classification.text", "Eventscan")
@@ -88,10 +86,7 @@ class EventStormPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150 }, update = True)
-
-            ctx.addAlertReference(idmef)
-
+            ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150 }, update = True, idmef = idmef)
             if ctx.CheckAndDecThreshold():
                 ctx.Set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
                 ctx.Set("alert.classification.text", "Eventstorm")

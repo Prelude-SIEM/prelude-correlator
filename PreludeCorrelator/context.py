@@ -18,7 +18,8 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, time, StringIO, pickle
-from PreludeCorrelator import idmef, require
+from PreludeCorrelator.idmef import IDMEF
+from PreludeCorrelator import require
 
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
@@ -73,17 +74,21 @@ class Timer:
                 self.start()
 
 
-class Context(idmef.IDMEF, Timer):
+class Context(IDMEF, Timer):
         def __setstate__(self, dict):
                 Timer.__setstate__(self, dict)
-                idmef.IDMEF.__setstate__(self, dict)
+                IDMEF.__setstate__(self, dict)
 
-        def __init__(self, name, options={}, update=False):
+        def __init__(self, name, options={}, update=False, idmef=None):
                 if update and _CONTEXT_TABLE.has_key(name):
                         self._update_count += 1
 
+                        if idmef:
+                                self.addAlertReference(idmef)
+
                         if Timer.running(self):
                                 Timer.reset(self)
+
                         return
 
                 self._update_count = 0
@@ -93,14 +98,17 @@ class Context(idmef.IDMEF, Timer):
                 self._name = name
                 _CONTEXT_TABLE[name] = self
 
-                idmef.IDMEF.__init__(self)
+                IDMEF.__init__(self)
                 Timer.__init__(self, 0)
+
+                if idmef:
+                        self.addAlertReference(idmef)
 
                 if options.has_key("expire"):
                         Timer.setExpire(self, options["expire"])
                         Timer.start(self)
 
-        def __new__(cls, name, options={}, update=False):
+        def __new__(cls, name, options={}, update=False, idmef=None):
                 if update and _CONTEXT_TABLE.has_key(name):
                         return _CONTEXT_TABLE[name]
 
@@ -162,6 +170,6 @@ def stats(logger):
         now = time.time()
         for ctx in _CONTEXT_TABLE.values():
                 if not ctx._start:
-                        logger.info("[%s]: threshold=%d" % (ctx._name, ctx._threshold))
+                        logger.info("[%s]: threshold=%d update=%d" % (ctx._name, ctx._threshold, ctx._update_count))
                 else:
-                        logger.info("[%s]: threshold=%d expire=%d" % (ctx._name, ctx._threshold, ctx._expire - (now - ctx._start)))
+                        logger.info("[%s]: threshold=%d update=%d expire=%d" % (ctx._name, ctx._threshold, ctx._update_count, ctx._expire - (now - ctx._start)))

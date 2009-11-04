@@ -40,8 +40,7 @@ class WormPlugin(Plugin):
         # Create context for classification combined with all the target.
         tlist = {}
         for target in idmef.Get("alert.target(*).node.address(*).address"):
-            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300 }, update = True)
-            ctx.addAlertReference(idmef)
+            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300 }, update = True, idmef = idmef)
 
             tlist[target] = True
             if not hasattr(ctx, "_target_list"):

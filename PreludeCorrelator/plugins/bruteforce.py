@@ -30,8 +30,7 @@ class BruteForcePlugin(Plugin):
 
         for source in sadd:
             for target in tadd:
-                ctx = Context("BRUTE_ST_" + source + target, { "expire": 2, "threshold": 5 }, update = True)
-                ctx.addAlertReference(idmef)
+                ctx = Context("BRUTE_ST_" + source + target, { "expire": 2, "threshold": 5 }, update = True, idmef = idmef)
 
                 if ctx.CheckAndDecThreshold():
                     ctx.Set("alert.classification.text", "Brute force attack")
@@ -47,8 +46,7 @@ class BruteForcePlugin(Plugin):
             return
 
         for user in userid:
-            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5 }, update = True)
-            ctx.addAlertReference(idmef)
+            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5 }, update = True, idmef=idmef)
 
             if ctx.CheckAndDecThreshold():
                 ctx.Set("alert.classification.text", "Brute force attack")

@@ -42,8 +42,7 @@ class FirewallPlugin(Plugin):
                 # denial is not observed in the next 10 seconds, an event alert is generated.
 
                 if not context.search(ctxname):
-                        ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True })
+                        ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True }, idmef=idmef)
                         ctx.Set("alert.assessment", idmef.Get("alert.assessment"))
                         ctx.Set("alert.classification", idmef.Get("alert.classification"))
                         ctx.Set("alert.correlation_alert.name", "Events to firewall correlation")
-                        ctx.addAlertReference(idmef)

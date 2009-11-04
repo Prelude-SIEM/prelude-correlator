@@ -80,10 +80,13 @@ class Context(idmef.IDMEF, Timer):
 
         def __init__(self, name, options={}, update=False):
                 if update and _CONTEXT_TABLE.has_key(name):
+                        self._update_count += 1
+
                         if Timer.running(self):
                                 Timer.reset(self)
                         return
 
+                self._update_count = 0
                 self._threshold = options.get("threshold", -1)
                 self._alert_on_expire = options.get("alert_on_expire", False)
 
@@ -118,6 +121,9 @@ class Context(idmef.IDMEF, Timer):
                                 self.alert()
 
                 self.destroy()
+
+        def getUpdateCount(self):
+                return self._update_count
 
         def destroy(self):
                 if isinstance(self, Timer):

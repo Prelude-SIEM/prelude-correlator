@@ -43,10 +43,7 @@ class FirewallPlugin(Plugin):
 
                 if not context.search(ctxname):
                         ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True })
-                        ctx.Set("alert.source", idmef.Get("alert.source"))
-                        ctx.Set("alert.target", idmef.Get("alert.target"))
                         ctx.Set("alert.assessment", idmef.Get("alert.assessment"))
                         ctx.Set("alert.classification", idmef.Get("alert.classification"))
                         ctx.Set("alert.correlation_alert.name", "Events to firewall correlation")
-                        ctx.Set("alert.correlation_alert.alertident(0).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
-                        ctx.Set("alert.correlation_alert.alertident(0).alertident", idmef.Get("alert.messageid"))
+                        ctx.addAlertReference(idmef)

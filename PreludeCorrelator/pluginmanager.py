@@ -75,13 +75,13 @@ class PluginManager:
             pname = plugin_class.__name__
 
             if env.config.getAsBool(pname, "disable", default=False) is True:
-                env.logger.info("%s disabled on user request" % (pname))
+                env.logger.info("[%s]: disabled on user request" % (pname))
                 continue
 
             try:
                 pi = plugin_class(env)
             except Exception, e:
-                env.logger.warning("Exception occurred while loading %s: %s" % (pname, e))
+                env.logger.warning("[%s]: exception occurred while loading: %s" % (pname, e))
                 continue
 
             self.__instances.append(pi)

@@ -28,46 +28,46 @@ _CONTEXT_TABLE = { }
 class Timer:
         def __setstate__(self, dict):
                 self.__dict__.update(dict)
-                if self._start:
+                if self._timer_start:
                         _TIMER_LIST.append(self)
 
         def __init__(self, expire, cb_func=None):
-                self._start = None
-                self._expire = expire
-                self._cb = cb_func
+                self._timer_start = None
+                self._timer_expire = expire
+                self._timer_cb = cb_func
 
         def _timerExpireCallback(self):
                 self.stop()
                 try:
-                        self._cb(self)
+                        self._timer_cb(self)
                 except:
                         pass
 
         def hasExpired(self, now=time.time()):
-                return self.elapsed(now) >= self._expire
+                return self.elapsed(now) >= self._timer_expire
 
         def check(self, now=time.time()):
                 if self.hasExpired(now):
                         self._timerExpireCallback()
 
         def elapsed(self, now=time.time()):
-                return now - self._start
+                return now - self._timer_start
 
         def running(self):
-                return self._start != None
+                return self._timer_start != None
 
         def setExpire(self, expire):
-                self._expire = expire
+                self._timer_expire = expire
 
         def start(self):
-                if not self._start:
-                        self._start = time.time()
+                if not self._timer_start:
+                        self._timer_start = time.time()
                         _TIMER_LIST.append(self)
 
         def stop(self):
-                if self._start:
+                if self._timer_start:
                         _TIMER_LIST.remove(self)
-                        self._start = None
+                        self._timer_start = None
 
         def reset(self):
                 self.stop()
@@ -169,7 +169,7 @@ def wakeup(now):
 def stats(logger):
         now = time.time()
         for ctx in _CONTEXT_TABLE.values():
-                if not ctx._start:
+                if not ctx._timer_start:
                         logger.info("[%s]: threshold=%d update=%d" % (ctx._name, ctx._threshold, ctx._update_count))
                 else:
-                        logger.info("[%s]: threshold=%d update=%d expire=%d" % (ctx._name, ctx._threshold, ctx._update_count, ctx._expire - (now - ctx._start)))
+                        logger.info("[%s]: threshold=%d update=%d expire=%d" % (ctx._name, ctx._threshold, ctx._update_count, ctx._timer_expire - (now - ctx._timer_start)))

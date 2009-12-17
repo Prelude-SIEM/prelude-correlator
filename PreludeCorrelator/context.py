@@ -80,27 +80,25 @@ class Context(IDMEF, Timer):
                 IDMEF.__setstate__(self, dict)
 
         def __init__(self, name, options={}, update=False, idmef=None):
-                if update and hasattr(self, "_name"):
+                is_update = update and hasattr(self, "_name")
+                if is_update is False:
+                        self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
+                        IDMEF.__init__(self)
+                        Timer.__init__(self, 0)
+
+                self._options.update(options)
+                self.setOptions(self._options)
+
+                if is_update is True:
                         return
 
-                self._expire = options.get("expire", 0)
-
-                self._update_count = 0
-                self._threshold = options.get("threshold", -1)
-                self._alert_on_expire = options.get("alert_on_expire", False)
-
                 self._name = name
+                self._update_count = 0
+                self._threshold_count = 0
                 _CONTEXT_TABLE[name] = self
-
-                IDMEF.__init__(self)
-                Timer.__init__(self, 0)
 
                 if idmef:
                         self.addAlertReference(idmef)
-
-                if self._expire != 0:
-                        Timer.setExpire(self, self._expire)
-                        Timer.start(self)
 
         def __new__(cls, name, options={}, update=False, idmef=None):
                 if update:
@@ -118,20 +116,30 @@ class Context(IDMEF, Timer):
                 return super(Context, cls).__new__(cls)
 
         def CheckAndDecThreshold(self):
-                self._threshold = self._threshold - 1
-                if self._threshold == 0:
+                self._threshold_count += 1
+                if self._threshold_count == self._options["threshold"]:
                         return True
                 else:
                         return False
 
         def _timerExpireCallback(self):
-                if self._alert_on_expire:
-                        if callable(self._alert_on_expire):
-                                self._alert_on_expire(self)
+                alert_on_expire = self._options["alert_on_expire"]
+                if alert_on_expire:
+                        if callable(alert_on_expire):
+                                alert_on_expire(self)
                         else:
                                 self.alert()
 
                 self.destroy()
+
+        def getOptions(self):
+                return self._options
+
+        def setOptions(self, options={}):
+                self._options = options
+
+                Timer.setExpire(self, self._options.get("expire", 0))
+                Timer.start(self) # will only start the timer if not already running
 
         def getUpdateCount(self):
                 return self._update_count
@@ -173,6 +181,6 @@ def stats(logger):
         now = time.time()
         for ctx in _CONTEXT_TABLE.values():
                 if not ctx._timer_start:
-                        logger.info("[%s]: threshold=%d update=%d" % (ctx._name, ctx._threshold, ctx._update_count))
+                        logger.info("[%s]: threshold=%d/%d update=%d" % (ctx._name, ctx._threshold_count, ctx._options["threshold"], ctx._update_count))
                 else:
-                        logger.info("[%s]: threshold=%d update=%d expire=%d" % (ctx._name, ctx._threshold, ctx._update_count, ctx._timer_expire - (now - ctx._timer_start)))
+                        logger.info("[%s]: threshold=%d/%d update=%d expire=%d/%d" % (ctx._name, ctx._threshold_count, ctx._options["threshold"], ctx._update_count, (now - ctx._timer_start), ctx._options["expire"]))

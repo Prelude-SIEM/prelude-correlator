@@ -80,16 +80,10 @@ class Context(IDMEF, Timer):
                 IDMEF.__setstate__(self, dict)
 
         def __init__(self, name, options={}, update=False, idmef=None):
-                if update and _CONTEXT_TABLE.has_key(name):
-                        self._update_count += 1
-
-                        if idmef:
-                                self.addAlertReference(idmef)
-
-                        if Timer.running(self):
-                                Timer.reset(self)
-
+                if update and hasattr(self, "_name"):
                         return
+
+                self._expire = options.get("expire", 0)
 
                 self._update_count = 0
                 self._threshold = options.get("threshold", -1)
@@ -104,13 +98,22 @@ class Context(IDMEF, Timer):
                 if idmef:
                         self.addAlertReference(idmef)
 
-                if options.has_key("expire"):
-                        Timer.setExpire(self, options["expire"])
+                if self._expire != 0:
+                        Timer.setExpire(self, self._expire)
                         Timer.start(self)
 
         def __new__(cls, name, options={}, update=False, idmef=None):
-                if update and _CONTEXT_TABLE.has_key(name):
-                        return _CONTEXT_TABLE[name]
+                if update:
+                        ctx = search(name)
+                        if ctx:
+                                ctx._update_count += 1
+                                if idmef:
+                                        ctx.addAlertReference(idmef)
+
+                                if ctx.running():
+                                        ctx.reset()
+
+                                return ctx
 
                 return super(Context, cls).__new__(cls)
 

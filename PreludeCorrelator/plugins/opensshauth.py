@@ -23,6 +23,14 @@ from PreludeCorrelator.context import Context
 
 
 class OpenSSHAuthPlugin(Plugin):
+    def alert(self, ctx):
+        if len(ctx.authtype) > 1:
+            ctx.Set("alert.classification.text", "Multiple authentication methods")
+            ctx.Set("alert.correlation_alert.name", "Multiple authentication methods")
+            ctx.Set("alert.assessment.impact.severity", "medium")
+            ctx.Set("alert.assessment.impact.description", "Multiple ways of authenticating a single user have been found over SSH. If passphrase is the only allowed method, make sure you disable passwords.")
+            ctx.alert()
+
     def run(self, idmef):
         if idmef.Get("alert.analyzer(-1).manufacturer") != "OpenSSH":
                 return
@@ -39,15 +47,10 @@ class OpenSSHAuthPlugin(Plugin):
 
         for username in idmef.Get("alert.target(*).user.user_id(*).name"):
             for target in idmef.Get("alert.target(*).node.address(*).address"):
-                ctx = Context("SSH_MAT_" + target + username, {"threshold": 1}, update = True)
+                ctx = Context("SSH_MAT_" + target + username, { "expire": 30, "alert_on_expire": self.alert }, update = True, idmef=idmef)
                 ctx.addAlertReference(idmef)
 
                 if not hasattr(ctx, "authtype"):
-                    ctx.authtype = data
-                elif ctx.authtype != data:
-                    ctx.Set("alert.classification.text", "Multiple authentication methods")
-                    ctx.Set("alert.correlation_alert.name", "Multiple authentication methods")
-                    ctx.Set("alert.assessment.impact.severity", "medium")
-                    ctx.Set("alert.assessment.impact.description", "Multiple ways of authenticating a single user have been found over SSH. If passphrase is the only allowed method, make sure you disable passwords.")
-                    ctx.alert()
-                    ctx.destroy()
+                    ctx.authtype = { data: True }
+                else:
+                    ctx.authtype[data] = True

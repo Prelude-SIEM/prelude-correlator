@@ -108,7 +108,7 @@ class SpamhausDropPlugin(Plugin):
     def run(self, idmef):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             if IPAddress(source) in self.__mynets:
-                ca = context.Context("SPAMHAUS_" + source, { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
+                ca = Context("SPAMHAUS_" + source, { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:
                         ca.Set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
                         ca.Set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")

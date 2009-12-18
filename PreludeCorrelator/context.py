@@ -132,6 +132,13 @@ class Context(IDMEF, Timer):
 
                 self.destroy()
 
+        def stats(self, log_func, now=time.time()):
+                if not self._timer_start:
+                    log_func("[%s]: threshold=%d/%d update=%d" % (self._name, self._threshold_count, self._options["threshold"], self._update_count))
+                else:
+                    log_func("[%s]: threshold=%d/%d update=%d expire=%d/%d" % (self._name, self._threshold_count, self._options["threshold"],
+                                                                               self._update_count, self.elapsed(now), self._options["expire"]))
+
         def getOptions(self):
                 return self._options
 
@@ -180,7 +187,4 @@ def wakeup(now):
 def stats(logger):
         now = time.time()
         for ctx in _CONTEXT_TABLE.values():
-                if not ctx._timer_start:
-                        logger.info("[%s]: threshold=%d/%d update=%d" % (ctx._name, ctx._threshold_count, ctx._options["threshold"], ctx._update_count))
-                else:
-                        logger.info("[%s]: threshold=%d/%d update=%d expire=%d/%d" % (ctx._name, ctx._threshold_count, ctx._options["threshold"], ctx._update_count, (now - ctx._timer_start), ctx._options["expire"]))
+                ctx.stats(logger.info, now)

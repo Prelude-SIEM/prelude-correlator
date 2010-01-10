@@ -98,7 +98,6 @@ class DshieldPlugin(Plugin):
                 if ca.getUpdateCount() == 0:
                     ca.Set("alert.classification.text", "IP source matching Dshield database")
                     ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
-                    ca.Set("alert.detect_time", entry[2] + " 00:00:00Z")
                     ca.Set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
                     ca.Set("alert.assessment.impact.severity", "high")
 

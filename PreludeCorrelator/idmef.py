@@ -46,6 +46,13 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return odict
 
+        def getTime(self):
+                itime = self.Get("alert.detect_time")
+                if not itime:
+                        itime = self.Get("alert.create_time")
+
+                return itime
+
         def Get(self, path, flatten=True, replacement=None):
                 path = PreludeEasy.IDMEFPath(path)
 
@@ -118,7 +125,13 @@ class IDMEF(PreludeEasy.IDMEF):
                 global prelude_client
                 prelude_client.correlationAlert(self)
 
-        def addAlertReference(self, idmef):
+        def addAlertReference(self, idmef, auto_set_detect_time=True):
+                if auto_set_detect_time is True:
+                    intime = idmef.getTime()
+                    curtime = self.getTime()
+                    if (not curtime) or intime < curtime:
+                        self.Set("alert.detect_time", intime)
+
                 self.Set("alert.source(>>)", idmef.Get("alert.source"))
                 self.Set("alert.target(>>)", idmef.Get("alert.target"))
                 self.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))

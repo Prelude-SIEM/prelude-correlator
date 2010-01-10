@@ -27,7 +27,7 @@ from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
 
-LIBPRELUDE_REQUIRED_VERSION = "0.9.23"
+LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 
 class Env:

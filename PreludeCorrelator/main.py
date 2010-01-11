@@ -27,6 +27,7 @@ from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
 
+env = None
 LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 
@@ -131,6 +132,7 @@ def main():
         parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
         (options, args) = parser.parse_args()
 
+        global env
         env = Env(options)
 
         ifd = None

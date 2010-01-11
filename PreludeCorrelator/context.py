@@ -18,6 +18,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 import os, time, StringIO, pickle
+from PreludeEasy import IDMEFTime
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator import require
 
@@ -75,7 +76,7 @@ class Timer:
 
 
 class Context(IDMEF, Timer):
-        FORMAT_VERSION = 0.1
+        FORMAT_VERSION = 0.2
 
         def __setstate__(self, dict):
                 Timer.__setstate__(self, dict)
@@ -95,29 +96,112 @@ class Context(IDMEF, Timer):
                 self._name = name
                 self._update_count = 0
 
-                if _CONTEXT_TABLE.has_key(name): # Make sure any timer is deleted on overwrite
-                    _CONTEXT_TABLE[name].destroy()
-
-                _CONTEXT_TABLE[name] = self
-
                 self._options.update(options)
                 self.setOptions(self._options)
 
-                if idmef:
+                if isinstance(idmef, IDMEF):
                         self.addAlertReference(idmef)
+
+                t = self._getTime(idmef)
+                self._time_min = t - self._options["expire"]
+
+                if self._options["expire"] > 0:
+                        self._time_max = t + self._options["expire"]
+                else:
+                        self._time_max = -1
+
+                if not _CONTEXT_TABLE.has_key(name):
+                        _CONTEXT_TABLE[name] = []
+
+                _CONTEXT_TABLE[name].append(self)
+
+                x = self._mergeIntersect(debug=False)
+                if x > 0:
+                        from PreludeCorrelator.main import env
+                        env.logger.error("A context merge happened on initialization. This should NOT happen : please report this error.")
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
                 if update or (overwrite is False):
-                        ctx = search(name)
+                        ctx = search(name, idmef, update=True)
                         if ctx:
                                 if update:
                                         ctx.update(options, idmef)
+
+                                        # If a context was updated, check intersection
+                                        ctx._mergeIntersect()
                                         return ctx
 
                                 if overwrite is False:
                                         return ctx
+                else:
+                        ctx = search(name, idmef, update=False)
+                        if ctx:
+                                ctx.destroy()
 
                 return super(Context, cls).__new__(cls)
+
+        def _getTime(self, idmef=None):
+                if not idmef:
+                        return time.time()
+
+                if isinstance(idmef, IDMEFTime):
+                    return long(idmef)
+
+                return long(idmef.getTime())
+
+        def _updateTime(self, itime):
+                self._time_min = min(itime - self._options["expire"], self._time_min)
+                if self._time_max != -1:
+                        self._time_max = max(itime + self._options["expire"], self._time_max)
+
+        def _intersect(self, idmef, debug=False):
+                if isinstance(idmef, Context):
+                        itmin = idmef._time_min
+                        itmax = idmef._time_max
+                else:
+                        itime = self._getTime(idmef)
+                        itmin = itime - self._options["expire"]
+                        itmax = itime + self._options["expire"]
+
+                if (itmin <= self._time_min and (self._time_max == -1 or itmax >= self._time_min)) or \
+                   (itmin >= self._time_min and (self._time_max == -1 or itmin <= self._time_max)):
+                        return min(itmin, self._time_min), max(itmax, self._time_max)
+
+                return None
+
+        def _mergeIntersect(self, debug=False):
+            for ctx in _CONTEXT_TABLE[self._name]:
+                if ctx == self:
+                        continue
+
+                if self._intersect(ctx, debug):
+                        self.merge(ctx)
+                        return True
+
+            return False
+
+        def merge(self, ctx):
+                self._update_count += ctx._update_count
+                self._time_min = min(self._time_min, ctx._time_min)
+                self._time_max = max(self._time_max, ctx._time_max)
+
+                self.Set("alert.source(>>)", ctx.Get("alert.source"))
+                self.Set("alert.target(>>)", ctx.Get("alert.target"))
+                self.Set("alert.correlation_alert.alertident(>>)", ctx.Get("alert.correlation_alert.alertident"))
+
+                ctx.destroy()
+
+        def checkTimeWindow(self, idmef, update=True):
+                i = self._intersect(idmef)
+                if not i:
+                        return False
+
+                if update:
+                        self._time_min = i[0]
+                        if self._time_max != -1:
+                                self._time_max = i[1]
+
+                return True
 
         def _timerExpireCallback(self):
                 threshold = self._options["threshold"]
@@ -158,7 +242,13 @@ class Context(IDMEF, Timer):
                 if self._timer_start:
                         str += " expire=%d/%d" % (self.elapsed(now), self._options["expire"])
 
-                log_func("[%s]: update=%d%s" % (self._name, self._update_count, str))
+                tmin = time.strftime("%c", time.localtime(self._time_min))
+                if self._time_max == -1:
+                    tmax = "<none>"
+                else:
+                    tmax = time.strftime("%c", time.localtime(self._time_max))
+
+                log_func("[%s]: tmin=%s tmax=%s update=%d%s" % (self._name, tmin, tmax, self._update_count, str))
 
         def getOptions(self):
                 return self._options
@@ -176,8 +266,9 @@ class Context(IDMEF, Timer):
                 if isinstance(self, Timer):
                         self.stop()
 
-                del(_CONTEXT_TABLE[self._name])
-
+                _CONTEXT_TABLE[self._name].remove(self)
+                if not _CONTEXT_TABLE[self._name]:
+                    _CONTEXT_TABLE.pop(self._name)
 
 def getName(arg):
         def escape(s):
@@ -196,10 +287,12 @@ def getName(arg):
 
         return name
 
-def search(name):
+def search(name, idmef=None, update=False):
     name = getName(name)
-    if _CONTEXT_TABLE.has_key(name):
-        return _CONTEXT_TABLE[name]
+    for ctx in _CONTEXT_TABLE.get(name, ()):
+        ctime = ctx.checkTimeWindow(idmef, update)
+        if ctime:
+            return ctx
 
     return None
 
@@ -213,13 +306,22 @@ def save():
 
 def load():
         if os.path.exists(_ctxt_filename):
+                global _TIMER_LIST
+                global _CONTEXT_TABLE
+
                 fd = open(_ctxt_filename, "r")
                 try:
                         _CONTEXT_TABLE.update(pickle.load(fd))
                 except EOFError:
                         return
 
-                for ctx in _CONTEXT_TABLE.values():
+                v = _CONTEXT_TABLE.values()
+                if v and type(v[0]) is not list:
+                        _TIMER_LIST = [ ]
+                        _CONTEXT_TABLE = { }
+
+                for ctxlist in _CONTEXT_TABLE.values():
+                    for ctx in ctxlist:
                         if not ctx.isVersionCompatible():
                                 ctx.destroy()
 
@@ -232,7 +334,8 @@ def stats(logger):
 
         with_threshold = []
 
-        for ctx in _CONTEXT_TABLE.values():
+        for ctxlist in _CONTEXT_TABLE.values():
+            for ctx in ctxlist:
                 if ctx._options["threshold"] == -1:
                         ctx.stats(logger.info, now)
                 else:

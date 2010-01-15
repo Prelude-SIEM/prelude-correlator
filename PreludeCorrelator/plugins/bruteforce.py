@@ -30,15 +30,12 @@ class BruteForcePlugin(Plugin):
 
         for source in sadd:
             for target in tadd:
-                ctx = Context("BRUTE_ST_" + source + target, { "expire": 2, "threshold": 5 }, update = True, idmef = idmef)
-
-                if ctx.CheckAndDecThreshold():
-                    ctx.Set("alert.classification.text", "Brute force attack")
+                ctx = Context("BRUTE_ST_" + source + target, { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef = idmef)
+                if ctx.getUpdateCount() == 0:
+                    ctx.Set("alert.classification.text", "Brute Force attack")
                     ctx.Set("alert.correlation_alert.name", "Multiple failed login")
                     ctx.Set("alert.assessment.impact.severity", "high")
-                    ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
-                    ctx.alert()
-                    ctx.destroy()
+                    ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login using different account")
 
     def _BruteUserForce(self, idmef):
         userid = idmef.Get("alert.target(*).user.user_id(*).name");
@@ -46,20 +43,16 @@ class BruteForcePlugin(Plugin):
             return
 
         for user in userid:
-            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5 }, update = True, idmef=idmef)
-
-            if ctx.CheckAndDecThreshold():
-                ctx.Set("alert.classification.text", "Brute force attack")
-                ctx.Set("alert.correlation_alert.name", "Multiple failed login")
+            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef=idmef)
+            if ctx.getUpdateCount() == 0:
+                ctx.Set("alert.classification.text", "Brute Force attack")
+                ctx.Set("alert.correlation_alert.name", "Multiple failed login against a single account")
                 ctx.Set("alert.assessment.impact.severity", "high")
                 ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
-                ctx.alert()
-                ctx.destroy()
 
 
     def run(self, idmef):
-        if not idmef.match("alert.classification.text", re.compile("[Ll]ogin|[Aa]uthentication"),
-                           "alert.assessment.impact.completion", "failed"):
+        if not idmef.match("alert.classification.text", re.compile("[Ll]ogin|[Aa]uthentication")):
             return
 
         self._BruteForce(idmef)

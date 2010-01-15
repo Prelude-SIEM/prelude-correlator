@@ -186,5 +186,15 @@ def wakeup(now):
 
 def stats(logger):
         now = time.time()
+
+        with_threshold = []
+
         for ctx in _CONTEXT_TABLE.values():
+                if ctx._options["threshold"] == -1:
+                        ctx.stats(logger.info, now)
+                else:
+                        with_threshold.append(ctx)
+
+        with_threshold.sort(lambda x, y: x.getUpdateCount() - y.getUpdateCount())
+        for ctx in with_threshold:
                 ctx.stats(logger.info, now)

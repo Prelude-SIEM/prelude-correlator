@@ -24,25 +24,26 @@ from PreludeCorrelator.pluginmanager import Plugin
 class FirewallPlugin(Plugin):
     def run(self, idmef):
         source = idmef.Get("alert.source(0).node.address(0).address")
-        sport = idmef.Get("alert.source(0).service.port", 0)
         target = idmef.Get("alert.target(0).node.address(0).address")
         dport = idmef.Get("alert.target(0).service.port", 0)
 
         if not source or not target:
                 return
 
-        ctxname = "FIREWALL_" + source + str(sport) + target + str(dport)
+        ctxname = "FIREWALL_" + source + target + str(dport)
 
         if idmef.match("alert.classification.text", re.compile("[Pp]acket [Dd]ropped|[Dd]enied")):
-                # Update context if any, removing the alert_on_expire attribute.
-                ctx = context.Context(ctxname, { "expire": 10 }, update = True)
+                # overwrite any existing context, with the same name.
+                ctx = context.Context(ctxname, { "expire": 10 }, update=True)
+                ctx.block_installed = True
         else:
                 # Begins a timer for every event that contains a source and a target
                 # address which has not been matched by an observed packet denial.  If a packet
                 # denial is not observed in the next 10 seconds, an event alert is generated.
-
-                if not context.search(ctxname):
-                        ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True }, idmef=idmef)
+                ctx = context.search(ctxname)
+                if not ctx or ctx.block_installed == False:
+                        ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True }, idmef=idmef, update=True)
                         ctx.Set("alert.assessment", idmef.Get("alert.assessment"))
                         ctx.Set("alert.classification", idmef.Get("alert.classification"))
-                        ctx.Set("alert.correlation_alert.name", "Events to firewall correlation")
+                        ctx.Set("alert.correlation_alert.name", "No firewall block observed for these events")
+                        ctx.block_installed = False

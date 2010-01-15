@@ -94,11 +94,10 @@ class PreludeClient:
                         self._print_output.write(str(idmef))
 
         def recvEvent(self):
-                msg = idmef.IDMEF()
-
                 last = time.time()
                 while self._continue:
                         try:
+                            msg = idmef.IDMEF()
                             r = self._client.RecvIDMEF(msg, 1000)
                         except:
                                 r = 0
@@ -106,7 +105,6 @@ class PreludeClient:
                         if r:
                                 if msg.Get("alert.create_time"):
                                         self._handle_event(msg)
-                                msg.reset()
 
                         now = time.time()
                         if now - last >= 1:

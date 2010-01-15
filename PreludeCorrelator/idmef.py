@@ -118,9 +118,6 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return True
 
-        def reset(self):
-                return
-
         def alert(self):
                 global prelude_client
                 prelude_client.correlationAlert(self)

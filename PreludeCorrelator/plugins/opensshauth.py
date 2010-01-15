@@ -47,10 +47,11 @@ class OpenSSHAuthPlugin(Plugin):
 
         for username in idmef.Get("alert.target(*).user.user_id(*).name"):
             for target in idmef.Get("alert.target(*).node.address(*).address"):
-                ctx = Context("SSH_MAT_" + target + username, { "expire": 30, "alert_on_expire": self.alert }, update = True, idmef=idmef)
-                ctx.addAlertReference(idmef)
-
-                if not hasattr(ctx, "authtype"):
+                ctx = Context("SSH_MAT_" + target + username, { "expire": 30, "alert_on_expire": self.alert }, update=True)
+                if ctx.getUpdateCount() == 0:
                     ctx.authtype = { data: True }
-                else:
+                    ctx.addAlertReference(idmef)
+
+                elif not ctx.authtype.has_key(data):
                     ctx.authtype[data] = True
+                    ctx.addAlertReference(idmef)

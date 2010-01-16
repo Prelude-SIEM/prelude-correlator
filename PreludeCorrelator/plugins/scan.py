@@ -33,13 +33,11 @@ class EventScanPlugin(Plugin):
 
         for saddr in source:
             for daddr in target:
-                ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30 }, update = True, idmef=idmef)
-                if ctx.CheckAndDecThreshold():
+                ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30, "alert_on_expire": True }, update = True, idmef=idmef)
+                if ctx.getUpdateCount() == 0:
                     ctx.Set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
                     ctx.Set("alert.classification.text", "Eventscan")
                     ctx.Set("alert.assessment.impact.severity", "high")
-                    ctx.alert()
-                    ctx.destroy()
 
 
 # Detect Eventsweep:
@@ -54,27 +52,20 @@ class EventSweepPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context("SCAN_EVENTSWEEP_" + classification + saddr, { "expire": 60, "threshold": 30 }, update = True)
-            insert = True
+            ctx = Context("SCAN_EVENTSWEEP_" + classification + saddr, { "expire": 60, "threshold": 30, "alert_on_expire": True }, overwrite = False)
+            if ctx.getUpdateCount() == 0:
+                ctx.Set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
+                ctx.Set("alert.classification.text", "Eventsweep")
+                ctx.Set("alert.assessment.impact.severity", "high")
 
             cur = ctx.Get("alert.target(*).node.address(*).address")
             if cur:
                 for address in target:
                     if address in cur:
                         insert = False
-                        break
+                        return
 
-            if insert:
-                ctx.addAlertReference(idmef)
-
-                if ctx.CheckAndDecThreshold():
-                    ctx.Set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
-                    ctx.Set("alert.classification.text", "Eventsweep")
-                    ctx.Set("alert.assessment.impact.severity", "high")
-                    ctx.alert()
-                    ctx.destroy()
-
-
+            ctx.update(idmef=idmef)
 
 
 # Detect Eventstorm:
@@ -86,11 +77,9 @@ class EventStormPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150 }, update = True, idmef = idmef)
-            if ctx.CheckAndDecThreshold():
+            ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150, "alert_on_expire": True }, update = True, idmef = idmef)
+            if ctx.getUpdateCount() == 0:
                 ctx.Set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
                 ctx.Set("alert.classification.text", "Eventstorm")
                 ctx.Set("alert.assessment.impact.severity", "high")
-                ctx.alert()
-                ctx.destroy()
 

@@ -79,65 +79,78 @@ class Context(IDMEF, Timer):
                 Timer.__setstate__(self, dict)
                 IDMEF.__setstate__(self, dict)
 
-        def __init__(self, name, options={}, update=False, idmef=None):
-                is_update = update and hasattr(self, "_name")
-                if is_update is False:
-                        self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
-                        IDMEF.__init__(self)
-                        Timer.__init__(self, 0)
+        def __init__(self, name, options={}, overwrite=True, update=False, idmef=None):
+                already_initialized = (update or (overwrite is False)) and hasattr(self, "_name")
+                if already_initialized is True:
+                        return
+
+                self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
+                IDMEF.__init__(self)
+                Timer.__init__(self, 0)
+
+                self._name = name
+                self._update_count = 0
+
+                if _CONTEXT_TABLE.has_key(name): # Make sure any timer is deleted on overwrite
+                    _CONTEXT_TABLE[name].destroy()
+
+                _CONTEXT_TABLE[name] = self
 
                 self._options.update(options)
                 self.setOptions(self._options)
 
-                if is_update is True:
-                        return
-
-                self._name = name
-                self._update_count = 0
-                self._threshold_count = 0
-                _CONTEXT_TABLE[name] = self
-
                 if idmef:
                         self.addAlertReference(idmef)
 
-        def __new__(cls, name, options={}, update=False, idmef=None):
-                if update:
+        def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
+                if update or (overwrite is False):
                         ctx = search(name)
                         if ctx:
-                                ctx._update_count += 1
-                                if idmef:
-                                        ctx.addAlertReference(idmef)
+                                if update:
+                                        ctx.update(options, idmef)
+                                        return ctx
 
-                                if ctx.running():
-                                        ctx.reset()
-
-                                return ctx
+                                if overwrite is False:
+                                        return ctx
 
                 return super(Context, cls).__new__(cls)
 
-        def CheckAndDecThreshold(self):
-                self._threshold_count += 1
-                if self._threshold_count == self._options["threshold"]:
-                        return True
-                else:
-                        return False
-
         def _timerExpireCallback(self):
+                threshold = self._options["threshold"]
                 alert_on_expire = self._options["alert_on_expire"]
+
                 if alert_on_expire:
+                    if threshold == -1 or (self._update_count + 1) >= threshold:
                         if callable(alert_on_expire):
                                 alert_on_expire(self)
+                                return
                         else:
                                 self.alert()
 
                 self.destroy()
 
+        def update(self, options={}, idmef=None):
+                self._update_count += 1
+
+                if idmef:
+                        self.addAlertReference(idmef)
+
+                if self.running():
+                        self.reset()
+
+                self._options.update(options)
+                self.setOptions(self._options)
+
         def stats(self, log_func, now=time.time()):
-                if not self._timer_start:
-                    log_func("[%s]: threshold=%d/%d update=%d" % (self._name, self._threshold_count, self._options["threshold"], self._update_count))
-                else:
-                    log_func("[%s]: threshold=%d/%d update=%d expire=%d/%d" % (self._name, self._threshold_count, self._options["threshold"],
-                                                                               self._update_count, self.elapsed(now), self._options["expire"]))
+                str = ""
+
+                if self._options["threshold"] != -1:
+                        str += " threshold=%d/%d" % (self._update_count + 1, self._options["threshold"])
+
+                if self._timer_start:
+                        str += " expire=%d/%d" % (self.elapsed(now), self._options["expire"])
+
+                log_func("[%s]: update=%d%s" % (self._name, self._update_count, str))
 
         def getOptions(self):
                 return self._options

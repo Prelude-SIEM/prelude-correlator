@@ -40,11 +40,11 @@ class WormPlugin(Plugin):
         # Create context for classification combined with all the target.
         tlist = {}
         for target in idmef.Get("alert.target(*).node.address(*).address"):
-            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300 }, update = True, idmef = idmef)
+            ctx = context.Context("WORM_HOST_" + ctxt + target, { "expire": 300 }, overwrite=False, idmef=idmef)
+            if ctx.getUpdateCount() == 0:
+                ctx._target_list = {}
 
             tlist[target] = True
-            if not hasattr(ctx, "_target_list"):
-                ctx._target_list = {}
 
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             # We are trying to see whether a previous target is now attacking other hosts
@@ -54,10 +54,14 @@ class WormPlugin(Plugin):
             if not ctx:
                 continue
 
+            plen = len(ctx._target_list)
             ctx._target_list.update(tlist)
-            ctx.addAlertReference(idmef)
 
-            if len(ctx._target_list) > self.__repeat_target:
+            nlen = len(ctx._target_list)
+            if nlen > plen:
+                ctx.update(idmef=idmef)
+
+            if nlen >= self.__repeat_target:
                 ctx.Set("alert.classification.text", "Possible Worm Activity")
                 ctx.Set("alert.correlation_alert.name", "Source host is repeating actions taken against it recently")
                 ctx.Set("alert.assessment.impact.severity", "high")

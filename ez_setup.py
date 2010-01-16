@@ -14,6 +14,7 @@ the appropriate options to ``use_setuptools()``.
 This file can also be run as a script to install or upgrade setuptools.
 """
 import sys
+DOWNLOAD_VERSION = "0.6c11"
 DEFAULT_VERSION = "0.6c1"
 DEFAULT_URL     = "http://pypi.python.org/packages/%s/s/setuptools/" % sys.version[:3]
 
@@ -94,13 +95,13 @@ def use_setuptools(
     """
     was_imported = 'pkg_resources' in sys.modules or 'setuptools' in sys.modules
     def do_download():
-        egg = download_setuptools(version, download_base, to_dir, download_delay)
+        egg = download_setuptools(DOWNLOAD_VERSION, download_base, to_dir, download_delay)
         sys.path.insert(0, egg)
         import setuptools; setuptools.bootstrap_install_from = egg
     try:
         import pkg_resources
     except ImportError:
-        return do_download()       
+        return do_download()
     try:
         pkg_resources.require("setuptools>="+version); return
     except pkg_resources.VersionConflict, e:

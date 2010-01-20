@@ -75,10 +75,8 @@ class IDMEF(PreludeEasy.IDMEF):
                                 return
 
                 elif type(value) is tuple or type(value) is list:
-                        if value: # not empty
-                                raise Exception, "Invalid input value"
-
-                        value = None
+                        if not value:
+                                value = None
 
                 PreludeEasy.IDMEF.Set(self, path, value)
 

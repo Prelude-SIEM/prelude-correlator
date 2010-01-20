@@ -94,7 +94,7 @@ class DshieldPlugin(Plugin):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
             entry = self.__iphash.get(source, None)
             if entry:
-                ca = context.Context("DSHIELD_" + source, { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
+                ca = context.Context(("DSHIELD", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:
                     ca.Set("alert.classification.text", "IP source matching Dshield database")
                     ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")

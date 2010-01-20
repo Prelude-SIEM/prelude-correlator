@@ -30,7 +30,7 @@ class FirewallPlugin(Plugin):
         if not source or not target:
                 return
 
-        ctxname = "FIREWALL_" + source + target + str(dport)
+        ctxname = context.getName("FIREWALL", source, target, dport)
 
         if idmef.match("alert.classification.text", re.compile("[Pp]acket [Dd]ropped|[Dd]enied")):
                 # overwrite any existing context, with the same name.

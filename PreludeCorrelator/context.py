@@ -88,6 +88,7 @@ class Context(IDMEF, Timer):
                 IDMEF.__init__(self)
                 Timer.__init__(self, 0)
 
+                name = getName(name)
                 self._name = name
                 self._update_count = 0
 
@@ -103,6 +104,8 @@ class Context(IDMEF, Timer):
                         self.addAlertReference(idmef)
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
+                name = getName(name)
+
                 if update or (overwrite is False):
                         ctx = search(name)
                         if ctx:
@@ -171,7 +174,25 @@ class Context(IDMEF, Timer):
                 del(_CONTEXT_TABLE[self._name])
 
 
+def getName(arg):
+        def escape(s):
+                return s.replace("_", "\\_")
+
+        if type(arg) is str:
+                return escape(arg)
+
+        cnt = 0
+        name = ""
+        for i in arg:
+            if cnt > 0:
+                name += "_"
+            name += escape(str(i))
+            cnt += 1
+
+        return name
+
 def search(name):
+    name = getName(name)
     if _CONTEXT_TABLE.has_key(name):
         return _CONTEXT_TABLE[name]
 

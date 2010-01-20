@@ -30,7 +30,7 @@ class BruteForcePlugin(Plugin):
 
         for source in sadd:
             for target in tadd:
-                ctx = Context("BRUTE_ST_" + source + target, { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef = idmef)
+                ctx = Context(("BRUTE ST", source, target), { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef = idmef)
                 if ctx.getUpdateCount() == 0:
                     ctx.Set("alert.classification.text", "Brute Force attack")
                     ctx.Set("alert.correlation_alert.name", "Multiple failed login")
@@ -43,7 +43,7 @@ class BruteForcePlugin(Plugin):
             return
 
         for user in userid:
-            ctx = Context("BRUTE_U_" + user, { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef=idmef)
+            ctx = Context(("BRUTE USER", user), { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef=idmef)
             if ctx.getUpdateCount() == 0:
                 ctx.Set("alert.classification.text", "Brute Force attack")
                 ctx.Set("alert.correlation_alert.name", "Multiple failed login against a single account")

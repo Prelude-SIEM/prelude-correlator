@@ -33,7 +33,7 @@ class EventScanPlugin(Plugin):
 
         for saddr in source:
             for daddr in target:
-                ctx = Context("SCAN_EVENTSCAN_" + saddr + daddr, { "expire": 60, "threshold": 30, "alert_on_expire": True }, update = True, idmef=idmef)
+                ctx = Context(("SCAN EVENTSCAN", saddr, daddr), { "expire": 60, "threshold": 30, "alert_on_expire": True }, update = True, idmef=idmef)
                 if ctx.getUpdateCount() == 0:
                     ctx.Set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
                     ctx.Set("alert.classification.text", "Eventscan")
@@ -52,7 +52,7 @@ class EventSweepPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context("SCAN_EVENTSWEEP_" + classification + saddr, { "expire": 60, "threshold": 30, "alert_on_expire": True }, overwrite = False)
+            ctx = Context(("SCAN EVENTSWEEP", classification, saddr), { "expire": 60, "threshold": 30, "alert_on_expire": True }, overwrite = False)
             if ctx.getUpdateCount() == 0:
                 ctx.Set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
                 ctx.Set("alert.classification.text", "Eventsweep")
@@ -77,7 +77,7 @@ class EventStormPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context("SCAN_EVENTSTORM_" + saddr, { "expire": 120, "threshold": 150, "alert_on_expire": True }, update = True, idmef = idmef)
+            ctx = Context(("SCAN EVENTSTORM", saddr), { "expire": 120, "threshold": 150, "alert_on_expire": True }, update = True, idmef = idmef)
             if ctx.getUpdateCount() == 0:
                 ctx.Set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
                 ctx.Set("alert.classification.text", "Eventstorm")

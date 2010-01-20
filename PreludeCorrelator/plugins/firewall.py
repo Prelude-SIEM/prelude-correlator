@@ -17,33 +17,88 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import re
+import re, time
 from PreludeCorrelator import context
 from PreludeCorrelator.pluginmanager import Plugin
 
+
+def _evict(ctx):
+        now = time.time()
+        for target, values in ctx._protected_hosts.items():
+                if now - values[0] > ctx._flush_protected_hosts:
+                        ctx._protected_hosts.pop(target)
+
+        ctx.reset()
+
+def _alert(ctx):
+        cnt = 0
+        fw = context.search("FIREWALL INFOS")
+
+        for idmef in ctx.candidates:
+                source = idmef.Get("alert.source(0).node.address(0).address")
+                target = idmef.Get("alert.target(0).node.address(0).address")
+                dport = str(idmef.Get("alert.target(0).service.port", 0))
+
+                if not fw._protected_hosts.has_key(target):
+                        continue
+
+                if fw._protected_hosts[target][1].has_key(source + dport):
+                        continue
+
+                cnt += 1
+                ctx.addAlertReference(idmef)
+
+        if cnt > 0:
+                ctx.Set("alert.classification.text", "Events hit target")
+                ctx.Set("alert.assessment.impact.severity", "medium")
+                ctx.Set("alert.assessment.impact.description", "The target are known to be protected by a Firewall device, but a set of event have not been dropped")
+                ctx.Set("alert.correlation_alert.name", "No firewall block observed")
+                ctx.alert()
+
+        ctx.destroy()
+
 class FirewallPlugin(Plugin):
+    def __init__(self, env):
+        Plugin.__init__(self, env)
+        self._flush_protected_hosts = self.getConfigValue("flush-protected-hosts", 3600, type=int)
+
     def run(self, idmef):
         source = idmef.Get("alert.source(0).node.address(0).address")
+        scat = idmef.Get("alert.source(0).node.address(0).category")
         target = idmef.Get("alert.target(0).node.address(0).address")
-        dport = idmef.Get("alert.target(0).service.port", 0)
+        tcat = idmef.Get("alert.target(0).node.address(0).category")
 
-        if not source or not target:
+        dport = idmef.Get("alert.target(0).service.port")
+        if not source or not target or not dport:
                 return
 
-        ctxname = context.getName("FIREWALL", source, target, dport)
+        if scat not in ("ipv4-addr", "ipv6-addr") or tcat not in ("ipv4-addr", "ipv6-addr"):
+                return
+
+        ctx = context.Context("FIREWALL INFOS", { "expire": self._flush_protected_hosts, "alert_on_expire": _evict }, update=True)
+        if ctx.getUpdateCount() == 0:
+                ctx._protected_hosts = {}
+                ctx._flush_protected_hosts = self._flush_protected_hosts
 
         if idmef.match("alert.classification.text", re.compile("[Pp]acket [Dd]ropped|[Dd]enied")):
-                # overwrite any existing context, with the same name.
-                ctx = context.Context(ctxname, { "expire": 10 }, update=True)
-                ctx.block_installed = True
+                if not ctx._protected_hosts.has_key(target):
+                        ctx._protected_hosts[target] = [0, {}]
+
+                ctx._protected_hosts[target][0] = float(idmef.getTime())
+                ctx._protected_hosts[target][1][source + str(dport)] = True
         else:
-                # Begins a timer for every event that contains a source and a target
-                # address which has not been matched by an observed packet denial.  If a packet
-                # denial is not observed in the next 10 seconds, an event alert is generated.
-                ctx = context.search(ctxname)
-                if not ctx or ctx.block_installed == False:
-                        ctx = context.Context(ctxname, { "expire": 10, "alert_on_expire": True }, idmef=idmef, update=True)
-                        ctx.Set("alert.assessment", idmef.Get("alert.assessment"))
-                        ctx.Set("alert.classification", idmef.Get("alert.classification"))
-                        ctx.Set("alert.correlation_alert.name", "No firewall block observed for these events")
-                        ctx.block_installed = False
+                if not ctx._protected_hosts.has_key(target):
+                        return
+
+                if time.time() - ctx._protected_hosts[target][0] > self._flush_protected_hosts:
+                        ctx._protected_hosts.pop(target)
+                        return;
+
+                if ctx._protected_hosts[target][1].has_key(source + str(dport)):
+                        return
+
+                ctx = context.Context(("FIREWALL", source), { "expire": 120, "alert_on_expire": _alert }, update=True)
+                if ctx.getUpdateCount() == 0:
+                    ctx.candidates = []
+
+                ctx.candidates.append(idmef)

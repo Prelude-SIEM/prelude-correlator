@@ -1,3 +1,52 @@
+* 2010-01-29, prelude-correlator-1.0.0rc1:
+
+- [Firewall]: The plugin will now report CorrelationAlert for events /
+  sets of events that appear to have passed through a firewall known to
+  protect the target machine. If no firewall ever emit block concerning
+  a given host, then this host is considered un-protected, and there is
+  no point in reporting CorrelationAlert.
+
+- [OpenSSHAuth]: The plugin has been modified so that it can now
+  generate a single CorrelationAlert for multiples authentication method
+  used in a given time slice.
+
+- [Spamhaus]: The plugin has been modified so that it can now generate a
+  single CorrelationAlert for multiples events received from the same
+  source.
+
+- [BruteForce]: Various improvement, do not limit the number of events
+  the plugin is able to report in a single CorrelationAlert.
+
+- [Scan]: do not limit the number of events the plugin is able to report
+  in a single CorrelationAlert.
+
+- Context initialization now take an optional 'overwrite' argument. This
+  argument, if set to False, mean that the Context() will be returned
+  un-modified if it already exist. If it doesn't, it will be created.
+
+- New Context.update() method, which provide exactly the same
+  functionality as calling Context() with the 'update=True' argument.
+  This is useful since some plugin need to defer an update to another
+  place in the code.
+
+- If the context creation/update function is called with an IDMEF message
+  parameter, then we automatically call addAlertReference on the context
+  CorrelationAlert using the provided message as the parameter.
+
+- Make it possible to change context option on update
+
+- Automatically set CorrelationAlert DetectTime : reported
+  CorrelationAlert DetectTime now match the time of the first event that
+  was detected.
+
+- Make it possible for plugin to specify a function to be called on
+  Timer expiration.
+
+- Disable BusinessHour correlation by default since it is very verbose
+
+- Various bug fixes.
+
+
 * 2009-11-03, prelude-correlator-0.9.0-beta8:
 
 - Include spamhaus_drop.dat in the source distribution. Fix installation

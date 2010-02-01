@@ -1,3 +1,9 @@
+* 2010-02-01, prelude-correlator-1.0.0rc2:
+
+- Fix generated tarball name, so that the package might easily be
+  included in various distribution for testing.
+
+
 * 2010-01-29, prelude-correlator-1.0.0rc1:
 
 - [Firewall]: The plugin will now report CorrelationAlert for events /

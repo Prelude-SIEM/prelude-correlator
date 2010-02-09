@@ -75,6 +75,8 @@ class Timer:
 
 
 class Context(IDMEF, Timer):
+        FORMAT_VERSION = 0.1
+
         def __setstate__(self, dict):
                 Timer.__setstate__(self, dict)
                 IDMEF.__setstate__(self, dict)
@@ -84,6 +86,7 @@ class Context(IDMEF, Timer):
                 if already_initialized is True:
                         return
 
+                self._version = self.FORMAT_VERSION
                 self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
                 IDMEF.__init__(self)
                 Timer.__init__(self, 0)
@@ -131,6 +134,10 @@ class Context(IDMEF, Timer):
                                 self.alert()
 
                 self.destroy()
+
+        def isVersionCompatible(self):
+                version = self.__dict__.get("_version", None)
+                return self.FORMAT_VERSION == version
 
         def update(self, options={}, idmef=None):
                 self._update_count += 1
@@ -213,6 +220,10 @@ def load():
                         _CONTEXT_TABLE.update(pickle.load(fd))
                 except EOFError:
                         return
+
+                for ctx in _CONTEXT_TABLE.values():
+                        if not ctx.isVersionCompatible():
+                                ctx.destroy()
 
 def wakeup(now):
         for timer in _TIMER_LIST:

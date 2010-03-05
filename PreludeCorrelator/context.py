@@ -107,8 +107,6 @@ class Context(IDMEF, Timer):
                         self.addAlertReference(idmef)
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
-                name = getName(name)
-
                 if update or (overwrite is False):
                         ctx = search(name)
                         if ctx:

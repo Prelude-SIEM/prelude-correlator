@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "1.0.0rc2"
+PRELUDE_CORRELATOR_VERSION = "1.0.0rc3"
 
 
 class my_sdist(sdist):

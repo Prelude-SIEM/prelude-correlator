@@ -1,3 +1,16 @@
+* 2010-03-05, prelude-correlator-1.0.0rc3:
+
+- Prelude-Correlator wasn't properly updating context (and thus, didn't
+  generate correlation events) since context identifiers were escaped 
+  twice.
+
+- Prevent exception when Prelude-Correlator attempt to restore contexts
+  from an earlier Prelude-Correlator version, and that the context
+  internal attributes have changed.
+
+- A sample-plugin example has been included in the distribution.
+
+
 * 2010-02-01, prelude-correlator-1.0.0rc2:
 
 - Fix generated tarball name, so that the package might easily be

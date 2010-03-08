@@ -1,3 +1,8 @@
+* 2010-03-08, prelude-correlator-1.0.0rc4:
+
+- Fix installation problem (#372).
+
+
 * 2010-03-05, prelude-correlator-1.0.0rc3:
 
 - Prelude-Correlator wasn't properly updating context (and thus, didn't

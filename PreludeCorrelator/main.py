@@ -31,10 +31,10 @@ LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 
 class Env:
-        def __init__(self, conf_filename):
-                self.logger = log.Log(conf_filename)
+        def __init__(self, options):
+                self.logger = log.Log(options)
 
-                self.config = config.Config(conf_filename)
+                self.config = config.Config(options.config)
                 self.pluginmanager = pluginmanager.PluginManager(self)
 
                 self.logger.info("%d plugin have been loaded." % (self.pluginmanager.getPluginCount()))
@@ -131,7 +131,7 @@ def main():
         parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
         (options, args) = parser.parse_args()
 
-        env = Env(options.config)
+        env = Env(options)
 
         ifd = None
         if options.print_input:

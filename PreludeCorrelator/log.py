@@ -42,7 +42,7 @@ class Log(logging.Logger):
         else:
             self.warnings(("[unknown:%d] " % level) + log)
 
-    def __init__(self, conf_filename):
+    def __init__(self, options):
         try:
                 PreludeEasy.PreludeLog.SetCallback(self.__log_callback)
         except:
@@ -50,18 +50,24 @@ class Log(logging.Logger):
                 pass
 
         self._have_extra = sys.version_info > (2, 4)
+
         try:
-                logging.config.fileConfig(conf_filename)
+                logging.config.fileConfig(options.config)
         except Exception, e:
                 DATEFMT = "%d %b %H:%M:%S"
                 if not self._have_extra:
-                        FORMAT="%(asctime)s %(levelname)s: %(message)s"
+                        FORMAT="%(asctime)s %(name)s %(levelname)s: %(message)s"
                 else:
-                        FORMAT="%(asctime)s (process:%(pid)d) %(levelname)s: %(message)s"
+                        FORMAT="%(asctime)s %(name)s (process:%(pid)d) %(levelname)s: %(message)s"
 
                 logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
 
         self._logger = logging.getLogger("prelude-correlator")
+
+        if options.daemon is True:
+                hdlr = logging.handlers.SysLogHandler('/dev/log')
+                hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
+                self._logger.addHandler(hdlr)
 
     def _log(self, log_func, log, extra):
         if self._have_extra:

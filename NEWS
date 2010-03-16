@@ -1,3 +1,18 @@
+* 2010-03-16, prelude-correlator-1.0.0:
+
+- When Prelude-Correlator is started as a daemon, make sure we use
+  syslog for logging.
+
+- Fix an exception when adding an alert with no source or target to the
+  generated Correlation alert, by Frédéric Yhuel
+  <fyhuel@prelude-technologies.com>
+
+- Do not generate Brute Force CorrelationAlert for multiples successful
+  authentication.
+
+- Workaround documentation installation problem.
+
+
 * 2010-03-08, prelude-correlator-1.0.0rc4:
 
 - Fix installation problem (#372).
@@ -6,7 +21,7 @@
 * 2010-03-05, prelude-correlator-1.0.0rc3:
 
 - Prelude-Correlator wasn't properly updating context (and thus, didn't
-  generate correlation events) since context identifiers were escaped 
+  generate correlation events) since context identifiers were escaped
   twice.
 
 - Prevent exception when Prelude-Correlator attempt to restore contexts

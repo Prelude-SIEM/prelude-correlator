@@ -55,5 +55,11 @@ class BruteForcePlugin(Plugin):
         if not idmef.match("alert.classification.text", re.compile("[Ll]ogin|[Aa]uthentication")):
             return
 
+        # FIXME: In the future, we might want to include successfull authentication
+        # following a number of failed events, so that generated CorrelationAlert
+        # includes full details.
+        if idmef.Get("alert.assessment.impact.completion") == "succeeded":
+            return
+
         self._BruteForce(idmef)
         self._BruteUserForce(idmef)

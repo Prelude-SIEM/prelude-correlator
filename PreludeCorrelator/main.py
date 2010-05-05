@@ -22,7 +22,7 @@
 import require
 import sys, os, time, signal
 from optparse import OptionParser
-from PreludeEasy import ClientEasy, CheckVersion
+from PreludeEasy import ClientEasy, CheckVersion, IDMEFCriteria
 from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
@@ -94,17 +94,29 @@ class PreludeClient:
                 if self._print_output:
                         self._print_output.write(str(idmef))
 
-        def recvEvent(self):
+        def recvEvents(self):
+                criteria = env.config.get("general", "criteria")
+                if criteria:
+                    criteria = "alert && (%s)" % (criteria)
+                else:
+                    criteria = "alert"
+
+                try:
+                    criteria = IDMEFCriteria(criteria)
+                except Exception, e:
+                    env.logger.error("Error processing criteria '%s': %s" % (criteria, e))
+                    raise
+
                 last = time.time()
                 while self._continue:
                         try:
                             msg = idmef.IDMEF()
                             r = self._client.RecvIDMEF(msg, 1000)
                         except:
-                                r = 0
+                            r = 0
 
                         if r:
-                                if msg.Get("alert.create_time"):
+                                if criteria.Match(msg):
                                         self._handle_event(msg)
 
                         now = time.time()
@@ -175,7 +187,7 @@ def main():
         # restore previous context.
         context.load()
 
-        env.prelude_client.recvEvent()
+        env.prelude_client.recvEvents()
 
         # save existing context
         context.save()

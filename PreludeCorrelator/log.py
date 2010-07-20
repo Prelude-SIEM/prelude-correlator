@@ -40,7 +40,7 @@ class Log(logging.Logger):
             self.critical(log)
 
         else:
-            self.warnings(("[unknown:%d] " % level) + log)
+            self.warning(("[unknown:%d] " % level) + log)
 
     def __init__(self, options):
         try:

@@ -27,7 +27,6 @@ from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
 
-env = None
 LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 
@@ -95,7 +94,7 @@ class PreludeClient:
                         self._print_output.write(str(idmef))
 
         def recvEvents(self):
-                criteria = env.config.get("general", "criteria")
+                criteria = self._env.config.get("general", "criteria")
                 if criteria:
                     criteria = "alert && (%s)" % (criteria)
                 else:
@@ -144,7 +143,6 @@ def main():
         parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
         (options, args) = parser.parse_args()
 
-        global env
         env = Env(options)
 
         ifd = None

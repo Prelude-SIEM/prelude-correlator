@@ -1,0 +1,87 @@
+#!/bin/sh
+# Startup script for prelude-correlator
+#
+# chkconfig: - 75 30
+# description: Run prelude-correlator
+# config /etc/prelude-correlator/prelude-correlator.conf
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+prog="prelude-correlator"
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Allow anyone to run status
+if [ "$1" = "status" ] ; then
+	status $prog
+	RETVAL=$?
+	exit $RETVAL
+fi
+
+# Check that we are root ... so non-root users stop here
+test $EUID = 0  ||  exit 4
+
+RETVAL=0
+
+start() {
+	test -x /usr/bin/$prog  || exit 5
+	test -f /etc/$prog/$prog.conf  || exit 6
+
+	if test "x`pidof $prog`" != x; then
+		echo "$prog already started"
+		action $"Starting $prog: " /bin/false
+		RETVAL=1
+		return $RETVAL
+	else
+		echo -n $"Starting $prog: "
+		unset HOME MAIL USER USERNAME
+		daemon $prog -d
+		RETVAL=$?
+		if test $RETVAL = 0 ; then
+			touch /var/lock/subsys/$prog
+		fi
+		echo
+		return $RETVAL
+	fi
+}
+
+stop() {
+	if test "x`pidof $prog`" != x; then
+		echo -n $"Stopping $prog: "
+		killproc $prog
+		RETVAL=$?
+		echo
+	fi
+	rm -f /var/lock/subsys/$prog
+	return $RETVAL
+}
+
+case "$1" in
+	start)
+	    start
+	    ;;
+	
+	stop)
+	    stop
+	    ;;
+	
+	restart|reload)
+	    stop
+	    sleep 3
+	    start
+	    ;;
+	condrestart)
+	    if test "x`pidof prog`" != x; then
+		stop
+		start
+	    fi
+	    ;;
+	
+	*)
+	    echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+	    RETVAL=3
+
+esac
+
+exit $RETVAL
+

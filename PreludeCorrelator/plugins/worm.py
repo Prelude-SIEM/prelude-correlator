@@ -1,5 +1,5 @@
 # Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
-# Copyright (C) 2009 PreludeIDS Technologies <yoann.v@prelude-ids.com>
+# Copyright (C) 2009-2012 CS-SI <yoann.v@prelude-ids.com>
 # All Rights Reserved.
 #
 # This file is part of the Prelude-Correlator program.

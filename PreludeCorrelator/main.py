@@ -69,7 +69,7 @@ class PreludeClient:
                 self._dry_run = dry_run
 
                 self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
-                                          "Prelude-Correlator", "Correlator", "PreludeIDS Technologies",
+                                          "Prelude-Correlator", "Correlator", "CS-SI",
                                           VERSION)
                 self._client.Start()
 

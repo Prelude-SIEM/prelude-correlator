@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "1.0.0"
+PRELUDE_CORRELATOR_VERSION = "1.0.1"
 
 
 class my_sdist(sdist):
@@ -97,6 +97,7 @@ setup(
         maintainer_email = "yoann.v@prelude-ids.com",
         author = "Yoann Vandoorselaere",
         author_email = "yoann.v@prelude-ids.com",
+        license = "GPL",
         url = "http://www.prelude-ids.com",
         download_url = "http://www.prelude-ids.com/development/download/",
         description = "Prelude-Correlator perform real time correlation of events received by Prelude",

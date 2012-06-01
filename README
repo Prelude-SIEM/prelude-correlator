@@ -53,14 +53,14 @@ prelude-devel mailing list by sending a mail to:
 and post your patch with a description of functionality.
 You can also attach patches to bugs on
 
-        http://trac.prelude-ids.org
+        https://dev.prelude-ids.com
 
 
 2. BUGS
 
 If you find any bugs, please report them to:
 
-        http://trac.prelude-ids.org
+        https://dev.prelude-ids.com
 
 Please make sure that what you're reporting is actually a BUG and not
 a problem on your side.

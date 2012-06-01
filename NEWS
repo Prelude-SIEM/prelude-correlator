@@ -1,3 +1,43 @@
+* 2012-06-01, prelude-correlator-1.0.1:
+
+- Fixed #494 : Prelude Correlator not stopping
+
+- Changed Copyright
+
+- Added packaging for rhel6
+
+- Ability to specify an input IDMEF criteria
+
+  There is now a [general] configuration section in prelude-correlator.conf
+  allowing to specify a criteria option that use an IDMEF criteria parameter
+  as an argument.
+    
+  Using this option, it is possible to specify an input filter for events
+  to be processed by the correlator.
+    
+  Additionally, always use an IDMEFCriteria to check whether the input
+  event is an alert, in place of manually retrieving alert.create_time.
+
+- Fixed some typo
+
+- Implement Context time merging capability
+    
+  Introduced time merging capability within Prelude-Correlator:
+  as of now, correlation contexts are associated with the time of the
+  triggering IDMEF event.
+    
+  When searching for a matching context, an existing context will only be
+  returned in case the specified search time match the time windows of an
+  existing context.
+    
+  This mean that when receiving a burst of events, the time carried with
+  events is directly taken into account : separate instances exists for
+  the same Context associated with events received at a different time.
+    
+  Additionally, context can be merged if more than one context time windows
+  overlap.
+
+
 * 2010-03-16, prelude-correlator-1.0.0:
 
 - When Prelude-Correlator is started as a daemon, make sure we use

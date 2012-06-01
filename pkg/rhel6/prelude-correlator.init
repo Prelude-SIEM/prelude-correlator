@@ -27,7 +27,7 @@ start() {
 	test -x /usr/bin/$prog  || exit 5
 	test -f /etc/$prog/$prog.conf  || exit 6
 
-	if test "x`pidof $prog`" != x; then
+	if test "x`pgrep -f $prog`" != x; then
 		echo "$prog already started"
 		action $"Starting $prog: " /bin/false
 		RETVAL=1
@@ -46,7 +46,7 @@ start() {
 }
 
 stop() {
-	if test "x`pidof $prog`" != x; then
+	if test "x`pgrep -f $prog`" != x; then
 		echo -n $"Stopping $prog: "
 		killproc $prog
 		RETVAL=$?
@@ -71,7 +71,7 @@ case "$1" in
 	    start
 	    ;;
 	condrestart)
-	    if test "x`pidof prog`" != x; then
+	    if test "x`pgrep -f prog`" != x; then
 		stop
 		start
 	    fi

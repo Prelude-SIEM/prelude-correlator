@@ -1,87 +1,92 @@
-#!/bin/sh
+#!/bin/bash
 # Startup script for prelude-correlator
 #
 # chkconfig: - 75 30
 # description: Run prelude-correlator
-# config /etc/prelude-correlator/prelude-correlator.conf
+# config: /etc/prelude-correlator/prelude-correlator.conf
+# pidfile: /var/run/prelude-correlator.pid
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin
 prog="prelude-correlator"
+exec=/usr/bin/$prog
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
+lockfile=/var/lock/subsys/$prog
+pidfile=/var/run/$prog.pid
+
 # Allow anyone to run status
 if [ "$1" = "status" ] ; then
-	status $prog
-	RETVAL=$?
-	exit $RETVAL
+    status $prog
+    RETVAL=$?
+    exit $RETVAL
 fi
 
 # Check that we are root ... so non-root users stop here
-test $EUID = 0  ||  exit 4
+[ $EUID = 0 ] || exit 4
 
 RETVAL=0
 
-start() {
-	test -x /usr/bin/$prog  || exit 5
-	test -f /etc/$prog/$prog.conf  || exit 6
 
-	if test "x`pgrep -f $prog`" != x; then
-		echo "$prog already started"
-		action $"Starting $prog: " /bin/false
-		RETVAL=1
-		return $RETVAL
-	else
-		echo -n $"Starting $prog: "
-		unset HOME MAIL USER USERNAME
-		daemon $prog -d
-		RETVAL=$?
-		if test $RETVAL = 0 ; then
-			touch /var/lock/subsys/$prog
-		fi
-		echo
-		return $RETVAL
-	fi
+rhstatus() {
+    status -p "$pidfile" -l $prog $exec
+}
+
+start() {
+    [ -x $exec ] || exit 5
+    [ -f /etc/$prog/$prog.conf ] || exit 6
+
+    echo -n $"Starting $prog: "
+    unset HOME MAIL USER USERNAME
+    daemon --pidfile="$pidfile" $exec -d -P $pidfile 2> /dev/null
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch $lockfile
+    return $RETVAL
 }
 
 stop() {
-	if test "x`pgrep -f $prog`" != x; then
-		echo -n $"Stopping $prog: "
-		killproc $prog
-		RETVAL=$?
-		echo
-	fi
-	rm -f /var/lock/subsys/$prog
-	return $RETVAL
+    echo -n $"Stopping $prog: "
+    killproc -p $pidfile $exec
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+restart() {
+    stop
+    sleep 3
+    start
 }
 
 case "$1" in
-	start)
-	    start
-	    ;;
+    start)
+	start
+	;;
+    
+    stop)
+	stop
+	;;
 	
-	stop)
-	    stop
-	    ;;
+    restart|reload)
+	restart
+	;;
+
+    status)
+	rhstatus
+	;;
+
+    condrestart)
+       rhstatus >/dev/null 2>&1 || exit 0
+       restart
+       ;;
 	
-	restart|reload)
-	    stop
-	    sleep 3
-	    start
-	    ;;
-	condrestart)
-	    if test "x`pgrep -f prog`" != x; then
-		stop
-		start
-	    fi
-	    ;;
-	
-	*)
-	    echo $"Usage: $0 {start|stop|restart|condrestart|status}"
-	    RETVAL=3
+    *)
+	echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+	RETVAL=3
 
 esac
 
 exit $RETVAL
-

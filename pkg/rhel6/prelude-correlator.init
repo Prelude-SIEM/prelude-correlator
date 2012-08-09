@@ -37,12 +37,26 @@ start() {
     [ -x $exec ] || exit 5
     [ -f /etc/$prog/$prog.conf ] || exit 6
 
+    # Disabling SELinux if enabled
+    if [ -f "/usr/sbin/getenforce" ]; then
+        selinux_status=`/usr/sbin/getenforce`
+        /usr/sbin/setenforce 0 2> /dev/null
+        echo $"Temporarily disabling SELinux..."
+    fi
+
     echo -n $"Starting $prog: "
     unset HOME MAIL USER USERNAME
     daemon --pidfile="$pidfile" $exec -d -P $pidfile 2> /dev/null
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && touch $lockfile
+
+    # Restoring SELinux
+    if [ -f "/usr/sbin/getenforce" ]; then
+        /usr/sbin/setenforce $selinux_status 2> /dev/null
+        echo $"Restoring previous SELinux state..."
+    fi
+
     return $RETVAL
 }
 

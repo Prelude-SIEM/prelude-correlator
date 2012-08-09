@@ -3,7 +3,7 @@
 Name: prelude-correlator
 Epoch:   1
 Version: 1.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Real time correlator of events received by Prelude Manager
 
 Group: Applications/Internet
@@ -20,6 +20,7 @@ Requires(preun) : /sbin/chkconfig
 Requires(preun) : /sbin/service
 Requires(postun): /sbin/service
 Requires: libprelude-python >= 0.9.24
+Requires: python-setuptools
 BuildArch: noarch
 
 
@@ -77,6 +78,10 @@ fi
 %{python_sitelib}/prelude_correlator*.egg-info
 
 %changelog
+* Thu Aug 10 2012 Antoine Luong <antoine.luong@c-s.fr> - 1.0.1-2
+- Added missing dependency to python-setuptools
+- Fixed #517 : Prelude Correlator not starting (SELinux)
+
 * Wed Jun 15 2011 Vincent Quéméner <vincent.quemener@c-s.fr> - 1.0.0-4
 - Rebuilt for RHEL6
 

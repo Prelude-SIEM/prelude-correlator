@@ -15,9 +15,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; see the file COPYING.  If not, write to
-# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import require
 import sys, os, time, signal
@@ -37,7 +37,7 @@ class Env:
                 self.config = config.Config(options.config)
                 self.pluginmanager = pluginmanager.PluginManager(self)
 
-                self.logger.info("%d plugin have been loaded." % (self.pluginmanager.getPluginCount()))
+                self.logger.info("%d plugins have been loaded." % (self.pluginmanager.getPluginCount()))
 
 
 class SignalHandler:
@@ -82,7 +82,7 @@ class PreludeClient:
                 self._events_processed += 1
 
         def stats(self):
-                self._env.logger.info("%d events received, %d correlationAlert generated." % (self._events_processed, self._alert_generated))
+                self._env.logger.info("%d events received, %d correlationAlerts generated." % (self._events_processed, self._alert_generated))
 
         def correlationAlert(self, idmef):
                 self._alert_generated = self._alert_generated + 1

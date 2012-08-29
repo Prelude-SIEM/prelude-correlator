@@ -31,7 +31,7 @@ Get Support
 
 
 Prelude-user mailing list archives can be accessed at:
-        http://www.prelude-ids.org/mailman/listinfo
+        https://www.prelude-ids.org/lists
 
 
 Commercial Support is available through the CS-SI company:
@@ -53,14 +53,14 @@ prelude-devel mailing list by sending a mail to:
 and post your patch with a description of functionality.
 You can also attach patches to bugs on
 
-        https://dev.prelude-ids.com
+        https://www.prelude-ids.org
 
 
 2. BUGS
 
 If you find any bugs, please report them to:
 
-        https://dev.prelude-ids.com
+        https://www.prelude-ids.org
 
 Please make sure that what you're reporting is actually a BUG and not
 a problem on your side.

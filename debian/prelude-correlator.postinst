@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+DAEMON_USER="prelude-correlator"
+
+add_sysuser()
+{
+        if ! getent passwd $DAEMON_USER >/dev/null; then
+                adduser --system --disabled-login --no-create-home --group $DAEMON_USER 2>&1 > /dev/null
+        fi
+}
+
+add_sysuser
+
+chown -R prelude-correlator /var/lib/prelude-correlator
+
+#DEBHELPER#
+
+exit 0
+

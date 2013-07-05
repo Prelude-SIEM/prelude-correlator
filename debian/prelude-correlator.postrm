@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+DAEMON_USER="prelude-correlator"
+
+if [ "$1" = "purge" ]
+then
+    deluser $DAEMON_USER || true
+fi
+
+#DEBHELPER#
+
+exit 0
+

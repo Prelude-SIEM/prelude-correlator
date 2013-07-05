@@ -1,0 +1,20 @@
+Prelude-Correlator specific notes for Debian
+============================================
+
+Installation
+------------
+
+After installing the package, you need to register the correlator
+to the Prelude Manager.
+
+The package will create a dedicated user for the correlator (since
+it does not require root privileges), so the registration line will
+be something like::
+
+  prelude-admin register prelude-correlator "idmef:rw" <manager address> --uid prelude-correlator --gid prelude-correlator
+
+After you have registered the correlator, you can edit /etc/default/prelude-correlator and set::
+
+ RUN=yes
+
+

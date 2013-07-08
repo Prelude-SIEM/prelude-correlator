@@ -1,7 +1,7 @@
 Source: prelude-correlator
 Section: admin
 Priority: extra
-Maintainer: Enguerrand de MAUDUIT <enguerrand.de-mauduit@c-s.fr>
+Maintainer: Equipe Prelude <contact.prelude@c-s.fr>
 Build-Depends: debhelper (>= 7.0.50~),
     python,
     python-setuptools (>= 0.6.14),

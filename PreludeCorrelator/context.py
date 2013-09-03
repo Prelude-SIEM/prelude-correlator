@@ -25,6 +25,7 @@ from PreludeCorrelator import require
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
 
+_DEBUG_MODE = False
 
 class Timer:
         def __setstate__(self, dict):
@@ -114,6 +115,10 @@ class Context(IDMEF, Timer):
                         _CONTEXT_TABLE[name] = []
 
                 _CONTEXT_TABLE[name].append(self)
+                
+                if _DEBUG_MODE:
+                    print  "DEBUG: (", time.strftime("%Y %B %d %H:%M:%S"), ") <KEY>: ", self._name," ", " <VALUE>:", _CONTEXT_TABLE.get(self._name), " will be added to the context list.\n"
+                    print "_CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n\n"
 
                 x = self._mergeIntersect(debug=False)
                 if x > 0:
@@ -266,6 +271,10 @@ class Context(IDMEF, Timer):
                 if isinstance(self, Timer):
                         self.stop()
 
+                if _DEBUG_MODE == True:
+                    print "DEBUG: (", time.strftime("%Y %B %d %H:%M:%S"), ") <KEY>: ", self._name, " <VALUE>: ", _CONTEXT_TABLE[self._name], " will be removed from the context list.\n"
+                    print "_CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n\n"
+
                 _CONTEXT_TABLE[self._name].remove(self)
                 if not _CONTEXT_TABLE[self._name]:
                     _CONTEXT_TABLE.pop(self._name)
@@ -310,15 +319,26 @@ def load():
                 global _CONTEXT_TABLE
 
                 fd = open(_ctxt_filename, "r")
+
+                if _DEBUG_MODE:
+                    print "DEBUG: _ctxt_filename: ", _ctxt_filename, "\n"
+
                 try:
                         _CONTEXT_TABLE.update(pickle.load(fd))
                 except EOFError:
                         return
 
                 v = _CONTEXT_TABLE.values()
+
+                if _DEBUG_MODE:
+                    print "DEBUG: the context file has been opened. _CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n"
+
                 if v and type(v[0]) is not list:
                         _TIMER_LIST = [ ]
                         _CONTEXT_TABLE = { }
+
+                        if _DEBUG_MODE:
+                            print "DEBUG: _CONTEXT_TABLE = { } \n\n"
 
                 for ctxlist in _CONTEXT_TABLE.values():
                     for ctx in ctxlist:

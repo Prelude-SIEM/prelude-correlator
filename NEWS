@@ -1,3 +1,14 @@
+* 2013-09-03, prelude-correlator-1.0.2:
+
+- RHEL : Added missing dependency to python-setuptools
+
+- RHEL : Fixed #517 : Prelude Correlator not starting (SELinux)
+
+- RHEL : Fixed #494 : Prelude Correlator not stopping
+
+- Added some debug infos
+
+
 * 2012-06-01, prelude-correlator-1.0.1:
 
 - Fixed #494 : Prelude Correlator not stopping

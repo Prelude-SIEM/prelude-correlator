@@ -1,6 +1,0 @@
-DAEMONUSER=prelude-correlator   # Users to run the daemons as.
-
-RUN=no   # set to yes to start the server in the init.d script.
-         # you need to register the "prelude-correlator" profile
-         # before being able to start the correlator automatically
-

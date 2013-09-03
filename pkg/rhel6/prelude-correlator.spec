@@ -2,8 +2,8 @@
 
 Name: prelude-correlator
 Epoch:   1
-Version: 1.0.1
-Release: 2%{?dist}
+Version: 1.0.2
+Release: 1%{?dist}
 Summary: Real time correlator of events received by Prelude Manager
 
 Group: Applications/Internet

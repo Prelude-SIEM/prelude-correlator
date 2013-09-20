@@ -8,8 +8,8 @@ Summary: Real time correlator of events received by Prelude Manager
 
 Group: Applications/Internet
 License: GPLv2+
-URL: http://www.prelude-ids.com
-Source0: http://www.prelude-ids.com/download/releases/prelude-correlator/%{name}-%{version}.tar.gz
+URL: http://www.prelude-ids.org
+Source0: %{name}-%{version}.tar.gz
 Source1: prelude-correlator.init
 
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n) 

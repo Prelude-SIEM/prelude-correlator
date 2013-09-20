@@ -106,13 +106,13 @@ else:
 setup(
         name="prelude-correlator",
         version=PRELUDE_CORRELATOR_VERSION,
-        maintainer = "Yoann Vandoorselaere",
-        maintainer_email = "yoann.v@prelude-ids.com",
+        maintainer = "Prelude Team",
+        maintainer_email = "contact.prelude@c-s.fr",
         author = "Yoann Vandoorselaere",
         author_email = "yoann.v@prelude-ids.com",
         license = "GPL",
-        url = "http://www.prelude-ids.com",
-        download_url = "http://www.prelude-ids.com/development/download/",
+        url = "https://www.prelude-ids.org",
+        download_url = "https://www.prelude-ids.org/projects/prelude/files",
         description = "Prelude-Correlator perform real time correlation of events received by Prelude",
         long_description = """
 Prelude-Correlator perform real time correlation of events received by Prelude.
@@ -129,7 +129,7 @@ distributed with a default set of correlation rules, yet you still
 have the opportunity to modify and create any correlation rule that
 suits your needs.
 """,
-        classifiers = [ "Development Status :: 4 - Beta",
+        classifiers = [ "Development Status :: 5 - Production/Stable",
                         "Environment :: Console",
                         "Intended Audience :: System Administrators",
                         "License :: OSI Approved :: GNU General Public License (GPL)",

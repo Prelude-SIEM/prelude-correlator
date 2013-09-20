@@ -1,3 +1,362 @@
+commit be7094f2aa858837b15c1bc56f48f2f5027ac159
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2013-09-20
+
+    setup.py : Fixed files downloading behind proxies
+
+ NEWS     |    4 +++-
+ setup.py |   16 +++++-----------
+ 2 files changed, 8 insertions(+), 12 deletions(-)
+
+commit 1f12291c8ea40bd44baf6cc476d799db1b58cba0
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2013-09-03
+
+    Deleted pcorr_debug_mode_test.py
+
+ unittests/pcorr_debug_mode_test.py |   98 ------------------------------------
+ 1 files changed, 0 insertions(+), 98 deletions(-)
+ delete mode 100755 unittests/pcorr_debug_mode_test.py
+
+commit a3383445f73715478c95d9324c88f12f404d61f0
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2013-09-03
+
+    Prepare 1.0.2 - Removed debian packaging
+
+ NEWS                               |   11 ++
+ debian/README.Debian               |   20 ---
+ debian/changelog                   |  117 --------------
+ debian/compat                      |    1 -
+ debian/control                     |   33 ----
+ debian/copyright                   |   38 -----
+ debian/dirs                        |    4 -
+ debian/docs                        |    2 -
+ debian/prelude-correlator.default  |    6 -
+ debian/prelude-correlator.examples |    1 -
+ debian/prelude-correlator.init     |  296 ------------------------------------
+ debian/prelude-correlator.install  |    4 -
+ debian/prelude-correlator.postinst |   21 ---
+ debian/prelude-correlator.postrm   |   13 --
+ debian/pyversions                  |    1 -
+ debian/rules                       |   87 -----------
+ debian/watch                       |   13 --
+ pkg/rhel6/prelude-correlator.spec  |    4 +-
+ setup.py                           |    2 +-
+ 19 files changed, 14 insertions(+), 660 deletions(-)
+ delete mode 100644 debian/README.Debian
+ delete mode 100644 debian/changelog
+ delete mode 100644 debian/compat
+ delete mode 100644 debian/control
+ delete mode 100644 debian/copyright
+ delete mode 100644 debian/dirs
+ delete mode 100644 debian/docs
+ delete mode 100644 debian/prelude-correlator.default
+ delete mode 100644 debian/prelude-correlator.examples
+ delete mode 100644 debian/prelude-correlator.init
+ delete mode 100644 debian/prelude-correlator.install
+ delete mode 100644 debian/prelude-correlator.postinst
+ delete mode 100644 debian/prelude-correlator.postrm
+ delete mode 100644 debian/pyversions
+ delete mode 100755 debian/rules
+ delete mode 100644 debian/watch
+
+commit f81d1f5f520e22fb4f9e128e45e2e688927997ab
+Author: Thomas ANDREJAK <thomas.andrejak@c-s.fr>
+Date:   2013-09-03
+
+    Add debug feature to PreludeCorrelator : missing main and context file
+
+ PreludeCorrelator/context.py |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
+
+commit 983df7da7be3efab55e599f8b349fe1fc5111fec
+Author: Thomas ANDREJAK <thomas.andrejak@c-s.fr>
+Date:   2013-08-29
+
+    Add python-netaddr dependencie because of the SpamhausDropPlugin plugin
+
+ debian/control |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit d4e68f68fe3a656fa2d2d3b8e843f4707c6a4fa9
+Author: Thomas ANDREJAK <thomas.andrejak@c-s.fr>
+Date:   2013-08-11
+
+    Add debug feature to PreludeCorrelator
+
+ unittests/pcorr_debug_mode_test.py |   98 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 98 insertions(+), 0 deletions(-)
+ create mode 100755 unittests/pcorr_debug_mode_test.py
+
+commit a457a91c915b764ebc04f90510aab1aee1f43016
+Author: edemaudu <edemaudu@vigilo-dev9.si.c-s.fr>
+Date:   2013-07-08
+
+    Changement du nom de contact pour "Equipe Prelude" avec le mail correspondant
+
+ debian/control   |    2 +-
+ debian/copyright |   16 +++++++++-------
+ 2 files changed, 10 insertions(+), 8 deletions(-)
+
+commit 76b04a08ae65a7772001c7d6b1e4b5f58e1b1d3a
+Author: edemaudu <edemaudu@vigilo-dev9.si.c-s.fr>
+Date:   2013-07-05
+
+    Ajout répertoire debian/ pour création du paquet
+    Ajout fichiers manquants dans le dépot pour la construction (fichiers plugin et changelog)
+
+ ChangeLog                                   | 4208 +++++++++++
+ PreludeCorrelator/plugins/dshield.dat       |10010 +++++++++++++++++++++++++++
+ PreludeCorrelator/plugins/spamhaus_drop.dat |  234 +
+ debian/README.Debian                        |   20 +
+ debian/changelog                            |  117 +
+ debian/compat                               |    1 +
+ debian/control                              |   32 +
+ debian/copyright                            |   36 +
+ debian/dirs                                 |    4 +
+ debian/docs                                 |    2 +
+ debian/prelude-correlator.default           |    6 +
+ debian/prelude-correlator.examples          |    1 +
+ debian/prelude-correlator.init              |  296 +
+ debian/prelude-correlator.install           |    4 +
+ debian/prelude-correlator.postinst          |   21 +
+ debian/prelude-correlator.postrm            |   13 +
+ debian/pyversions                           |    1 +
+ debian/rules                                |   87 +
+ debian/watch                                |   13 +
+ prelude_correlator.egg-info/SOURCES.txt     |    2 +-
+ 20 files changed, 15107 insertions(+), 1 deletions(-)
+ create mode 100644 ChangeLog
+ create mode 100644 PreludeCorrelator/plugins/dshield.dat
+ create mode 100644 PreludeCorrelator/plugins/spamhaus_drop.dat
+ create mode 100644 debian/README.Debian
+ create mode 100644 debian/changelog
+ create mode 100644 debian/compat
+ create mode 100644 debian/control
+ create mode 100644 debian/copyright
+ create mode 100644 debian/dirs
+ create mode 100644 debian/docs
+ create mode 100644 debian/prelude-correlator.default
+ create mode 100644 debian/prelude-correlator.examples
+ create mode 100644 debian/prelude-correlator.init
+ create mode 100644 debian/prelude-correlator.install
+ create mode 100644 debian/prelude-correlator.postinst
+ create mode 100644 debian/prelude-correlator.postrm
+ create mode 100644 debian/pyversions
+ create mode 100755 debian/rules
+ create mode 100644 debian/watch
+
+commit 89f00068128b75b7145d2ba33bbbde2860b9c370
+Author: Antoine LUONG <antoine.luong@c-s.fr>
+Date:   2012-08-29
+
+    Updated URL info
+
+ README |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 594b526016716a5ad870115c26b8e309cf32eace
+Author: Antoine LUONG <antoine.luong@c-s.fr>
+Date:   2012-08-14
+
+    Updated Free Software Foundation headers
+
+ COPYING                                   |   41 ++++++++++++++---------------
+ PreludeCorrelator/__init__.py             |    6 ++--
+ PreludeCorrelator/config.py               |    6 ++--
+ PreludeCorrelator/context.py              |    6 ++--
+ PreludeCorrelator/idmef.py                |    6 ++--
+ PreludeCorrelator/log.py                  |    6 ++--
+ PreludeCorrelator/main.py                 |   10 +++---
+ PreludeCorrelator/pluginmanager.py        |    6 ++--
+ PreludeCorrelator/plugins/bruteforce.py   |    6 ++--
+ PreludeCorrelator/plugins/businesshour.py |    6 ++--
+ PreludeCorrelator/plugins/dshield.py      |    6 ++--
+ PreludeCorrelator/plugins/firewall.py     |    6 ++--
+ PreludeCorrelator/plugins/opensshauth.py  |    6 ++--
+ PreludeCorrelator/plugins/scan.py         |    6 ++--
+ PreludeCorrelator/plugins/spamhausdrop.py |    6 ++--
+ PreludeCorrelator/plugins/worm.py         |    6 ++--
+ PreludeCorrelator/require.py              |    6 ++--
+ PreludeCorrelator/utils.py                |    6 ++--
+ setup.py                                  |   19 +++++++++++++
+ 19 files changed, 92 insertions(+), 74 deletions(-)
+
+commit f917a914127a1e809d42c4a7eafb4d3e69acd39b
+Author: Antoine LUONG <antoine.luong@c-s.fr>
+Date:   2012-08-09
+
+    Added missing dependency to python-setuptools
+    Fixed #517 : Prelude Correlator not starting (SELinux)
+
+ pkg/rhel6/prelude-correlator.init |   14 ++++++++++++++
+ pkg/rhel6/prelude-correlator.spec |    7 ++++++-
+ 2 files changed, 20 insertions(+), 1 deletions(-)
+
+commit 67306475c53f8ca777ba58a09bf2d1a4ce057ba3
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2012-06-20
+
+    Definitively fixed #494
+
+ pkg/rhel6/prelude-correlator.init |  115 +++++++++++++++++++------------------
+ 1 files changed, 60 insertions(+), 55 deletions(-)
+
+commit ad99ff48b89bdb7578414ef31f26aa5207d6f46f
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2012-06-05
+
+    Readded *.dat in egg SOURCES.txt
+
+ prelude_correlator.egg-info/SOURCES.txt |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 2bae13915ea3f37d273d1643d92d484c31868dc2
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2012-06-01
+
+    Update NEWS, README bump version number
+
+ NEWS                                    |   40 +++++++++++++++++++++++++++++++
+ README                                  |    4 +-
+ prelude_correlator.egg-info/PKG-INFO    |    4 +-
+ prelude_correlator.egg-info/SOURCES.txt |    2 -
+ setup.py                                |    3 +-
+ 5 files changed, 46 insertions(+), 7 deletions(-)
+
+commit e5da0b492192861de70b1160d05ada2fef5ca680
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2012-06-01
+
+    Fixed #494 : Prelude Correlator not stopping
+
+ pkg/rhel6/prelude-correlator.init |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 0c6950e67580e65d978332e7cae0dbe76c2a386b
+Author: Antoine LUONG <antoine.luong@c-s.fr>
+Date:   2012-06-01
+
+    Copyright change for README files
+
+ AUTHORS                   |    2 +-
+ HACKING.README            |    7 +++----
+ PreludeCorrelator/main.py |    2 +-
+ README                    |    8 ++++----
+ 4 files changed, 9 insertions(+), 10 deletions(-)
+
+commit 8bc44e714abbda0db5165947ca7e54bb7a5d6d15
+Author: root <root@localhost.localdomain>
+Date:   2012-05-10
+
+    Copyright change for .c and .py files
+
+ PreludeCorrelator/__init__.py             |    2 +-
+ PreludeCorrelator/config.py               |    2 +-
+ PreludeCorrelator/context.py              |    2 +-
+ PreludeCorrelator/idmef.py                |    2 +-
+ PreludeCorrelator/log.py                  |    2 +-
+ PreludeCorrelator/main.py                 |    2 +-
+ PreludeCorrelator/pluginmanager.py        |    2 +-
+ PreludeCorrelator/plugins/bruteforce.py   |    2 +-
+ PreludeCorrelator/plugins/businesshour.py |    2 +-
+ PreludeCorrelator/plugins/dshield.py      |    2 +-
+ PreludeCorrelator/plugins/firewall.py     |    2 +-
+ PreludeCorrelator/plugins/opensshauth.py  |    2 +-
+ PreludeCorrelator/plugins/scan.py         |    2 +-
+ PreludeCorrelator/plugins/spamhausdrop.py |    2 +-
+ PreludeCorrelator/plugins/worm.py         |    2 +-
+ PreludeCorrelator/require.py              |    2 +-
+ PreludeCorrelator/utils.py                |    2 +-
+ 17 files changed, 17 insertions(+), 17 deletions(-)
+
+commit ae644cb1a50afcc981d625ad9e0d9690f3dcd07e
+Author: Jean-Charles ROGEZ <jean-charles.rogez@c-s.fr>
+Date:   2012-04-02
+
+    Added packaging for rhel6
+
+ pkg/rhel6/prelude-correlator.init |   87 ++++++++++++++++++++++++++
+ pkg/rhel6/prelude-correlator.spec |  123 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 210 insertions(+), 0 deletions(-)
+ create mode 100755 pkg/rhel6/prelude-correlator.init
+ create mode 100644 pkg/rhel6/prelude-correlator.spec
+
+commit 1fa41a66a8a0b19f0f0cc7772fd90d8efa6e3b51
+Author: F. Yhuel <fyhuel@prelude-technologies.com>
+Date:   2010-10-11
+
+    Remove global statement for 'env'
+    
+    'env' varaible was made global while it appears to be unnecessary
+
+ PreludeCorrelator/main.py |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+commit b56674d3da820912a07b89006625d6870458f378
+Author: Yoann Vandoorselaere <yoann.v@prelude-technologies.com>
+Date:   2010-09-10
+
+    Small impact description fix
+
+ PreludeCorrelator/plugins/worm.py |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit cb9cb33e9c52110272e179b08d52bc65a9ac0fb5
+Author: Yoann Vandoorselaere <yoann.v@prelude-technologies.com>
+Date:   2010-07-20
+
+    Fix typo (warnings, in place of warning)
+
+ PreludeCorrelator/log.py |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c32aaa02f3f6bde99c9e30d5b30fc5f0ed113870
+Author: Yoann Vandoorselaere <yoann.v@prelude-technologies.com>
+Date:   2010-05-05
+
+    Ability to specify an input IDMEF criteria
+    
+    There is now a [general] configuration section in prelude-correlator.conf
+    allowing to specify a criteria option that use an IDMEF criteria parameter
+    as an argument.
+    
+    Using this option, it is possible to specify an input filter for events
+    to be processed by the correlator.
+    
+    Additionally, always use an IDMEFCriteria to check whether the input
+    event is an alert, in place of manually retrieving alert.create_time.
+
+ PreludeCorrelator/main.py |   22 +++++++++++++++++-----
+ prelude-correlator.conf   |   10 ++++++++++
+ 2 files changed, 27 insertions(+), 5 deletions(-)
+
+commit 2311215a3f34c652f66c8d182514395782b4ee60
+Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
+Date:   2010-01-11
+
+    Implement Context time merging capability
+    
+    This commit introduce time merging capability within Prelude-Correlator:
+    as of now, correlation contexts are associated with the time of the
+    triggering IDMEF event.
+    
+    When searching for a matching context, an existing context will only be
+    returned in case the specified search time match the time windows of an
+    existing context.
+    
+    This mean that when receiving a burst of events, the time carried with
+    events is directly taken into account : separate instances exists for
+    the same Context associated with events received at a different time.
+    
+    Additionally, context can be merged if more than one context time windows
+    overlap.
+
+ PreludeCorrelator/context.py |  135 +++++++++++++++++++++++++++++++++++++-----
+ PreludeCorrelator/main.py    |    2 +
+ 2 files changed, 121 insertions(+), 16 deletions(-)
+
 commit 48b57a5158cf6a14e5e86c021534f336ffc2969f
 Author: Yoann Vandoorselaere <yoann.v@prelude-technologies.com>
 Date:   2010-03-16

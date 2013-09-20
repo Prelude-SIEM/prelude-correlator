@@ -23,6 +23,7 @@ from ez_setup import use_setuptools
 use_setuptools()
 
 import os, sys, shutil
+import urllib2
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
@@ -31,17 +32,10 @@ PRELUDE_CORRELATOR_VERSION = "1.0.2"
 
 
 class my_sdist(sdist):
-        def _downloadDatabase(self, dname, server, url, filename):
-                import httplib
+        def _downloadDatabase(self, dname, url, filename):
 
                 print "Downloading %s database, this might take a while..." % (dname)
-
-                con = httplib.HTTPConnection(server)
-                con.request("GET", url)
-                r = con.getresponse()
-                if r.status != 200:
-                        raise Exception, "Could not download %s host list, error %d" % (dname, r.status)
-
+		r = urllib2.urlopen(url)
                 fd = open(filename, "w")
                 fd.write(r.read())
                 fd.close()
@@ -52,8 +46,8 @@ class my_sdist(sdist):
                 fout.write(fin.read())
                 fout.close()
 
-                self._downloadDatabase("DShield", "www.dshield.org", "/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
-                self._downloadDatabase("Spamhaus", "www.spamhaus.org", "/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
+                self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
+                self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
 
                 sdist.__init__(self, *args)
 

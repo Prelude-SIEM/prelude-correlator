@@ -1,4 +1,6 @@
-* 2013-09-03, prelude-correlator-1.0.2:
+* 2013-09-20, prelude-correlator-1.0.2:
+
+- setup.py : Fixed files downloading behind proxies
 
 - RHEL : Added missing dependency to python-setuptools
 

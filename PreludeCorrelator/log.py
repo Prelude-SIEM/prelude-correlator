@@ -43,6 +43,8 @@ class Log(logging.Logger):
             self.warning(("[unknown:%d] " % level) + log)
 
     def __init__(self, options):
+        self.debug_level = options.debug
+
         try:
                 PreludeEasy.PreludeLog.SetCallback(self.__log_callback)
         except:
@@ -75,8 +77,9 @@ class Log(logging.Logger):
         else:
                 log_func(log)
 
-    def debug(self, log):
-        self._log(self._logger.debug, log, extra = { "pid": os.getpid() })
+    def debug(self, log, level=0):
+        if level >= self.debug_level:
+            self._log(self._logger.debug, log, extra = { "pid": os.getpid() })
 
     def info(self, log):
         self._log(self._logger.info, log, extra = { "pid": os.getpid() })

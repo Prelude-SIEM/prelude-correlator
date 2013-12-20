@@ -183,7 +183,7 @@ def main():
         SignalHandler(env)
 
         # restore previous context.
-        context.load()
+        context.load(env)
 
         env.prelude_client.recvEvents()
 

@@ -22,10 +22,10 @@ from PreludeEasy import IDMEFTime
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator import require
 
+env = None
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
 
-_DEBUG_MODE = False
 
 class Timer:
         def __setstate__(self, dict):
@@ -115,14 +115,10 @@ class Context(IDMEF, Timer):
                         _CONTEXT_TABLE[name] = []
 
                 _CONTEXT_TABLE[name].append(self)
-                
-                if _DEBUG_MODE:
-                    print  "DEBUG: (", time.strftime("%Y %B %d %H:%M:%S"), ") <KEY>: ", self._name," ", " <VALUE>:", _CONTEXT_TABLE.get(self._name), " will be added to the context list.\n"
-                    print "_CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n\n"
+                env.logger.debug("[add]%s" % (self.getStat()))
 
                 x = self._mergeIntersect(debug=False)
                 if x > 0:
-                        from PreludeCorrelator.main import env
                         env.logger.error("A context merge happened on initialization. This should NOT happen : please report this error.")
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
@@ -237,8 +233,9 @@ class Context(IDMEF, Timer):
 
                 self._options.update(options)
                 self.setOptions(self._options)
+                env.logger.debug("[update]%s" % self.getStat())
 
-        def stats(self, log_func, now=time.time()):
+        def getStat(self, now=time.time()):
                 str = ""
 
                 if self._options["threshold"] != -1:
@@ -247,13 +244,13 @@ class Context(IDMEF, Timer):
                 if self._timer_start:
                         str += " expire=%d/%d" % (self.elapsed(now), self._options["expire"])
 
-                tmin = time.strftime("%c", time.localtime(self._time_min))
+                tmin = time.strftime("%X", time.localtime(self._time_min))
                 if self._time_max == -1:
                     tmax = "<none>"
                 else:
-                    tmax = time.strftime("%c", time.localtime(self._time_max))
+                    tmax = time.strftime("%X", time.localtime(self._time_max))
 
-                log_func("[%s]: tmin=%s tmax=%s update=%d%s" % (self._name, tmin, tmax, self._update_count, str))
+                return ("[%s]: tmin=%s tmax=%s update=%d%s" % (self._name, tmin, tmax, self._update_count, str))
 
         def getOptions(self):
                 return self._options
@@ -271,9 +268,7 @@ class Context(IDMEF, Timer):
                 if isinstance(self, Timer):
                         self.stop()
 
-                if _DEBUG_MODE == True:
-                    print "DEBUG: (", time.strftime("%Y %B %d %H:%M:%S"), ") <KEY>: ", self._name, " <VALUE>: ", _CONTEXT_TABLE[self._name], " will be removed from the context list.\n"
-                    print "_CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n\n"
+                env.logger.debug("[del]%s" % self.getStat())
 
                 _CONTEXT_TABLE[self._name].remove(self)
                 if not _CONTEXT_TABLE[self._name]:
@@ -313,15 +308,15 @@ def save():
         pickle.dump(_CONTEXT_TABLE, fd)
         fd.close()
 
-def load():
+def load(_env):
+        global env
+        env = _env
+
         if os.path.exists(_ctxt_filename):
                 global _TIMER_LIST
                 global _CONTEXT_TABLE
 
                 fd = open(_ctxt_filename, "r")
-
-                if _DEBUG_MODE:
-                    print "DEBUG: _ctxt_filename: ", _ctxt_filename, "\n"
 
                 try:
                         _CONTEXT_TABLE.update(pickle.load(fd))
@@ -329,16 +324,11 @@ def load():
                         return
 
                 v = _CONTEXT_TABLE.values()
-
-                if _DEBUG_MODE:
-                    print "DEBUG: the context file has been opened. _CONTEXT_TABLE.items(): ", _CONTEXT_TABLE.items(), "\n\n"
-
                 if v and type(v[0]) is not list:
                         _TIMER_LIST = [ ]
                         _CONTEXT_TABLE = { }
 
-                        if _DEBUG_MODE:
-                            print "DEBUG: _CONTEXT_TABLE = { } \n\n"
+                env.logger.debug("[load]: %d context loaded" % len(_CONTEXT_TABLE))
 
                 for ctxlist in _CONTEXT_TABLE.values():
                     for ctx in ctxlist:
@@ -351,16 +341,15 @@ def wakeup(now):
 
 def stats(logger):
         now = time.time()
-
         with_threshold = []
 
         for ctxlist in _CONTEXT_TABLE.values():
             for ctx in ctxlist:
                 if ctx._options["threshold"] == -1:
-                        ctx.stats(logger.info, now)
+                        logger.info(ctx.getStat(now))
                 else:
                         with_threshold.append(ctx)
 
         with_threshold.sort(lambda x, y: x.getUpdateCount() - y.getUpdateCount())
         for ctx in with_threshold:
-                ctx.stats(logger.info, now)
+                logger.info(ctx.getStat(now))

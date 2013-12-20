@@ -235,8 +235,10 @@ class Context(IDMEF, Timer):
                 self.setOptions(self._options)
                 env.logger.debug("[update]%s" % self.getStat())
 
-        def getStat(self, now=time.time()):
+        def getStat(self, now=None):
                 str = ""
+                if not now:
+                        now = time.time()
 
                 if self._options["threshold"] != -1:
                         str += " threshold=%d/%d" % (self._update_count + 1, self._options["threshold"])

@@ -115,7 +115,7 @@ class Context(IDMEF, Timer):
                         _CONTEXT_TABLE[name] = []
 
                 _CONTEXT_TABLE[name].append(self)
-                env.logger.debug("[add]%s" % (self.getStat()))
+                env.logger.debug("[add]%s" % (self.getStat()), level=3)
 
                 x = self._mergeIntersect(debug=False)
                 if x > 0:
@@ -233,7 +233,7 @@ class Context(IDMEF, Timer):
 
                 self._options.update(options)
                 self.setOptions(self._options)
-                env.logger.debug("[update]%s" % self.getStat())
+                env.logger.debug("[update]%s" % self.getStat(), level=3)
 
         def getStat(self, now=None):
                 str = ""
@@ -270,7 +270,7 @@ class Context(IDMEF, Timer):
                 if isinstance(self, Timer):
                         self.stop()
 
-                env.logger.debug("[del]%s" % self.getStat())
+                env.logger.debug("[del]%s" % self.getStat(), level=3)
 
                 _CONTEXT_TABLE[self._name].remove(self)
                 if not _CONTEXT_TABLE[self._name]:

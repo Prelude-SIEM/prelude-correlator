@@ -78,7 +78,7 @@ class Log(logging.Logger):
                 log_func(log)
 
     def debug(self, log, level=0):
-        if level >= self.debug_level:
+        if level <= self.debug_level:
             self._log(self._logger.debug, log, extra = { "pid": os.getpid() })
 
     def info(self, log):

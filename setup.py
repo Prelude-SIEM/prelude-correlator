@@ -32,10 +32,16 @@ PRELUDE_CORRELATOR_VERSION = "1.0.2"
 
 
 class my_sdist(sdist):
+        
+        user_options = sdist.user_options + [ ( 'disabledl',None,"Disable the download of DShield and Spamhaus databases" ) ]
+        disabledl = False
+
         def _downloadDatabase(self, dname, url, filename):
 
                 print "Downloading %s database, this might take a while..." % (dname)
-		r = urllib2.urlopen(url)
+                req = urllib2.Request(url)
+                req.add_header('User-agent', 'Mozilla 5.10')
+                r = urllib2.urlopen(req)
                 fd = open(filename, "w")
                 fd.write(r.read())
                 fd.close()
@@ -45,11 +51,15 @@ class my_sdist(sdist):
                 fout = open('ChangeLog', 'w')
                 fout.write(fin.read())
                 fout.close()
-
-                self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
-                self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
-
                 sdist.__init__(self, *args)
+
+        def run(self):
+                if self.disabledl :
+                    print "You have disable the download of DShield and Spamhaus databases. You will have to download them later to use these plugin"
+                else:
+                    self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
+                    self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
+                sdist.run(self)
 
 
 

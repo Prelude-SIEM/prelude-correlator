@@ -53,6 +53,14 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 return itime
 
+        def GetAdditionalDataByMeaning(self, meaning):
+            try:
+                idx = self.Get("alert.additional_data(*).meaning").index(meaning)
+            except:
+                return None
+
+            return self.Get("alert.additional_data(%d).data" % idx)
+
         def Get(self, path, flatten=True, replacement=None):
                 path = PreludeEasy.IDMEFPath(path)
 

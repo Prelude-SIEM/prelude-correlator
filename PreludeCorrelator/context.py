@@ -45,14 +45,23 @@ class Timer:
                 except:
                         pass
 
-        def hasExpired(self, now=time.time()):
+        def hasExpired(self, now=None):
+                if not now:
+                        now = time.time()
+
                 return self.elapsed(now) >= self._timer_expire
 
-        def check(self, now=time.time()):
+        def check(self, now=None):
+                if not now:
+                        now = time.time()
+
                 if self.hasExpired(now):
                         self._timerExpireCallback()
 
-        def elapsed(self, now=time.time()):
+        def elapsed(self, now=None):
+                if not now:
+                        now = time.time()
+
                 return now - self._timer_start
 
         def running(self):

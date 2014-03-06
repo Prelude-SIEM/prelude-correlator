@@ -59,13 +59,13 @@ class Plugin(object, PluginLog):
 
 
 class PluginManager:
-    __ENTRYPOINT = 'PreludeCorrelator.plugins'
-
-    def __init__(self, env):
+    def __init__(self, env, entrypoint='PreludeCorrelator.plugins'):
         self._count = 0
         self.__instances = []
 
-        for entrypoint in pkg_resources.iter_entry_points(self.__ENTRYPOINT):
+        for entrypoint in pkg_resources.iter_entry_points(entrypoint):
+            env.logger.debug("loading entry point %s" % entrypoint, 1)
+
             try:
                 plugin_class = entrypoint.load()
             except Exception, e:
@@ -90,6 +90,9 @@ class PluginManager:
     def getPluginCount(self):
         return self._count
 
+    def getPluginList(self):
+        return self.__instances
+
     def signal(self, signo, frame):
         for plugin in self.__instances:
             try:
@@ -103,4 +106,3 @@ class PluginManager:
                 plugin.run(idmef)
             except Exception, e:
                 traceback.print_exc()
-

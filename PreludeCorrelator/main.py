@@ -35,8 +35,12 @@ class Env:
                 self.logger = log.Log(options)
 
                 self.config = config.Config(options.config)
-                self.pluginmanager = pluginmanager.PluginManager(self)
 
+                # restore previous context
+                # (this need to be called after logger is setup, and before plugin loading).
+                context.load(self)
+
+                self.pluginmanager = pluginmanager.PluginManager(self)
                 self.logger.info("%d plugins have been loaded." % (self.pluginmanager.getPluginCount()))
 
 
@@ -181,9 +185,6 @@ def main():
         idmef.set_prelude_client(env.prelude_client)
 
         SignalHandler(env)
-
-        # restore previous context.
-        context.load(env)
 
         env.prelude_client.recvEvents()
 

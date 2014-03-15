@@ -58,6 +58,7 @@ class SignalHandler:
                 if signum == signal.SIGQUIT:
                         self._env.prelude_client.stats()
                         context.stats(self._env.logger)
+                        self._env.pluginmanager.stats()
                 else:
                         self._env.prelude_client.stop()
 

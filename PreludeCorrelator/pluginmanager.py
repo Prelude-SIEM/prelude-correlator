@@ -51,6 +51,12 @@ class Plugin(object, PluginLog):
         self.env = env
         PluginLog.__init__(self, env)
 
+    def _getName(self):
+        return self.__class__.__name__
+
+    def stats(self):
+        pass
+
     def signal(self, signo, frame):
         pass
 
@@ -60,6 +66,7 @@ class Plugin(object, PluginLog):
 
 class PluginManager:
     def __init__(self, env, entrypoint='PreludeCorrelator.plugins'):
+        self._env = env
         self._count = 0
         self.__instances = []
 
@@ -81,7 +88,7 @@ class PluginManager:
             try:
                 pi = plugin_class(env)
             except Exception, e:
-                env.logger.warning("[%s]: exception occurred while loading: %s" % (pname, e))
+                env.logger.error("[%s]: exception occurred while loading:\n%s" % (pname, traceback.format_exc()))
                 continue
 
             self.__instances.append(pi)
@@ -93,16 +100,23 @@ class PluginManager:
     def getPluginList(self):
         return self.__instances
 
+    def stats(self):
+        for plugin in self.__instances:
+            try:
+                plugin.stats()
+            except Exception, e:
+                self._env.logger.error("[%s]: exception occurred while retrieving statistics:\n%s" % (plugin._getName(), traceback.format_exc()))
+
     def signal(self, signo, frame):
         for plugin in self.__instances:
             try:
                 plugin.signal(signo, frame)
             except Exception, e:
-                traceback.print_exc()
+                self._env.logger.error("[%s]: exception occurred while signaling:\n%s" % (plugin._getName(), traceback.format_exc()))
 
     def run(self, idmef):
         for plugin in self.__instances:
             try:
                 plugin.run(idmef)
             except Exception, e:
-                traceback.print_exc()
+                self._env.logger.error("[%s]: exception occurred while running:\n%s" % (plugin._getName(), traceback.format_exc()))

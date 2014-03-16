@@ -21,8 +21,8 @@
 
 import require
 import sys, os, time, signal
-from optparse import OptionParser
-from PreludeEasy import ClientEasy, CheckVersion, IDMEFCriteria
+from optparse import OptionParser, OptionGroup
+from PreludeEasy import ClientEasy, CheckVersion, IDMEF, IDMEFCriteria
 from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
@@ -98,7 +98,33 @@ class PreludeClient:
                 if self._print_output:
                         self._print_output.write(str(idmef))
 
-        def recvEvents(self):
+
+        def _recvEventsFromClient(self, idmef):
+                try:
+                        ret = self._client.RecvIDMEF(idmef, 1000)
+                except:
+                        ret = 0
+
+                return ret
+
+        def _readEventsFromFile(self, idmef, count=True):
+                if count and self._env._input_limit > 0 and self._env._input_count >= self._env._input_limit:
+                        self._continue = 0
+                        return 0
+
+                try:
+                        idmef << self._env._input_fd
+                except EOFError:
+                        self._continue = 0
+                        return 0
+
+                if count:
+                        self._env._input_count += 1
+
+                return 1
+
+
+        def _readEvents(self, _read_func_cb):
                 criteria = self._env.config.get("general", "criteria")
                 if criteria:
                     criteria = "alert && (%s)" % (criteria)
@@ -113,11 +139,8 @@ class PreludeClient:
 
                 last = time.time()
                 while self._continue:
-                        try:
-                            msg = idmef.IDMEF()
-                            r = self._client.RecvIDMEF(msg, 1000)
-                        except:
-                            r = 0
+                        msg = idmef.IDMEF()
+                        r = _read_func_cb(msg)
 
                         if r:
                                 if criteria.Match(msg):
@@ -127,6 +150,15 @@ class PreludeClient:
                         if now - last >= 1:
                                 context.wakeup(now)
                                 last = now
+
+        def readEvents(self, offset):
+                for i in xrange(0, offset):
+                        self._readEventsFromFile(idmef.IDMEF(), count=False)
+
+                self._readEvents(self._readEventsFromFile)
+
+        def recvEvents(self):
+                self._readEvents(self._recvEventsFromClient)
 
         def stop(self):
                 self._continue = False
@@ -143,6 +175,13 @@ def main():
         parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
         parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
         parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
+
+        grp = OptionGroup(parser, "IDMEF Input", "Read IDMEF events from file")
+        grp.add_option("", "--input-file", action="store", dest="readfile", type="string", help="Read IDMEF events from the specified file", metavar="FILE")
+        grp.add_option("", "--input-offset", action="store", dest="readoff", type="int", help="Start processing events starting at the given offset", metavar="OFFSET", default=0)
+        grp.add_option("", "--input-limit", action="store", dest="readlimit", type="int", help="Read events until the given limit is reached", metavar="LIMIT", default=-1)
+        parser.add_option_group(grp)
+
         parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
         parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
         parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
@@ -187,7 +226,13 @@ def main():
 
         SignalHandler(env)
 
-        env.prelude_client.recvEvents()
+        if options.readfile:
+                env._input_limit = options.readlimit
+                env._input_count = 0
+                env._input_fd = open(options.readfile, "r")
+                env.prelude_client.readEvents(options.readoff)
+        else:
+                env.prelude_client.recvEvents()
 
         # save existing context
         context.save()

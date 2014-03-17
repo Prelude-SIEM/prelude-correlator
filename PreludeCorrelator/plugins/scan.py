@@ -65,7 +65,7 @@ class EventSweepPlugin(Plugin):
                         insert = False
                         return
 
-            ctx.update(idmef=idmef)
+            ctx.update(idmef=idmef, timer_rst=ctx.getUpdateCount())
 
 
 # Detect Eventstorm:

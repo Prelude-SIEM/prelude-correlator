@@ -231,13 +231,13 @@ class Context(IDMEF, Timer):
                 version = self.__dict__.get("_version", None)
                 return self.FORMAT_VERSION == version
 
-        def update(self, options={}, idmef=None):
+        def update(self, options={}, idmef=None, timer_rst=True):
                 self._update_count += 1
 
                 if idmef:
                         self.addAlertReference(idmef)
 
-                if self.running():
+                if timer_rst and self.running():
                         self.reset()
 
                 self._options.update(options)

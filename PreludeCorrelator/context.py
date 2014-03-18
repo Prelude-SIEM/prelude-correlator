@@ -17,12 +17,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, time, StringIO, pickle
+import os, time, StringIO, pickle, sys
 from PreludeEasy import IDMEFTime
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator import require
 
 env = None
+_last_wakeup = 0
+_next_wakeup = 0
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
 
@@ -58,11 +60,11 @@ class Timer:
                 if not now:
                         now = time.time()
 
-                if self.hasExpired(now):
+                elapsed = self.elapsed(now)
+                if elapsed >= self._timer_expire:
                         self._timerExpireCallback()
-                        return True
-
-                return False
+                else:
+                        return self._timer_expire - elapsed
 
         def elapsed(self, now=None):
                 if not now:
@@ -80,6 +82,9 @@ class Timer:
                 if not self._timer_start and self._timer_expire > 0:
                         self._timer_start = time.time()
                         _TIMER_LIST.append(self)
+
+                        global _next_wakeup
+                        _next_wakeup = min(_next_wakeup, self._timer_expire)
 
         def stop(self):
                 self._timer_start = None
@@ -350,16 +355,30 @@ def load(_env):
                                 ctx.destroy()
 
 def wakeup(now):
-        global _TIMER_LIST
+        global _TIMER_LIST, _next_wakeup, _last_wakeup
 
+        if now - _last_wakeup < _next_wakeup:
+                return
+
+        _next_wakeup = sys.maxint
+
+        i = 0
+        tlen = len(_TIMER_LIST)
         need_delete = False
+
         for timer in _TIMER_LIST:
-                r = timer.check(now)
-                if r:
+                ret = timer.check(now)
+                if ret:
+                        _next_wakeup = min(ret, _next_wakeup)
+                else:
+                        i += 1
                         need_delete = True
 
         if need_delete:
                 _TIMER_LIST = [x for x in _TIMER_LIST if x._timer_start is not None]
+
+        env.logger.debug("woke-up %d/%d timer, next wake-up in %.2f seconds" % (i, tlen, _next_wakeup))
+        _last_wakeup = now
 
 def stats(logger):
         now = time.time()

@@ -52,11 +52,17 @@ class Timer:
                 return self.elapsed(now) >= self._timer_expire
 
         def check(self, now=None):
+                if not self._timer_start:
+                        return
+
                 if not now:
                         now = time.time()
 
                 if self.hasExpired(now):
                         self._timerExpireCallback()
+                        return True
+
+                return False
 
         def elapsed(self, now=None):
                 if not now:
@@ -76,9 +82,7 @@ class Timer:
                         _TIMER_LIST.append(self)
 
         def stop(self):
-                if self._timer_start:
-                        _TIMER_LIST.remove(self)
-                        self._timer_start = None
+                self._timer_start = None
 
         def reset(self):
                 self.stop()
@@ -224,7 +228,6 @@ class Context(IDMEF, Timer):
                                 return
                         else:
                                 self.alert()
-
                 self.destroy()
 
         def isVersionCompatible(self):
@@ -347,8 +350,16 @@ def load(_env):
                                 ctx.destroy()
 
 def wakeup(now):
+        global _TIMER_LIST
+
+        need_delete = False
         for timer in _TIMER_LIST:
-                timer.check(now)
+                r = timer.check(now)
+                if r:
+                        need_delete = True
+
+        if need_delete:
+                _TIMER_LIST = [x for x in _TIMER_LIST if x._timer_start is not None]
 
 def stats(logger):
         now = time.time()

@@ -43,6 +43,7 @@ class PluginLog:
 
 class Plugin(object, PluginLog):
     enable = True
+    autoload = True
 
     def getConfigValue(self, option, default=None, type=str):
         return self.env.config.get(self.__class__.__name__, option, default=default, type=type)
@@ -68,7 +69,8 @@ class PluginManager:
     def __init__(self, env, entrypoint='PreludeCorrelator.plugins'):
         self._env = env
         self._count = 0
-        self.__instances = []
+        self.__plugins_instances = []
+        self.__plugins_classes = []
 
         for entrypoint in pkg_resources.iter_entry_points(entrypoint):
             env.logger.debug("loading entry point %s" % entrypoint, 1)
@@ -85,37 +87,45 @@ class PluginManager:
                 env.logger.info("[%s]: disabled on user request" % (pname))
                 continue
 
-            try:
-                pi = plugin_class(env)
-            except Exception, e:
-                env.logger.error("[%s]: exception occurred while loading:\n%s" % (pname, traceback.format_exc()))
-                continue
+            if plugin_class.autoload:
+                try:
+                    pi = plugin_class(env)
+                except Exception, e:
+                    env.logger.error("[%s]: exception occurred while loading:\n%s" % (pname, traceback.format_exc()))
+                    continue
+                self.__plugins_instances.append(pi)
 
-            self.__instances.append(pi)
+            self.__plugins_classes.append(plugin_class)
             self._count += 1
 
     def getPluginCount(self):
         return self._count
 
     def getPluginList(self):
-        return self.__instances
+        return self.getPluginsInstanceList()
+
+    def getPluginsInstancesList(self):
+        return self.__plugins_instances
+
+    def getPluginsClassesList(self):
+        return self.__plugins_classes
 
     def stats(self):
-        for plugin in self.__instances:
+        for plugin in self.getPluginsInstancesList():
             try:
                 plugin.stats()
             except Exception, e:
                 self._env.logger.error("[%s]: exception occurred while retrieving statistics:\n%s" % (plugin._getName(), traceback.format_exc()))
 
     def signal(self, signo, frame):
-        for plugin in self.__instances:
+        for plugin in self.getPluginsInstancesList():
             try:
                 plugin.signal(signo, frame)
             except Exception, e:
                 self._env.logger.error("[%s]: exception occurred while signaling:\n%s" % (plugin._getName(), traceback.format_exc()))
 
     def run(self, idmef):
-        for plugin in self.__instances:
+        for plugin in self.getPluginsInstancesList():
             try:
                 plugin.run(idmef)
             except Exception, e:

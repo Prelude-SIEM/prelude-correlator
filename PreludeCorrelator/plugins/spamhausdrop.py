@@ -19,12 +19,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os, httplib, time
-from PreludeCorrelator import require
+from PreludeCorrelator import require, log
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator.pluginmanager import Plugin
 from PreludeCorrelator.context import Context, Timer
 
 import netaddr
+
+logger = log.getLogger(__name__)
 
 if tuple(int(x) for x in netaddr.__version__.split(".")) >= (0, 7):
     from netaddr import IPAddress, IPNetwork, IPSet
@@ -64,7 +66,7 @@ class SpamhausDropPlugin(Plugin):
             Timer(self.__reload - age, self.__retrieveData).start()
 
     def __downloadData(self):
-        self.info("Downloading host list, this might take some time...")
+        logger.info("Downloading host list, this might take some time...")
 
         try:
             con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
@@ -80,7 +82,7 @@ class SpamhausDropPlugin(Plugin):
         fd.write(r.read())
         fd.close()
 
-        self.info("Downloading done, processing data.")
+        logger.info("Downloading done, processing data.")
 
     def __retrieveData(self, timer=None):
         try:

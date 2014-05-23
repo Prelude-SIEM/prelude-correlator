@@ -20,75 +20,64 @@
 import PreludeEasy
 import logging, logging.config, logging.handlers, sys, os
 
-class Log(logging.Logger):
-    def __log_callback(self, level, log):
+
+debug_level = 0
+
+def _debug(self, msg, *args, **kwargs):
+        level = kwargs.pop("level", 0)
+
+        if debug_level and level <= debug_level:
+                self.log(logging.DEBUG, msg, *args, **kwargs)
+
+
+logging.Logger.debug = _debug
+
+
+def __C_log_callback(self, level, log):
         log = log.rstrip('\n')
 
         if level == PreludeEasy.PreludeLog.DEBUG:
-            self.debug(log)
+                self.debug(log)
 
         elif level == PreludeEasy.PreludeLog.INFO:
-            self.info(log)
+                self.info(log)
 
         elif level == PreludeEasy.PreludeLog.WARNING:
-            self.warning(log)
+                self.warning(log)
 
         elif level == PreludeEasy.PreludeLog.ERROR:
-            self.error(log)
+                self.error(log)
 
         elif level == PreludeEasy.PreludeLog.CRITICAL:
-            self.critical(log)
+                self.critical(log)
 
         else:
-            self.warning(("[unknown:%d] " % level) + log)
+                self.warning(("[unknown:%d] " % level) + log)
 
-    def __init__(self, options):
-        self.debug_level = options.debug
+
+def initLogger(options):
+        global debug_level
+
+        debug_level = options.debug
 
         try:
-                PreludeEasy.PreludeLog.SetCallback(self.__log_callback)
+                PreludeEasy.PreludeLog.SetCallback(__C_log_callback)
         except:
                 # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
                 pass
-
-        self._have_extra = sys.version_info > (2, 4)
 
         try:
                 logging.config.fileConfig(options.config)
         except Exception, e:
                 DATEFMT = "%d %b %H:%M:%S"
-                if not self._have_extra:
-                        FORMAT="%(asctime)s %(name)s %(levelname)s: %(message)s"
-                else:
-                        FORMAT="%(asctime)s %(name)s (process:%(pid)d) %(levelname)s: %(message)s"
-
+                FORMAT="%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
                 logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
-
-        self._logger = logging.getLogger("prelude-correlator")
 
         if options.daemon is True:
                 hdlr = logging.handlers.SysLogHandler('/dev/log')
                 hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
-                self._logger.addHandler(hdlr)
+                logging.getLogger().addHandler(hdlr)
 
-    def _log(self, log_func, log, extra):
-        if self._have_extra:
-                log_func(log, extra=extra)
-        else:
-                log_func(log)
 
-    def debug(self, log, level=0):
-        if self.debug_level and level <= self.debug_level:
-            self._log(self._logger.debug, log, extra = { "pid": os.getpid() })
-
-    def info(self, log):
-        self._log(self._logger.info, log, extra = { "pid": os.getpid() })
-
-    def warning(self, log):
-        self._log(self._logger.warning, log, extra = { "pid": os.getpid() })
-
-    def error(self, log):
-        self._log(self._logger.error, log, extra = { "pid": os.getpid() })
-
-    def critical(self, log):
-        self._log(self._logger.critical, log, extra = { "pid": os.getpid() })
+def getLogger(name=__name__):
+        return logging.getLogger(name)

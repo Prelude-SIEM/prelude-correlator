@@ -22,18 +22,18 @@
 import require
 import sys, os, time, signal
 from optparse import OptionParser, OptionGroup
-from PreludeEasy import ClientEasy, CheckVersion, IDMEF, IDMEFCriteria
+from PreludeEasy import ClientEasy, CheckVersion, IDMEFCriteria
 from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config
 
 
+logger = log.getLogger(__name__)
 LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 
 class Env:
         def __init__(self, options):
-                self.logger = log.Log(options)
-
+                log.initLogger(options)
                 self.config = config.Config(options.config)
 
                 # restore previous context
@@ -41,7 +41,7 @@ class Env:
                 context.load(self)
 
                 self.pluginmanager = pluginmanager.PluginManager(self)
-                self.logger.info("%d plugins have been loaded." % (self.pluginmanager.getPluginCount()))
+                logger.info("%d plugins have been loaded.", self.pluginmanager.getPluginCount())
 
 
 class SignalHandler:
@@ -52,12 +52,12 @@ class SignalHandler:
                 signal.signal(signal.SIGQUIT, self._handle_signal)
 
         def _handle_signal(self, signum, frame):
-                self._env.logger.info("caught signal %d" % signum)
+                logger.info("caught signal %d", signum)
                 self._env.pluginmanager.signal(signum, frame)
 
                 if signum == signal.SIGQUIT:
                         self._env.prelude_client.stats()
-                        context.stats(self._env.logger)
+                        context.stats()
                         self._env.pluginmanager.stats()
                 else:
                         self._env.prelude_client.stop()
@@ -87,7 +87,7 @@ class PreludeClient:
                 self._events_processed += 1
 
         def stats(self):
-                self._env.logger.info("%d events received, %d correlationAlerts generated." % (self._events_processed, self._alert_generated))
+                logger.info("%d events received, %d correlationAlerts generated.", self._events_processed, self._alert_generated)
 
         def correlationAlert(self, idmef):
                 self._alert_generated = self._alert_generated + 1
@@ -134,7 +134,7 @@ class PreludeClient:
                 try:
                     criteria = IDMEFCriteria(criteria)
                 except Exception, e:
-                    env.logger.error("Error processing criteria '%s': %s" % (criteria, e))
+                    logger.error("Error processing criteria '%s': %s", criteria, e)
                     raise
 
                 last = time.time()

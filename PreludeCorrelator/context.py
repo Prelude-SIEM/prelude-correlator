@@ -17,16 +17,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, time, StringIO, pickle, sys
+import os, time, pickle, sys
 from PreludeEasy import IDMEFTime
 from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator import require
+from PreludeCorrelator import require, log
 
-env = None
 _last_wakeup = 0
 _next_wakeup = 0
 _TIMER_LIST = [ ]
 _CONTEXT_TABLE = { }
+logger = log.getLogger(__name__)
 
 
 class Timer:
@@ -44,8 +44,8 @@ class Timer:
                 self.stop()
                 try:
                         self._timer_cb(self)
-                except:
-                        pass
+                except Exception, e:
+                        logger.exception("on timer expiration: '%s'", e)
 
         def hasExpired(self, now=None):
                 if not now:
@@ -133,11 +133,11 @@ class Context(IDMEF, Timer):
                         _CONTEXT_TABLE[name] = []
 
                 _CONTEXT_TABLE[name].append(self)
-                env.logger.debug("[add]%s" % (self.getStat()), level=3)
+                logger.debug("[add]%s", self.getStat(), level=3)
 
                 x = self._mergeIntersect(debug=False)
                 if x > 0:
-                        env.logger.error("A context merge happened on initialization. This should NOT happen : please report this error.")
+                        logger.critical("A context merge happened on initialization. This should NOT happen : please report this error.")
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
                 if update or (overwrite is False):
@@ -250,7 +250,7 @@ class Context(IDMEF, Timer):
 
                 self._options.update(options)
                 self.setOptions(self._options)
-                env.logger.debug("[update]%s" % self.getStat(), level=3)
+                logger.debug("[update]%s", self.getStat(), level=3)
 
         def getStat(self, now=None):
                 str = ""
@@ -287,7 +287,7 @@ class Context(IDMEF, Timer):
                 if isinstance(self, Timer):
                         self.stop()
 
-                env.logger.debug("[del]%s" % self.getStat(), level=3)
+                logger.debug("[del]%s", self.getStat(), level=3)
 
                 _CONTEXT_TABLE[self._name].remove(self)
                 if not _CONTEXT_TABLE[self._name]:
@@ -328,9 +328,6 @@ def save():
         fd.close()
 
 def load(_env):
-        global env
-        env = _env
-
         if os.path.exists(_ctxt_filename):
                 global _TIMER_LIST
                 global _CONTEXT_TABLE
@@ -347,7 +344,7 @@ def load(_env):
                         _TIMER_LIST = [ ]
                         _CONTEXT_TABLE = { }
 
-                env.logger.debug("[load]: %d context loaded" % len(_CONTEXT_TABLE))
+                logger.debug("[load]: %d context loaded", len(_CONTEXT_TABLE))
 
                 for ctxlist in _CONTEXT_TABLE.values():
                     for ctx in ctxlist:
@@ -377,10 +374,10 @@ def wakeup(now):
         if need_delete:
                 _TIMER_LIST = [x for x in _TIMER_LIST if x._timer_start is not None]
 
-        env.logger.debug("woke-up %d/%d timer, next wake-up in %.2f seconds" % (i, tlen, _next_wakeup))
+        logger.debug("woke-up %d/%d timer, next wake-up in %.2f seconds", i, tlen, _next_wakeup)
         _last_wakeup = now
 
-def stats(logger):
+def stats():
         now = time.time()
         with_threshold = []
 

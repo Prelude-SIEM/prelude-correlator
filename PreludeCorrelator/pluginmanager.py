@@ -17,31 +17,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import pkg_resources, sys, os, traceback, ConfigParser
+import pkg_resources, ConfigParser
+from PreludeCorrelator import log
 
 
-class PluginLog:
-    def __init__(self, env):
-        self.__logger = env.logger
-        self.__prefix = "[" + self.__class__.__name__ + "]: "
-
-    def debug(self, log):
-        self.__logger.debug(self.__prefix + log)
-
-    def info(self, log):
-        self.__logger.info(self.__prefix + log)
-
-    def warning(self, log):
-        self.__logger.warning(self.__prefix + log)
-
-    def error(self, log):
-        self.__logger.error(self.__prefix + log)
-
-    def critical(self, log):
-        self.__logger.critical(self.__prefix + log)
+logger = log.getLogger(__name__)
 
 
-class Plugin(object, PluginLog):
+class Plugin(object):
     enable = True
     autoload = True
 
@@ -50,7 +33,6 @@ class Plugin(object, PluginLog):
 
     def __init__(self, env):
         self.env = env
-        PluginLog.__init__(self, env)
 
     def _getName(self):
         return self.__class__.__name__
@@ -73,26 +55,27 @@ class PluginManager:
         self.__plugins_classes = []
 
         for entrypoint in pkg_resources.iter_entry_points(entrypoint):
-            env.logger.debug("loading entry point %s" % entrypoint, 1)
+            logger.debug("loading entry point %s", entrypoint, level=1)
 
             try:
                 plugin_class = entrypoint.load()
             except Exception, e:
-                env.logger.warning("%s: %s" % (entrypoint, e))
+                logger.exception("error loading '%s': %s", entrypoint, e)
                 continue
 
             pname = plugin_class.__name__
 
             if env.config.getAsBool(pname, "disable", default=False) is True:
-                env.logger.info("[%s]: disabled on user request" % (pname))
+                logger.info("[%s]: disabled on user request", pname)
                 continue
 
             if plugin_class.autoload:
                 try:
                     pi = plugin_class(env)
                 except Exception, e:
-                    env.logger.error("[%s]: exception occurred while loading:\n%s" % (pname, traceback.format_exc()))
+                    logger.exception("[%s]: exception occurred while loading", pname)
                     continue
+
                 self.__plugins_instances.append(pi)
 
             self.__plugins_classes.append(plugin_class)
@@ -115,18 +98,18 @@ class PluginManager:
             try:
                 plugin.stats()
             except Exception, e:
-                self._env.logger.error("[%s]: exception occurred while retrieving statistics:\n%s" % (plugin._getName(), traceback.format_exc()))
+                logger.exception("[%s]: exception occurred while retrieving statistics", plugin._getName())
 
     def signal(self, signo, frame):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.signal(signo, frame)
             except Exception, e:
-                self._env.logger.error("[%s]: exception occurred while signaling:\n%s" % (plugin._getName(), traceback.format_exc()))
+                logger.exception("[%s]: exception occurred while signaling", plugin._getName())
 
     def run(self, idmef):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.run(idmef)
             except Exception, e:
-                self._env.logger.error("[%s]: exception occurred while running:\n%s" % (plugin._getName(), traceback.format_exc()))
+                logger.exception("[%s]: exception occurred while running", plugin._getName())

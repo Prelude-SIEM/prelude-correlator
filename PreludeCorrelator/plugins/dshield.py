@@ -19,10 +19,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os, httplib, time
-from PreludeCorrelator import context
-from PreludeCorrelator import require
+from PreludeCorrelator import context, require, log
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator.pluginmanager import Plugin
+
+
+logger = log.getLogger(__name__)
 
 
 class DshieldPlugin(Plugin):
@@ -49,7 +51,7 @@ class DshieldPlugin(Plugin):
             context.Timer(self.__reload - age, self.__retrieveData).start()
 
     def __downloadData(self):
-        self.info("Downloading host list, this might take some time...")
+        logger.info("Downloading host list, this might take some time...")
 
         try:
             con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
@@ -65,7 +67,7 @@ class DshieldPlugin(Plugin):
         fd.write(r.read())
         fd.close()
 
-        self.info("Downloading done, processing data.")
+        logger.info("Downloading done, processing data.")
 
     def __retrieveData(self, timer=None):
         try:

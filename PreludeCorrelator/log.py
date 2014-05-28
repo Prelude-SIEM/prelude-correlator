@@ -33,26 +33,27 @@ def _debug(self, msg, *args, **kwargs):
 logging.Logger.debug = _debug
 
 
-def __C_log_callback(self, level, log):
+def __C_log_callback(level, log):
         log = log.rstrip('\n')
+        logger = getLogger("libprelude")
 
         if level == PreludeEasy.PreludeLog.DEBUG:
-                self.debug(log)
+                logger.debug(log)
 
         elif level == PreludeEasy.PreludeLog.INFO:
-                self.info(log)
+                logger.info(log)
 
         elif level == PreludeEasy.PreludeLog.WARNING:
-                self.warning(log)
+                logger.warning(log)
 
         elif level == PreludeEasy.PreludeLog.ERROR:
-                self.error(log)
+                logger.error(log)
 
         elif level == PreludeEasy.PreludeLog.CRITICAL:
-                self.critical(log)
+                logger.critical(log)
 
         else:
-                self.warning(("[unknown:%d] " % level) + log)
+                logger.warning(("[unknown:%d] " % level) + log)
 
 
 def initLogger(options):

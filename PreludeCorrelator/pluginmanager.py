@@ -65,8 +65,11 @@ class PluginManager:
 
             pname = plugin_class.__name__
 
-            if env.config.getAsBool(pname, "disable", default=False) is True:
-                logger.info("[%s]: disabled on user request", pname)
+            if env.config.getAsBool(pname, "disable", default=not plugin_class.enable) is True:
+                if plugin_class.enable:
+                    logger.info("[%s]: disabled on user request", pname)
+                else:
+                    logger.info("[%s]: disabled by default", pname)
                 continue
 
             if plugin_class.autoload:

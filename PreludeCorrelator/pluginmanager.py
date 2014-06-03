@@ -85,7 +85,7 @@ class PluginManager:
         return self._count
 
     def getPluginList(self):
-        return self.getPluginsInstanceList()
+        return self.getPluginsInstancesList()
 
     def getPluginsInstancesList(self):
         return self.__plugins_instances

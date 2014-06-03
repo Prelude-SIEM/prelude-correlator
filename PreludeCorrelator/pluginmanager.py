@@ -27,6 +27,7 @@ logger = log.getLogger(__name__)
 class Plugin(object):
     enable = True
     autoload = True
+    conflict = []
 
     def getConfigValue(self, option, default=None, type=str):
         return self.env.config.get(self.__class__.__name__, option, default=default, type=type)
@@ -54,6 +55,9 @@ class PluginManager:
         self.__plugins_instances = []
         self.__plugins_classes = []
 
+        conflict = {}
+        force_enable = {}
+
         for entrypoint in pkg_resources.iter_entry_points(entrypoint):
             logger.debug("loading entry point %s", entrypoint, level=1)
 
@@ -65,11 +69,33 @@ class PluginManager:
 
             pname = plugin_class.__name__
 
-            if env.config.getAsBool(pname, "disable", default=not plugin_class.enable) is True:
+            enable_s = env.config.get(pname, "enable", default=str(plugin_class.enable)).lower()
+            enable = enable_s in ("true", "yes", "force")
+
+            if enable:
+                if env.config.getAsBool(pname, "disable", default=False):
+                    enable = False
+
+                elif enable_s == "force":
+                    force_enable[pname] = enable
+            else:
                 if plugin_class.enable:
                     logger.info("[%s]: disabled on user request", pname)
                 else:
                     logger.info("[%s]: disabled by default", pname)
+                continue
+
+            for reason, namelist in plugin_class.conflict:
+                conflict.update([(name, (pname, reason)) for name in namelist])
+
+            self.__plugins_classes.append(plugin_class)
+
+
+        for plugin_class in self.getPluginsClassesList():
+            pname = plugin_class.__name__
+
+            if pname in conflict and not force_enable.has_key(pname):
+                logger.info("[%s]: disabled by plugin '%s' reason:%s", pname, conflict[pname][0], conflict[pname][1])
                 continue
 
             if plugin_class.autoload:
@@ -81,7 +107,6 @@ class PluginManager:
 
                 self.__plugins_instances.append(pi)
 
-            self.__plugins_classes.append(plugin_class)
             self._count += 1
 
     def getPluginCount(self):

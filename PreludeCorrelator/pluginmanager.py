@@ -78,7 +78,8 @@ class PluginManager:
 
                 elif enable_s == "force":
                     force_enable[pname] = enable
-            else:
+
+            if not enable:
                 if plugin_class.enable:
                     logger.info("[%s]: disabled on user request", pname)
                 else:

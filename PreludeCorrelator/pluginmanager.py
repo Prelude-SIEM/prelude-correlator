@@ -48,6 +48,9 @@ class Plugin(object):
         pass
 
 
+class PluginError(Exception):
+     pass
+
 class PluginManager:
     def __init__(self, env, entrypoint='PreludeCorrelator.plugins'):
         self._env = env
@@ -59,15 +62,18 @@ class PluginManager:
         force_enable = {}
 
         for entrypoint in pkg_resources.iter_entry_points(entrypoint):
-            logger.debug("loading entry point %s", entrypoint, level=1)
+            logger.debug("loading entry point %s", entrypoint.module_name, level=1)
+
+            pname = entrypoint.name
 
             try:
                 plugin_class = entrypoint.load()
-            except Exception, e:
-                logger.exception("error loading '%s': %s", entrypoint, e)
+            except PluginError, e:
+                logger.error("[%s]: %s", pname, e)
                 continue
-
-            pname = plugin_class.__name__
+            except Exception, e:
+                logger.exception("error loading '%s': %s", pname, e)
+                continue
 
             enable_s = env.config.get(pname, "enable", default=str(plugin_class.enable)).lower()
             enable = enable_s in ("true", "yes", "force")
@@ -102,6 +108,9 @@ class PluginManager:
             if plugin_class.autoload:
                 try:
                     pi = plugin_class(env)
+                except PluginError, e:
+                    logger.error("[%s]: %s", pname, e)
+                    continue
                 except Exception, e:
                     logger.exception("[%s]: exception occurred while loading", pname)
                     continue

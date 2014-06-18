@@ -21,10 +21,13 @@
 import os, httplib, time
 from PreludeCorrelator import require, log
 from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator.pluginmanager import Plugin
+from PreludeCorrelator.pluginmanager import Plugin, PluginError
 from PreludeCorrelator.context import Context, Timer
 
-import netaddr
+try:
+    import netaddr
+except:
+    raise PluginError("missing netaddr module : https://pypi.python.org/pypi/netaddr")
 
 logger = log.getLogger(__name__)
 

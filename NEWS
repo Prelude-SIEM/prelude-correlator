@@ -1,3 +1,6 @@
+- Upcoming release will require libprelude 1.0.2
+
+
 * 2013-09-20, prelude-correlator-1.0.2:
 
 - setup.py : Fixed files downloading behind proxies

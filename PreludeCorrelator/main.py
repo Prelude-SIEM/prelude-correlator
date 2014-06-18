@@ -184,7 +184,7 @@ def main():
 
         parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
         parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
-        parser.add_option("--debug", action="store", dest="debug", type="int", help="Enable debug ouptut (optional debug level argument)", metavar="LEVEL")
+        parser.add_option("--debug", action="store", dest="debug", type="int", default=0, help="Enable debugging output (level from 1 to 10)", metavar="LEVEL")
         (options, args) = parser.parse_args()
 
         env = Env(options)

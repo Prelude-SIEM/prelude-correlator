@@ -1,4 +1,52 @@
-- Upcoming release will require libprelude 1.0.2
+* 2014-07-07, prelude-correlator-1.2.5:
+
+- Improved exception handling
+
+- Support IDMEF Alert merge, to avoid CorrelationAlert listing
+  the same source multiples times
+
+- Allow pluginmanager API to be used with multiples entrypoints
+
+    A Prelude-Correlator plugin may now use the pluginmanager API with
+    their own entrypoint to load their own sub-plugins.
+
+- Allow plugin to specify a list of conflicting plugins
+
+    Using this interface, a plugin can now provide a list of other plugins
+    that conflict with him, and that shouldn't be loaded.
+    Additionally, provide a way for the user to force loading of a plugin
+    that was disabled because of a conflict (using enable = force in the
+    configuration section for the plugin).
+
+- Add autoload attribute to the generic Plugin class
+
+    This attribute controls whether PluginManager() will directly load a given
+    plugin or only references the plugin class for later loading. Default behavior
+    is to load the plugins.
+
+- Various timer improvements
+
+- Add an option to read IDMEF input from file,
+  within the given offset / limit
+
+- Add a stats() function which can be used by a plugin
+  to provide statistics printing
+
+- Implement GetAdditionalDataByMeaning() method
+
+- Always retrieve the current time when no argument is supplied
+
+- Add --disabledl option to setup.py sdist
+  Downloading Spamhaus database need real user-agent, using Mozilla 5
+
+- Logging fixes, using Python logging API
+
+- Add the ability to set debug log level
+
+- Updated dshield.dat, spamhaus_drop.dat
+
+- Removed rhel6 packaging
+
 
 
 * 2013-09-20, prelude-correlator-1.0.2:

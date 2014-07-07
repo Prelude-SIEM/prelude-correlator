@@ -28,7 +28,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "1.0.2"
+PRELUDE_CORRELATOR_VERSION = "1.2.5"
 
 
 class my_sdist(sdist):

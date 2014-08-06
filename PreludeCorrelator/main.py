@@ -221,7 +221,12 @@ def main():
             if options.pidfile:
                 open(options.pidfile, "w").write(str(os.getpid()))
 
-        env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
+        try:
+            env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
+        except Exception, e:
+            logger.error(e)
+            sys.exit(1)
+
         idmef.set_prelude_client(env.prelude_client)
 
         SignalHandler(env)

@@ -18,83 +18,54 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, httplib, time
-from PreludeCorrelator import context, require, log
-from PreludeCorrelator.idmef import IDMEF
+from PreludeCorrelator import context, require, log, download
 from PreludeCorrelator.pluginmanager import Plugin
 
 
 logger = log.getLogger(__name__)
 
 
-class DshieldPlugin(Plugin):
-    DSHIELD_RELOAD = 7 * 24 * 60 * 60
-    DSHIELD_SERVER = "www.dshield.org"
-    DSHIELD_URI = "/ipsascii.html?limit=10000"
-    DSHIELD_TIMEOUT = 10
-    DSHIELD_FILENAME = require.get_data_filename(__name__, "dshield.dat")
+class DShieldDownloader(download.HTTPDownloadCache):
+    def __init__(self, filename, uri, timeout, reload):
+        download.HTTPDownloadCache.__init__(self, "DShield", filename, uri, timeout, reload, logger)
 
     def __ipNormalize(self, ip):
         return ".".join([ i.lstrip("0") for i in ip.split(".") ])
 
-    def __loadData(self, age=0):
-        self.__iphash.clear()
+    def parse(self, data):
+        ret = {}
 
-        for line in open(self.__filename, "r"):
-            if line[0] == '#':
+        for line in data.split("\n"):
+            if not line or line[0] == '#':
                 continue
 
             ip, reports, attacks, first_seen, last_seen = line.split('\t')
-            self.__iphash[self.__ipNormalize(ip)] = (int(reports), int(attacks), first_seen, last_seen)
+            ret[self.__ipNormalize(ip)] = (int(reports), int(attacks), first_seen, last_seen)
 
-        if self.__reload > 0:
-            context.Timer(self.__reload - age, self.__retrieveData).start()
+        return ret
 
-    def __downloadData(self):
-        logger.info("Downloading host list, this might take some time...")
 
-        try:
-            con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
-        except TypeError:
-            con = httplib.HTTPConnection(self.__server)
-
-        con.request("GET", self.__uri)
-        r = con.getresponse()
-        if r.status != 200:
-            raise Exception, "Could not download DShield host list, error %d" % r.status
-
-        fd = open(self.__filename, "w")
-        fd.write(r.read())
-        fd.close()
-
-        logger.info("Downloading done, processing data.")
-
-    def __retrieveData(self, timer=None):
-        try:
-            st = os.stat(self.__filename)
-            if self.__reload <= 0 or time.time() - st.st_mtime < self.__reload:
-                return self.__loadData(time.time() - st.st_mtime)
-        except OSError:
-            pass
-
-        self.__downloadData()
-        self.__loadData()
-
+class DshieldPlugin(Plugin):
+    DSHIELD_RELOAD = 7 * 24 * 60 * 60
+    DSHIELD_URI = "http://www.dshield.org/ipsascii.html?limit=10000"
+    DSHIELD_TIMEOUT = 10
+    DSHIELD_FILENAME = require.get_data_filename(__name__, "dshield.dat")
 
     def __init__(self, env):
         Plugin.__init__(self, env)
 
-        self.__iphash = { }
-        self.__reload = self.getConfigValue("reload", self.DSHIELD_RELOAD, type=int)
-        self.__filename = self.getConfigValue("filename", self.DSHIELD_FILENAME)
-        self.__server = self.getConfigValue("server", self.DSHIELD_SERVER)
-        self.__uri = self.getConfigValue("uri", self.DSHIELD_URI)
-        self.__timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT, type=float)
-        self.__retrieveData()
+        uri = self.getConfigValue("uri", self.DSHIELD_URI)
+        timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT, type=float)
+        reload = self.getConfigValue("reload", self.DSHIELD_RELOAD, type=int)
+        filename = self.getConfigValue("filename", self.DSHIELD_FILENAME)
+
+        self.__data = DShieldDownloader(filename, uri, timeout, reload)
 
     def run(self, idmef):
+        data = self.__data.get()
+
         for source in idmef.Get("alert.source(*).node.address(*).address"):
-            entry = self.__iphash.get(source, None)
+            entry = data.get(source, None)
             if entry:
                 ca = context.Context(("DSHIELD", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:

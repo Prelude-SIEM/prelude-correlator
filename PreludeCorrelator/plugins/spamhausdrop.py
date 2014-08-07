@@ -18,11 +18,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, httplib, time
-from PreludeCorrelator import require, log
-from PreludeCorrelator.idmef import IDMEF
+from PreludeCorrelator import require, log, download
 from PreludeCorrelator.pluginmanager import Plugin, PluginError
-from PreludeCorrelator.context import Context, Timer
+from PreludeCorrelator.context import Context
 
 try:
     import netaddr
@@ -49,66 +47,39 @@ else:
             self.append(obj)
 
 
-class SpamhausDropPlugin(Plugin):
-    RELOAD = 7 * 24 * 60 * 60
-    SERVER = "www.spamhaus.org"
-    URI = "/drop/drop.lasso"
-    TIMEOUT = 10
-    FILENAME = require.get_data_filename(__name__, "spamhaus_drop.dat")
+class SpamhausDownload(download.HTTPDownloadCache):
+    def __init__(self, filename, uri, timeout, reload):
+        download.HTTPDownloadCache.__init__(self, "SpamhausDrop", filename, uri, timeout, reload, logger)
 
-    def __loadData(self, age=0):
-        for line in open(self.__filename, "r"):
-            if line[0] == ';':
+    def parse(self, data):
+        mynets = IPSet()
+
+        for line in data.split("\n"):
+            if not line or line[0] == ';':
                 continue
 
             ip, sbl = line.split(';')
             ip = IPNetwork(ip.strip())
-            self.__mynets.add(ip)
+            mynets.add(ip)
 
-        if self.__reload > 0:
-            Timer(self.__reload - age, self.__retrieveData).start()
+        return mynets
 
-    def __downloadData(self):
-        logger.info("Downloading host list, this might take some time...")
 
-        try:
-            con = httplib.HTTPConnection(self.__server, timeout=self.__timeout)
-        except TypeError:
-            con = httplib.HTTPConnection(self.__server)
-
-        con.request("GET", self.__uri)
-        r = con.getresponse()
-        if r.status != 200:
-            raise Exception, "Could not download spamhaus DROP list, error %d" % r.status
-
-        fd = open(self.__filename, "w")
-        fd.write(r.read())
-        fd.close()
-
-        logger.info("Downloading done, processing data.")
-
-    def __retrieveData(self, timer=None):
-        try:
-            st = os.stat(self.__filename)
-            if self.__reload <= 0 or time.time() - st.st_mtime < self.__reload:
-                return self.__loadData(time.time() - st.st_mtime)
-        except OSError:
-            pass
-
-        self.__downloadData()
-        self.__loadData()
-
+class SpamhausDropPlugin(Plugin):
+    RELOAD = 7 * 24 * 60 * 60
+    URI = "http://www.spamhaus.org/drop/drop.txt"
+    TIMEOUT = 10
+    FILENAME = require.get_data_filename(__name__, "spamhaus_drop.dat")
 
     def __init__(self, env):
         Plugin.__init__(self, env)
 
-        self.__mynets = IPSet()
-        self.__reload = self.getConfigValue("reload", self.RELOAD, type=int)
-        self.__filename = self.getConfigValue("filename", self.FILENAME)
-        self.__server = self.getConfigValue("server", self.SERVER)
-        self.__uri = self.getConfigValue("uri", self.URI)
-        self.__timeout = self.getConfigValue("timeout", self.TIMEOUT, type=float)
-        self.__retrieveData()
+        reload = self.getConfigValue("reload", self.RELOAD, type=int)
+        filename = self.getConfigValue("filename", self.FILENAME)
+        uri = self.getConfigValue("uri", self.URI)
+        timeout = self.getConfigValue("timeout", self.TIMEOUT, type=float)
+
+        self.__data = SpamhausDownload(filename, uri, timeout, reload)
 
     def run(self, idmef):
         for source in idmef.Get("alert.source(*).node.address(*).address"):
@@ -117,7 +88,7 @@ class SpamhausDropPlugin(Plugin):
             except:
                 continue
 
-            if addr in self.__mynets:
+            if addr in self.__data.get():
                 ca = Context(("SPAMHAUS", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:
                         ca.Set("alert.classification.text", "IP source matching Spamhaus DROP dataset")

@@ -82,7 +82,7 @@ class Timer:
                 self._timer_expire = expire
 
         def start(self):
-                if not self._timer_start and self._timer_expire > 0:
+                if not self._timer_start and self._timer_expire:
                         self._timer_start = time.time()
                         _TIMER_LIST.append(self)
 

@@ -82,10 +82,11 @@ class Timer:
                 self._timer_expire = expire
 
         def start(self):
-                if not self._timer_start and self._timer_expire:
-                        self._timer_start = time.time()
-                        _TIMER_LIST.append(self)
+                if self._timer_expire:
+                        if not self._timer_start:
+                                _TIMER_LIST.append(self)
 
+                        self._timer_start = time.time()
                         global _next_wakeup
                         _next_wakeup = min(_next_wakeup, self._timer_expire)
 
@@ -93,7 +94,6 @@ class Timer:
                 self._timer_start = None
 
         def reset(self):
-                self.stop()
                 self.start()
 
 

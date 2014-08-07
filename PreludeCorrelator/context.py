@@ -63,7 +63,10 @@ class Timer:
                 elapsed = self.elapsed(now)
                 if elapsed >= self._timer_expire:
                         self._timerExpireCallback()
-                else:
+
+                # Return None in case the timer is stopped, and the time
+                # remaining if it is already active (expired, or timer reset from the callback).
+                if self._timer_start:
                         return self._timer_expire - elapsed
 
         def elapsed(self, now=None):

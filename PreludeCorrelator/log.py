@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import PreludeEasy
-import logging, logging.config, logging.handlers, sys, os
+import logging, logging.config, logging.handlers, sys, os, stat
 
 
 debug_level = 0
@@ -56,6 +56,16 @@ def __C_log_callback(level, log):
                 logger.warning(("[unknown:%d] " % level) + log)
 
 
+def getSyslogHandlerAddress():
+        for f in ("/dev/log", "/var/run/log", "/var/run/syslog"):
+            try:
+                if stat.S_ISSOCK(os.stat(f).st_mode):
+                    return f
+            except:
+                pass
+
+        return "localhost"
+
 def initLogger(options):
         global debug_level
 
@@ -75,7 +85,7 @@ def initLogger(options):
                 logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
 
         if options.daemon is True:
-                hdlr = logging.handlers.SysLogHandler('/dev/log')
+                hdlr = logging.handlers.SysLogHandler(getSyslogHandlerAddress(), facility=logging.handlers.SysLogHandler.LOG_DAEMON)
                 hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
                 logging.getLogger().addHandler(hdlr)
 

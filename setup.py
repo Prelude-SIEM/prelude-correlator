@@ -32,7 +32,7 @@ PRELUDE_CORRELATOR_VERSION = "1.2.5"
 
 
 class my_sdist(sdist):
-        
+
         user_options = sdist.user_options + [ ( 'disabledl',None,"Disable the download of DShield and Spamhaus databases" ) ]
         disabledl = False
 
@@ -64,34 +64,24 @@ class my_sdist(sdist):
 
 
 class my_install(install):
-        def __install_data(self):
-                data_files = self.distribution.data_files
-                self.distribution.data_files = []
+        def run(self):
+                for dirname, flist in self.distribution.data_files:
+                        prefix = self.prefix
+                        if self.prefix == "/usr" and dirname[0:4] == "etc/":
+                                prefix = os.sep
 
-                if self.prefix == "/usr":
-                        prefix = "/"
-                else:
-                        prefix = self.prefix or ""
+                        destdir = os.path.join(os.path.normpath((self.root or '') + prefix), dirname)
+                        self.mkpath(destdir)
 
-                root = self.root or ""
-                for dir, files in data_files:
-                        dir = os.path.abspath(root + os.sep + os.path.join(prefix, dir))
-
-                        self.mkpath(dir)
-                        for f in files:
-                                dest = os.path.join(dir, os.path.basename(f))
+                        for f in flist:
+                                dest = os.path.join(destdir, os.path.basename(f))
                                 if dest[-4:] == "conf" and os.path.exists(dest):
                                         dest += "-dist"
 
-                                self.copy_file(f, dest)
+                                self.copy_file(f, destdir)
 
-        def run(self):
-                prefix = self.prefix
-                if prefix == "/usr":
-                        prefix = ""
-
+                self.distribution.data_files = []
                 self.init_siteconfig(prefix)
-                self.__install_data()
                 install.run(self)
                 os.remove("PreludeCorrelator/siteconfig.py")
 

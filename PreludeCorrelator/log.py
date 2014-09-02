@@ -64,7 +64,7 @@ def getSyslogHandlerAddress():
             except:
                 pass
 
-        return "localhost"
+        return ("localhost", 514)
 
 def initLogger(options):
         global debug_level

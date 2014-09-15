@@ -122,7 +122,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 for newidx, newval in enumerate(PreludeEasy.IDMEF.Get(idmef, path) or ()):
                         have_match = False
                         for curidx, curval in enumerate(curvalues):
-                                if curval.Match(newval, PreludeEasy.IDMEFCriterion.OPERATOR_EQUAL):
+                                if curval == newval:
                                         sharedset.append((curidx, newidx))
                                         have_match = True
 

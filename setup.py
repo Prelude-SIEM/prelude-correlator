@@ -67,7 +67,7 @@ class my_install(install):
         def run(self):
                 for dirname, flist in self.distribution.data_files:
                         prefix = self.prefix
-                        if self.prefix == "/usr" and dirname[0:4] == "etc/":
+                        if self.prefix == "/usr":
                                 prefix = os.sep
 
                         destdir = os.path.join(os.path.normpath((self.root or '') + prefix), dirname)

@@ -1,3 +1,25 @@
+* 2014-09-16, prelude-correlator-1.2.6rc1:
+
+Author: Yoann Vandoorselaere
+
+- Fix problem with --root installation, and --prefix=/
+
+- Syslog logging fallback to UDP localhost if no socket is found
+
+- Various timer fixes
+
+    - Timers added multiple times on reset
+
+    - Timers with negative expiration time not initialized correctly
+
+    - Unnecessary traversal of the timer list on reset
+
+- Introduce a new DownloadCache, used by Dshield and Spamhaus plugin
+
+- Prevent traceback on profile error
+
+
+
 * 2014-07-07, prelude-correlator-1.2.5:
 
 - Improved exception handling

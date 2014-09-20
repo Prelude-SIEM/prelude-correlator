@@ -17,25 +17,28 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import time
-from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator.pluginmanager import Plugin
+try:
+        import os
+        from preludecorrelator import siteconfig
 
-# Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
+        def get_config_filename(module, fname):
+                return os.path.join(siteconfig.conf_dir, fname)
 
-class BusinessHourPlugin(Plugin):
-    def run(self, idmef):
+        def get_data_filename(module, fname):
+                return os.path.join(siteconfig.lib_dir, fname)
 
-        t = time.localtime(int(idmef.get("alert.create_time")))
+except:
+        import pkg_resources
 
-        if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour < 9 or t.tm_hour > 17):
-                return
+        def get_config_filename(module, fname):
+                if module is None:
+                        module = pkg_resources.Requirement.parse("prelude-correlator")
 
-        if idmef.get("alert.assessment.impact.completion") != "succeeded":
-                return
+                return pkg_resources.resource_filename(module, fname)
 
-        ca = IDMEF()
-        ca.addAlertReference(idmef)
-        ca.set("alert.classification", idmef.get("alert.classification"))
-        ca.set("alert.correlation_alert.name", "Critical system activity on day off")
-        ca.alert()
+        def get_data_filename(module, fname):
+                if module is None:
+                        module = pkg_resources.Requirement.parse("prelude-correlator")
+
+                return pkg_resources.resource_filename(module, fname)
+

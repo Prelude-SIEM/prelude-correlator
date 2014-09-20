@@ -19,14 +19,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys, os, time, signal
+import sys, os, time, signal, pkg_resources
 from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
-from PreludeCorrelator import __version__ as VERSION
-from PreludeCorrelator import idmef, pluginmanager, context, log, config, require
+from preludecorrelator import idmef, pluginmanager, context, log, config, require
 
 
 logger = log.getLogger(__name__)
+VERSION = pkg_resources.get_distribution('prelude-correlator').version
 LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 

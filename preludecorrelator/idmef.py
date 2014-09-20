@@ -20,7 +20,7 @@
 from collections import defaultdict
 import tempfile, re, itertools, operator
 import prelude
-from PreludeCorrelator import utils
+from preludecorrelator import utils
 
 _RegexType = type(re.compile(""))
 

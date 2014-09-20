@@ -18,8 +18,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import re, time
-from PreludeCorrelator import context
-from PreludeCorrelator.pluginmanager import Plugin
+from preludecorrelator import context
+from preludecorrelator.pluginmanager import Plugin
 
 
 def _evict(ctx):

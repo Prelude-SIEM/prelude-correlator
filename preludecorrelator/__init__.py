@@ -17,28 +17,3 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-try:
-        import os
-        from PreludeCorrelator import siteconfig
-
-        def get_config_filename(module, fname):
-                return os.path.join(siteconfig.conf_dir, fname)
-
-        def get_data_filename(module, fname):
-                return os.path.join(siteconfig.lib_dir, fname)
-
-except:
-        import pkg_resources
-
-        def get_config_filename(module, fname):
-                if module is None:
-                        module = pkg_resources.Requirement.parse("prelude-correlator")
-
-                return pkg_resources.resource_filename(module, fname)
-
-        def get_data_filename(module, fname):
-                if module is None:
-                        module = pkg_resources.Requirement.parse("prelude-correlator")
-
-                return pkg_resources.resource_filename(module, fname)
-

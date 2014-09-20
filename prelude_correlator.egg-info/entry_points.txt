@@ -1,15 +1,15 @@
-[PreludeCorrelator.plugins]
-OpenSSHAuthPlugin = PreludeCorrelator.plugins.opensshauth:OpenSSHAuthPlugin
-EventSweepPlugin = PreludeCorrelator.plugins.scan:EventSweepPlugin
-BusinessHourPlugin = PreludeCorrelator.plugins.businesshour:BusinessHourPlugin
-WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin
-FirewallPlugin = PreludeCorrelator.plugins.firewall:FirewallPlugin
-BruteForcePlugin = PreludeCorrelator.plugins.bruteforce:BruteForcePlugin
-EventStormPlugin = PreludeCorrelator.plugins.scan:EventStormPlugin
-SpamhausDropPlugin = PreludeCorrelator.plugins.spamhausdrop:SpamhausDropPlugin
-DshieldPlugin = PreludeCorrelator.plugins.dshield:DshieldPlugin
-EventScanPlugin = PreludeCorrelator.plugins.scan:EventScanPlugin
-
 [console_scripts]
-prelude-correlator = PreludeCorrelator.main:main
+prelude-correlator = preludecorrelator.main:main
+
+[preludecorrelator.plugins]
+BruteForcePlugin = preludecorrelator.plugins.bruteforce:BruteForcePlugin
+BusinessHourPlugin = preludecorrelator.plugins.businesshour:BusinessHourPlugin
+DshieldPlugin = preludecorrelator.plugins.dshield:DshieldPlugin
+EventScanPlugin = preludecorrelator.plugins.scan:EventScanPlugin
+EventStormPlugin = preludecorrelator.plugins.scan:EventStormPlugin
+EventSweepPlugin = preludecorrelator.plugins.scan:EventSweepPlugin
+FirewallPlugin = preludecorrelator.plugins.firewall:FirewallPlugin
+OpenSSHAuthPlugin = preludecorrelator.plugins.opensshauth:OpenSSHAuthPlugin
+SpamhausDropPlugin = preludecorrelator.plugins.spamhausdrop:SpamhausDropPlugin
+WormPlugin = preludecorrelator.plugins.worm:WormPlugin
 

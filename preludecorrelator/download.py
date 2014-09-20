@@ -23,8 +23,8 @@ except:
     import urllib2 as urlreq
 
 import os, time
-from PreludeCorrelator.context import Timer
-from PreludeCorrelator.pluginmanager import PluginError
+from preludecorrelator.context import Timer
+from preludecorrelator.pluginmanager import PluginError
 
 class DownloadCache:
         def __init__(self, name, filename, reload, logger, bindata=False):

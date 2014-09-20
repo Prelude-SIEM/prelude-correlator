@@ -19,8 +19,8 @@
 
 import os, time, pickle, sys
 from prelude import IDMEFTime
-from PreludeCorrelator.idmef import IDMEF
-from PreludeCorrelator import require, log
+from preludecorrelator.idmef import IDMEF
+from preludecorrelator import require, log
 
 _last_wakeup = 0
 _next_wakeup = 0

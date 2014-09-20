@@ -22,8 +22,8 @@
 # a timer of 600 seconds.   If the host then replays the event against
 # other hosts multiple times, an event is generated.
 
-from PreludeCorrelator import context
-from PreludeCorrelator.pluginmanager import Plugin
+from preludecorrelator import context
+from preludecorrelator.pluginmanager import Plugin
 
 class WormPlugin(Plugin):
     REPEAT = 5

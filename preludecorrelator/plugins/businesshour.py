@@ -17,4 +17,25 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-__version__ = __import__('pkg_resources').get_distribution('prelude-correlator').version
+import time
+from preludecorrelator.idmef import IDMEF
+from preludecorrelator.pluginmanager import Plugin
+
+# Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
+
+class BusinessHourPlugin(Plugin):
+    def run(self, idmef):
+
+        t = time.localtime(int(idmef.get("alert.create_time")))
+
+        if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour < 9 or t.tm_hour > 17):
+                return
+
+        if idmef.get("alert.assessment.impact.completion") != "succeeded":
+                return
+
+        ca = IDMEF()
+        ca.addAlertReference(idmef)
+        ca.set("alert.classification", idmef.get("alert.classification"))
+        ca.set("alert.correlation_alert.name", "Critical system activity on day off")
+        ca.alert()

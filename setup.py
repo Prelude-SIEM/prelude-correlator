@@ -61,8 +61,8 @@ class my_sdist(sdist):
                 if self.disabledl :
                     print("You have disable the download of DShield and Spamhaus databases. You will have to download them later to use these plugin")
                 else:
-                    self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
-                    self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
+                    self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "preludecorrelator/plugins/dshield.dat")
+                    self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "preludecorrelator/plugins/spamhaus_drop.dat")
                 sdist.run(self)
 
 
@@ -87,10 +87,10 @@ class my_install(install):
                 self.distribution.data_files = []
                 self.init_siteconfig(prefix)
                 install.run(self)
-                os.remove("PreludeCorrelator/siteconfig.py")
+                os.remove("preludecorrelator/siteconfig.py")
 
         def init_siteconfig(self, prefix):
-                config = open("PreludeCorrelator/siteconfig.py", "w")
+                config = open("preludecorrelator/siteconfig.py", "w")
                 config.write("conf_dir = '%s'\n" % os.path.abspath(prefix + "/etc/prelude-correlator"))
                 config.write("lib_dir = '%s'\n" % os.path.abspath(prefix + "/var/lib/prelude-correlator"))
                 config.close()
@@ -105,7 +105,7 @@ if is_egg:
 else:
         package_data = {}
         data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
-                       ("var/lib/prelude-correlator", ["PreludeCorrelator/plugins/dshield.dat", "PreludeCorrelator/plugins/spamhaus_drop.dat"]) ]
+                       ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ]
 
 setup(
         name="prelude-correlator",
@@ -146,20 +146,20 @@ suits your needs.
         packages = find_packages(),
         entry_points = {
                 'console_scripts': [
-                        'prelude-correlator = PreludeCorrelator.main:main',
+                        'prelude-correlator = preludecorrelator.main:main',
                 ],
 
-                'PreludeCorrelator.plugins': [
-                        'BruteForcePlugin = PreludeCorrelator.plugins.bruteforce:BruteForcePlugin',
-                        'BusinessHourPlugin = PreludeCorrelator.plugins.businesshour:BusinessHourPlugin',
-                        'DshieldPlugin = PreludeCorrelator.plugins.dshield:DshieldPlugin',
-                        'FirewallPlugin = PreludeCorrelator.plugins.firewall:FirewallPlugin',
-                        'OpenSSHAuthPlugin = PreludeCorrelator.plugins.opensshauth:OpenSSHAuthPlugin',
-                        'EventScanPlugin = PreludeCorrelator.plugins.scan:EventScanPlugin',
-                        'EventStormPlugin = PreludeCorrelator.plugins.scan:EventStormPlugin',
-                        'EventSweepPlugin = PreludeCorrelator.plugins.scan:EventSweepPlugin',
-                        'WormPlugin = PreludeCorrelator.plugins.worm:WormPlugin',
-                        'SpamhausDropPlugin = PreludeCorrelator.plugins.spamhausdrop:SpamhausDropPlugin'
+                'preludecorrelator.plugins': [
+                        'BruteForcePlugin = preludecorrelator.plugins.bruteforce:BruteForcePlugin',
+                        'BusinessHourPlugin = preludecorrelator.plugins.businesshour:BusinessHourPlugin',
+                        'DshieldPlugin = preludecorrelator.plugins.dshield:DshieldPlugin',
+                        'FirewallPlugin = preludecorrelator.plugins.firewall:FirewallPlugin',
+                        'OpenSSHAuthPlugin = preludecorrelator.plugins.opensshauth:OpenSSHAuthPlugin',
+                        'EventScanPlugin = preludecorrelator.plugins.scan:EventScanPlugin',
+                        'EventStormPlugin = preludecorrelator.plugins.scan:EventStormPlugin',
+                        'EventSweepPlugin = preludecorrelator.plugins.scan:EventSweepPlugin',
+                        'WormPlugin = preludecorrelator.plugins.worm:WormPlugin',
+                        'SpamhausDropPlugin = preludecorrelator.plugins.spamhausdrop:SpamhausDropPlugin'
                 ]
         },
 

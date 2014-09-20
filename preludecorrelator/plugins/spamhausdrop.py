@@ -18,9 +18,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from PreludeCorrelator import require, log, download
-from PreludeCorrelator.pluginmanager import Plugin, PluginError
-from PreludeCorrelator.context import Context
+from preludecorrelator import require, log, download
+from preludecorrelator.pluginmanager import Plugin, PluginError
+from preludecorrelator.context import Context
 
 try:
     import netaddr

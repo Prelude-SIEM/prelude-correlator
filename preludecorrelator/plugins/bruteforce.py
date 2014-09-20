@@ -18,8 +18,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import re
-from PreludeCorrelator.pluginmanager import Plugin
-from PreludeCorrelator.context import Context
+from preludecorrelator.pluginmanager import Plugin
+from preludecorrelator.context import Context
 
 class BruteForcePlugin(Plugin):
     def _BruteForce(self, idmef):

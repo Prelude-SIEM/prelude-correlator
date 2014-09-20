@@ -18,8 +18,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from PreludeCorrelator import context, require, log, download
-from PreludeCorrelator.pluginmanager import Plugin
+from preludecorrelator import context, require, log, download
+from preludecorrelator.pluginmanager import Plugin
 
 
 logger = log.getLogger(__name__)

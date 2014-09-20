@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import pkg_resources
-from PreludeCorrelator import log
+from preludecorrelator import log
 
 
 logger = log.getLogger(__name__)
@@ -52,7 +52,7 @@ class PluginError(Exception):
      pass
 
 class PluginManager:
-    def __init__(self, env, entrypoint='PreludeCorrelator.plugins'):
+    def __init__(self, env, entrypoint='preludecorrelator.plugins'):
         self._env = env
         self._count = 0
         self.__plugins_instances = []

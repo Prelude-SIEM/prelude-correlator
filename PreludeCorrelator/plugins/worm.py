@@ -33,20 +33,20 @@ class WormPlugin(Plugin):
         self.__repeat_target = self.getConfigValue("repeat-target", self.REPEAT, type=int)
 
     def run(self, idmef):
-        ctxt = idmef.Get("alert.classification.text")
+        ctxt = idmef.get("alert.classification.text")
         if not ctxt:
             return
 
         # Create context for classification combined with all the target.
         tlist = {}
-        for target in idmef.Get("alert.target(*).node.address(*).address"):
+        for target in idmef.get("alert.target(*).node.address(*).address"):
             ctx = context.Context(("WORM HOST", ctxt, target), { "expire": 300 }, overwrite=False, idmef=idmef)
             if ctx.getUpdateCount() == 0:
                 ctx._target_list = {}
 
             tlist[target] = True
 
-        for source in idmef.Get("alert.source(*).node.address(*).address"):
+        for source in idmef.get("alert.source(*).node.address(*).address"):
             # We are trying to see whether a previous target is now attacking other hosts
             # thus, we check whether a context exist with this classification combined to
             # this source.
@@ -62,9 +62,9 @@ class WormPlugin(Plugin):
                 ctx.update(idmef=idmef)
 
             if nlen >= self.__repeat_target:
-                ctx.Set("alert.classification.text", "Possible Worm Activity")
-                ctx.Set("alert.correlation_alert.name", "Source host is repeating actions taken against it recently")
-                ctx.Set("alert.assessment.impact.severity", "high")
-                ctx.Set("alert.assessment.impact.description", source + " has repeated actions taken against it recently at least %d times. It may have been infected with a worm." % (self.__repeat_target))
+                ctx.set("alert.classification.text", "Possible Worm Activity")
+                ctx.set("alert.correlation_alert.name", "Source host is repeating actions taken against it recently")
+                ctx.set("alert.assessment.impact.severity", "high")
+                ctx.set("alert.assessment.impact.description", source + " has repeated actions taken against it recently at least %d times. It may have been infected with a worm." % (self.__repeat_target))
                 ctx.alert()
                 ctx.destroy()

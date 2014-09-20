@@ -19,26 +19,26 @@
 
 from collections import defaultdict
 import tempfile, re, itertools, operator
-import PreludeEasy
+import prelude
 from PreludeCorrelator import utils
 
 _RegexType = type(re.compile(""))
 
-class IDMEF(PreludeEasy.IDMEF):
+class IDMEF(prelude.IDMEF):
         def __setstate__(self, dict):
                 fd = tempfile.TemporaryFile("rb+")
                 fd.write(dict["idmef_encoded"])
                 fd.seek(0)
 
-                PreludeEasy.IDMEF.__init__(self)
-                self.Read(fd)
+                prelude.IDMEF.__init__(self)
+                self.read(fd)
 
                 del(dict["idmef_encoded"])
                 self.__dict__.update(dict)
 
         def __getstate__(self):
                 fd = tempfile.TemporaryFile("rb+")
-                self.Write(fd)
+                self.write(fd)
                 fd.seek(0)
 
                 odict = self.__dict__.copy()
@@ -48,24 +48,16 @@ class IDMEF(PreludeEasy.IDMEF):
                 return odict
 
         def getTime(self):
-                itime = self.Get("alert.detect_time")
+                itime = self.get("alert.detect_time")
                 if not itime:
-                        itime = self.Get("alert.create_time")
+                        itime = self.get("alert.create_time")
 
                 return itime
 
-        def GetAdditionalDataByMeaning(self, meaning):
-            try:
-                idx = self.Get("alert.additional_data(*).meaning").index(meaning)
-            except:
-                return None
+        def get(self, path, flatten=True, replacement=None):
+                path = prelude.IDMEFPath(path)
 
-            return self.Get("alert.additional_data(%d).data" % idx)
-
-        def Get(self, path, flatten=True, replacement=None):
-                path = PreludeEasy.IDMEFPath(path)
-
-                value = path.Get(self)
+                value = path.get(self)
                 if value is None:
                         return replacement
 
@@ -75,7 +67,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 return value
 
         def _match(self, path, needle):
-                value = self.Get(path)
+                value = self.get(path)
 
                 if not isinstance(needle, _RegexType):
                         ret = value == needle
@@ -118,8 +110,8 @@ class IDMEF(PreludeEasy.IDMEF):
                 newset = []
                 sharedset = []
 
-                curvalues = PreludeEasy.IDMEF.Get(self, path)
-                for newidx, newval in enumerate(PreludeEasy.IDMEF.Get(idmef, path) or ()):
+                curvalues = prelude.IDMEF.get(self, path)
+                for newidx, newval in enumerate(prelude.IDMEF.get(idmef, path) or ()):
                         have_match = False
                         for curidx, curval in enumerate(curvalues):
                                 if curval == newval:
@@ -159,10 +151,10 @@ class IDMEF(PreludeEasy.IDMEF):
                 return (fpath, value[0])
 
         def _getFilteredValue(self, basepath, fpath, reqval, idmef, preproc_func, filtered):
-                for idx, value in enumerate(PreludeEasy.IDMEF.Get(idmef, basepath + "." + fpath) or ()):
+                for idx, value in enumerate(prelude.IDMEF.get(idmef, basepath + "." + fpath) or ()):
                         if value:
                                 if value == reqval or reqval is None:
-                                        PreludeEasy.IDMEF.Set(idmef, basepath + "(%d)." % idx + fpath, None)
+                                        prelude.IDMEF.set(idmef, basepath + "(%d)." % idx + fpath, None)
 
                         if value and preproc_func:
                                 fpath, value = preproc_func(value)
@@ -195,13 +187,13 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 unmodified_set, sharedset, newset = self._getMergeList(path, idmef)
                 for idx, value in newset:
-                        PreludeEasy.IDMEF.Set(self, path + "(>>)", value)
+                        prelude.IDMEF.set(self, path + "(>>)", value)
                         for fpath, value in filtered_new.get(idx, {}).items():
                                 if value and fpath in postproc:
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
-                                        PreludeEasy.IDMEF.Set(self, path + "(-1)." + fpath, value)
+                                        prelude.IDMEF.set(self, path + "(-1)." + fpath, value)
 
                 for idx in unmodified_set:
                         for fpath, value in filtered_cur.get(idx, {}).items():
@@ -209,7 +201,7 @@ class IDMEF(PreludeEasy.IDMEF):
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
-                                        PreludeEasy.IDMEF.Set(self, path + "(%d)." % idx + fpath, value)
+                                        prelude.IDMEF.set(self, path + "(%d)." % idx + fpath, value)
 
                 common = defaultdict(list)
                 for idx, nidx in sharedset:
@@ -222,7 +214,7 @@ class IDMEF(PreludeEasy.IDMEF):
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
-                                        PreludeEasy.IDMEF.Set(self, path + "(%d)." % idx + fpath, value)
+                                        prelude.IDMEF.set(self, path + "(%d)." % idx + fpath, value)
 
 
                 for idx, values in filtered_new.items():
@@ -231,7 +223,7 @@ class IDMEF(PreludeEasy.IDMEF):
                             fpath, value = postproc[fpath](fpath, value)
 
                         if value:
-                                PreludeEasy.IDMEF.Set(idmef, path + "(%d)." % (idx) + fpath, value)
+                                prelude.IDMEF.set(idmef, path + "(%d)." % (idx) + fpath, value)
 
 
         def addAlertReference(self, idmef, auto_set_detect_time=True):
@@ -239,7 +231,7 @@ class IDMEF(PreludeEasy.IDMEF):
                     intime = idmef.getTime()
                     curtime = self.getTime()
                     if (not curtime) or intime < curtime:
-                        self.Set("alert.detect_time", intime)
+                        self.set("alert.detect_time", intime)
 
                 st_filters = [(("process.pid", None), None, None),
                               (("service.name", "unknown"), None, None),
@@ -249,8 +241,8 @@ class IDMEF(PreludeEasy.IDMEF):
                 self._mergeSet("alert.source", idmef, st_filters)
                 self._mergeSet("alert.target", idmef, st_filters)
 
-                self.Set("alert.correlation_alert.alertident(>>).alertident", idmef.Get("alert.messageid"))
-                self.Set("alert.correlation_alert.alertident(-1).analyzerid", idmef.Get("alert.analyzer(*).analyzerid")[-1])
+                self.set("alert.correlation_alert.alertident(>>).alertident", idmef.get("alert.messageid"))
+                self.set("alert.correlation_alert.alertident(-1).analyzerid", idmef.get("alert.analyzer(*).analyzerid")[-1])
 
 
 def set_prelude_client(client):

@@ -26,16 +26,16 @@ from PreludeCorrelator.pluginmanager import Plugin
 class BusinessHourPlugin(Plugin):
     def run(self, idmef):
 
-        t = time.localtime(int(idmef.Get("alert.create_time")))
+        t = time.localtime(int(idmef.get("alert.create_time")))
 
         if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour < 9 or t.tm_hour > 17):
                 return
 
-        if idmef.Get("alert.assessment.impact.completion") != "succeeded":
+        if idmef.get("alert.assessment.impact.completion") != "succeeded":
                 return
 
         ca = IDMEF()
         ca.addAlertReference(idmef)
-        ca.Set("alert.classification", idmef.Get("alert.classification"))
-        ca.Set("alert.correlation_alert.name", "Critical system activity on day off")
+        ca.set("alert.classification", idmef.get("alert.classification"))
+        ca.set("alert.correlation_alert.name", "Critical system activity on day off")
         ca.alert()

@@ -17,7 +17,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import PreludeEasy
+import prelude
 import logging, logging.config, logging.handlers, sys, os, stat
 
 
@@ -37,19 +37,19 @@ def __C_log_callback(level, log):
         log = log.rstrip('\n')
         logger = getLogger("libprelude")
 
-        if level == PreludeEasy.PreludeLog.DEBUG:
+        if level == prelude.PreludeLog.DEBUG:
                 logger.debug(log)
 
-        elif level == PreludeEasy.PreludeLog.INFO:
+        elif level == prelude.PreludeLog.INFO:
                 logger.info(log)
 
-        elif level == PreludeEasy.PreludeLog.WARNING:
+        elif level == prelude.PreludeLog.WARNING:
                 logger.warning(log)
 
-        elif level == PreludeEasy.PreludeLog.ERROR:
+        elif level == prelude.PreludeLog.ERROR:
                 logger.error(log)
 
-        elif level == PreludeEasy.PreludeLog.CRITICAL:
+        elif level == prelude.PreludeLog.CRITICAL:
                 logger.critical(log)
 
         else:
@@ -72,7 +72,7 @@ def initLogger(options):
         debug_level = options.debug
 
         try:
-                PreludeEasy.PreludeLog.SetCallback(__C_log_callback)
+                prelude.PreludeLog.setCallback(__C_log_callback)
         except:
                 # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
                 pass

@@ -166,7 +166,7 @@ suits your needs.
         zip_safe = False,
         data_files = data_files,
         package_data = package_data,
-        install_requires = [ "PreludeEasy >= 1.2.6rc1" ],
+        install_requires = [ "prelude >= 1.2.6rc1" ],
 
         cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

@@ -35,9 +35,9 @@ def _alert(ctx):
         fw = context.search("FIREWALL INFOS")
 
         for idmef in ctx.candidates:
-                source = idmef.Get("alert.source(0).node.address(0).address")
-                target = idmef.Get("alert.target(0).node.address(0).address")
-                dport = str(idmef.Get("alert.target(0).service.port", 0))
+                source = idmef.get("alert.source(0).node.address(0).address")
+                target = idmef.get("alert.target(0).node.address(0).address")
+                dport = str(idmef.get("alert.target(0).service.port", 0))
 
                 if not target in fw._protected_hosts:
                         continue
@@ -49,10 +49,10 @@ def _alert(ctx):
                 ctx.addAlertReference(idmef)
 
         if cnt > 0:
-                ctx.Set("alert.classification.text", "Events hit target")
-                ctx.Set("alert.assessment.impact.severity", "medium")
-                ctx.Set("alert.assessment.impact.description", "The target are known to be protected by a Firewall device, but a set of event have not been dropped")
-                ctx.Set("alert.correlation_alert.name", "No firewall block observed")
+                ctx.set("alert.classification.text", "Events hit target")
+                ctx.set("alert.assessment.impact.severity", "medium")
+                ctx.set("alert.assessment.impact.description", "The target are known to be protected by a Firewall device, but a set of event have not been dropped")
+                ctx.set("alert.correlation_alert.name", "No firewall block observed")
                 ctx.alert()
 
         ctx.destroy()
@@ -63,12 +63,12 @@ class FirewallPlugin(Plugin):
         self._flush_protected_hosts = self.getConfigValue("flush-protected-hosts", 3600, type=int)
 
     def run(self, idmef):
-        source = idmef.Get("alert.source(0).node.address(0).address")
-        scat = idmef.Get("alert.source(0).node.address(0).category")
-        target = idmef.Get("alert.target(0).node.address(0).address")
-        tcat = idmef.Get("alert.target(0).node.address(0).category")
+        source = idmef.get("alert.source(0).node.address(0).address")
+        scat = idmef.get("alert.source(0).node.address(0).category")
+        target = idmef.get("alert.target(0).node.address(0).address")
+        tcat = idmef.get("alert.target(0).node.address(0).category")
 
-        dport = idmef.Get("alert.target(0).service.port")
+        dport = idmef.get("alert.target(0).service.port")
         if not source or not target or not dport:
                 return
 

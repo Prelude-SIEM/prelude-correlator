@@ -23,30 +23,28 @@ from PreludeCorrelator.context import Context
 
 def alert(ctx):
     if len(ctx.authtype) > 1:
-        ctx.Set("alert.classification.text", "Multiple authentication methods")
-        ctx.Set("alert.correlation_alert.name", "Multiple authentication methods")
-        ctx.Set("alert.assessment.impact.severity", "medium")
-        ctx.Set("alert.assessment.impact.description", "Multiple ways of authenticating a single user have been found over SSH. If passphrase is the only allowed method, make sure you disable passwords.")
+        ctx.set("alert.classification.text", "Multiple authentication methods")
+        ctx.set("alert.correlation_alert.name", "Multiple authentication methods")
+        ctx.set("alert.assessment.impact.severity", "medium")
+        ctx.set("alert.assessment.impact.description", "Multiple ways of authenticating a single user have been found over SSH. If passphrase is the only allowed method, make sure you disable passwords.")
         ctx.alert()
     ctx.destroy()
 
 class OpenSSHAuthPlugin(Plugin):
     def run(self, idmef):
-        if idmef.Get("alert.analyzer(-1).manufacturer") != "OpenSSH":
+        if idmef.get("alert.analyzer(-1).manufacturer") != "OpenSSH":
                 return
 
-        if idmef.Get("alert.assessment.impact.completion") != "succeeded":
+        if idmef.get("alert.assessment.impact.completion") != "succeeded":
                 return
 
-        try:
-                idx = idmef.Get("alert.additional_data(*).meaning").index("Authentication method")
-        except:
+        data = idmef.get("alert.additional_data('Authentication method').data")
+        if not data:
                 return
 
-        data = idmef.Get("alert.additional_data(%d).data" % idx)
-
-        for username in idmef.Get("alert.target(*).user.user_id(*).name"):
-            for target in idmef.Get("alert.target(*).node.address(*).address"):
+        data = data[0]
+        for username in idmef.get("alert.target(*).user.user_id(*).name"):
+            for target in idmef.get("alert.target(*).node.address(*).address"):
                 ctx = Context(("SSHAUTH", target, username), { "expire": 30, "alert_on_expire": alert }, update=True)
                 if ctx.getUpdateCount() == 0:
                     ctx.authtype = { data: True }

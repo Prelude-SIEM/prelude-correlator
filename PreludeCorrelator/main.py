@@ -21,7 +21,7 @@
 
 import sys, os, time, signal
 from optparse import OptionParser, OptionGroup
-from PreludeEasy import ClientEasy, CheckVersion, IDMEFCriteria
+from prelude import ClientEasy, checkVersion, IDMEFCriteria
 from PreludeCorrelator import __version__ as VERSION
 from PreludeCorrelator import idmef, pluginmanager, context, log, config, require
 
@@ -75,7 +75,7 @@ class PreludeClient:
                 self._client = ClientEasy("prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
                                           "Prelude-Correlator", "Correlator", "CS-SI",
                                           VERSION)
-                self._client.Start()
+                self._client.start()
 
 
         def _handle_event(self, idmef):
@@ -92,7 +92,7 @@ class PreludeClient:
                 self._alert_generated = self._alert_generated + 1
 
                 if not self._dry_run:
-                        self._client.SendIDMEF(idmef)
+                        self._client.sendIDMEF(idmef)
 
                 if self._print_output:
                         self._print_output.write(str(idmef))
@@ -100,7 +100,7 @@ class PreludeClient:
 
         def _recvEventsFromClient(self, idmef):
                 try:
-                        ret = self._client.RecvIDMEF(idmef, 1000)
+                        ret = self._client.recvIDMEF(idmef, 1000)
                 except:
                         ret = 0
 
@@ -142,7 +142,7 @@ class PreludeClient:
                         r = _read_func_cb(msg)
 
                         if r:
-                                if criteria.Match(msg):
+                                if criteria.match(msg):
                                         self._handle_event(msg)
 
                         now = time.time()
@@ -164,7 +164,7 @@ class PreludeClient:
 
 
 def main():
-        CheckVersion(LIBPRELUDE_REQUIRED_VERSION)
+        checkVersion(LIBPRELUDE_REQUIRED_VERSION)
 
         config_filename = require.get_config_filename(None, "prelude-correlator.conf")
 

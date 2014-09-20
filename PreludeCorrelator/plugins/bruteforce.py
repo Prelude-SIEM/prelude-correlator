@@ -23,8 +23,8 @@ from PreludeCorrelator.context import Context
 
 class BruteForcePlugin(Plugin):
     def _BruteForce(self, idmef):
-        sadd = idmef.Get("alert.source(*).node.address(*).address")
-        tadd = idmef.Get("alert.target(*).node.address(*).address")
+        sadd = idmef.get("alert.source(*).node.address(*).address")
+        tadd = idmef.get("alert.target(*).node.address(*).address")
         if not sadd or not tadd:
             return
 
@@ -32,23 +32,23 @@ class BruteForcePlugin(Plugin):
             for target in tadd:
                 ctx = Context(("BRUTE ST", source, target), { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef = idmef)
                 if ctx.getUpdateCount() == 0:
-                    ctx.Set("alert.classification.text", "Brute Force attack")
-                    ctx.Set("alert.correlation_alert.name", "Multiple failed login")
-                    ctx.Set("alert.assessment.impact.severity", "high")
-                    ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login using different account")
+                    ctx.set("alert.classification.text", "Brute Force attack")
+                    ctx.set("alert.correlation_alert.name", "Multiple failed login")
+                    ctx.set("alert.assessment.impact.severity", "high")
+                    ctx.set("alert.assessment.impact.description", "Multiple failed attempts have been made to login using different account")
 
     def _BruteUserForce(self, idmef):
-        userid = idmef.Get("alert.target(*).user.user_id(*).name");
+        userid = idmef.get("alert.target(*).user.user_id(*).name");
         if not userid:
             return
 
         for user in userid:
             ctx = Context(("BRUTE USER", user), { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef=idmef)
             if ctx.getUpdateCount() == 0:
-                ctx.Set("alert.classification.text", "Brute Force attack")
-                ctx.Set("alert.correlation_alert.name", "Multiple failed login against a single account")
-                ctx.Set("alert.assessment.impact.severity", "high")
-                ctx.Set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
+                ctx.set("alert.classification.text", "Brute Force attack")
+                ctx.set("alert.correlation_alert.name", "Multiple failed login against a single account")
+                ctx.set("alert.assessment.impact.severity", "high")
+                ctx.set("alert.assessment.impact.description", "Multiple failed attempts have been made to login to a user account")
 
 
     def run(self, idmef):
@@ -58,7 +58,7 @@ class BruteForcePlugin(Plugin):
         # FIXME: In the future, we might want to include successfull authentication
         # following a number of failed events, so that generated CorrelationAlert
         # includes full details.
-        if idmef.Get("alert.assessment.impact.completion") == "succeeded":
+        if idmef.get("alert.assessment.impact.completion") == "succeeded":
             return
 
         self._BruteForce(idmef)

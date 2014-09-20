@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os, time, pickle, sys
-from PreludeEasy import IDMEFTime
+from prelude import IDMEFTime
 from PreludeCorrelator.idmef import IDMEF
 from PreludeCorrelator import require, log
 
@@ -210,9 +210,9 @@ class Context(IDMEF, Timer):
                 self._time_min = min(self._time_min, ctx._time_min)
                 self._time_max = max(self._time_max, ctx._time_max)
 
-                self.Set("alert.source(>>)", ctx.Get("alert.source"))
-                self.Set("alert.target(>>)", ctx.Get("alert.target"))
-                self.Set("alert.correlation_alert.alertident(>>)", ctx.Get("alert.correlation_alert.alertident"))
+                self.set("alert.source(>>)", ctx.get("alert.source"))
+                self.set("alert.target(>>)", ctx.get("alert.target"))
+                self.set("alert.correlation_alert.alertident(>>)", ctx.get("alert.correlation_alert.alertident"))
 
                 ctx.destroy()
 

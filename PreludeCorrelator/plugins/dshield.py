@@ -64,13 +64,13 @@ class DshieldPlugin(Plugin):
     def run(self, idmef):
         data = self.__data.get()
 
-        for source in idmef.Get("alert.source(*).node.address(*).address"):
+        for source in idmef.get("alert.source(*).node.address(*).address"):
             entry = data.get(source, None)
             if entry:
                 ca = context.Context(("DSHIELD", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:
-                    ca.Set("alert.classification.text", "IP source matching Dshield database")
-                    ca.Set("alert.correlation_alert.name", "IP source matching Dshield database")
-                    ca.Set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
-                    ca.Set("alert.assessment.impact.severity", "high")
+                    ca.set("alert.classification.text", "IP source matching Dshield database")
+                    ca.set("alert.correlation_alert.name", "IP source matching Dshield database")
+                    ca.set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
+                    ca.set("alert.assessment.impact.severity", "high")
 

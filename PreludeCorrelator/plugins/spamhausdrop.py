@@ -82,7 +82,7 @@ class SpamhausDropPlugin(Plugin):
         self.__data = SpamhausDownload(filename, uri, timeout, reload)
 
     def run(self, idmef):
-        for source in idmef.Get("alert.source(*).node.address(*).address"):
+        for source in idmef.get("alert.source(*).node.address(*).address"):
             try:
                 addr = IPAddress(source)
             except:
@@ -91,7 +91,7 @@ class SpamhausDropPlugin(Plugin):
             if addr in self.__data.get():
                 ca = Context(("SPAMHAUS", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
                 if ca.getUpdateCount() == 0:
-                        ca.Set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
-                        ca.Set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")
-                        ca.Set("alert.assessment.impact.description", "Spamhaus gathered this IP address in their DROP list - %s" % (source))
-                        ca.Set("alert.assessment.impact.severity", "medium")
+                        ca.set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
+                        ca.set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")
+                        ca.set("alert.assessment.impact.description", "Spamhaus gathered this IP address in their DROP list - %s" % (source))
+                        ca.set("alert.assessment.impact.severity", "medium")

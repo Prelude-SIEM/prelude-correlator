@@ -39,10 +39,10 @@ def _alert(ctx):
                 target = idmef.Get("alert.target(0).node.address(0).address")
                 dport = str(idmef.Get("alert.target(0).service.port", 0))
 
-                if not fw._protected_hosts.has_key(target):
+                if not target in fw._protected_hosts:
                         continue
 
-                if fw._protected_hosts[target][1].has_key(source + dport):
+                if (source + dport) in fw._protected_hosts[target][1]:
                         continue
 
                 cnt += 1
@@ -81,20 +81,20 @@ class FirewallPlugin(Plugin):
                 ctx._flush_protected_hosts = self._flush_protected_hosts
 
         if idmef.match("alert.classification.text", re.compile("[Pp]acket [Dd]ropped|[Dd]enied")):
-                if not ctx._protected_hosts.has_key(target):
+                if not target in ctx._protected_hosts:
                         ctx._protected_hosts[target] = [0, {}]
 
                 ctx._protected_hosts[target][0] = float(idmef.getTime())
                 ctx._protected_hosts[target][1][source + str(dport)] = True
         else:
-                if not ctx._protected_hosts.has_key(target):
+                if not target in ctx._protected_hosts:
                         return
 
                 if time.time() - ctx._protected_hosts[target][0] > self._flush_protected_hosts:
                         ctx._protected_hosts.pop(target)
                         return;
 
-                if ctx._protected_hosts[target][1].has_key(source + str(dport)):
+                if (source + str(dport)) in ctx._protected_hosts[target][1]:
                         return
 
                 ctx = context.Context(("FIREWALL", source), { "expire": 120, "alert_on_expire": _alert }, update=True)

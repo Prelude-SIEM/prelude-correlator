@@ -17,21 +17,24 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import ConfigParser
+try:
+    import configparser
+except:
+    import ConfigParser as configparser
 
-class Config(ConfigParser.ConfigParser):
+class Config(configparser.ConfigParser):
         def __init__(self, filename):
-                ConfigParser.ConfigParser.__init__(self)
+                configparser.ConfigParser.__init__(self)
                 self.read(filename)
 
         def get(self, section, option, raw=None, vars=None, default=None, type=str):
                 try:
-                        return type(ConfigParser.ConfigParser.get(self, section, option, raw, vars))
+                        return type(configparser.ConfigParser.get(self, section, option, raw=raw, vars=vars))
 
-                except ConfigParser.NoSectionError:
+                except configparser.NoSectionError:
                         return default
 
-                except ConfigParser.NoOptionError:
+                except configparser.NoOptionError:
                         return default
 
         def getAsBool(self, section, option, raw=None, vars=None, default=None):

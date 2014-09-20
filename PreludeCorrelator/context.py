@@ -44,7 +44,7 @@ class Timer:
                 self.stop()
                 try:
                         self._timer_cb(self)
-                except Exception, e:
+                except Exception as e:
                         logger.exception("on timer expiration: '%s'", e)
 
         def hasExpired(self, now=None):
@@ -132,7 +132,7 @@ class Context(IDMEF, Timer):
                 else:
                         self._time_max = -1
 
-                if not _CONTEXT_TABLE.has_key(name):
+                if not name in _CONTEXT_TABLE:
                         _CONTEXT_TABLE[name] = []
 
                 _CONTEXT_TABLE[name].append(self)
@@ -141,6 +141,9 @@ class Context(IDMEF, Timer):
                 x = self._mergeIntersect(debug=False)
                 if x > 0:
                         logger.critical("A context merge happened on initialization. This should NOT happen : please report this error.")
+
+        def __getnewargs__(self):
+                return (self._name, )
 
         def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
                 if update or (overwrite is False):
@@ -167,9 +170,9 @@ class Context(IDMEF, Timer):
                         return time.time()
 
                 if isinstance(idmef, IDMEFTime):
-                    return long(idmef)
+                    return int(idmef)
 
-                return long(idmef.getTime())
+                return int(idmef.getTime())
 
         def _updateTime(self, itime):
                 self._time_min = min(itime - self._options["expire"], self._time_min)
@@ -326,7 +329,7 @@ def search(name, idmef=None, update=False):
 _ctxt_filename = require.get_data_filename(None, "context.dat")
 
 def save():
-        fd = open(_ctxt_filename, "w")
+        fd = open(_ctxt_filename, "wb")
         pickle.dump(_CONTEXT_TABLE, fd)
         fd.close()
 
@@ -335,17 +338,12 @@ def load(_env):
                 global _TIMER_LIST
                 global _CONTEXT_TABLE
 
-                fd = open(_ctxt_filename, "r")
+                fd = open(_ctxt_filename, "rb")
 
                 try:
                         _CONTEXT_TABLE.update(pickle.load(fd))
                 except EOFError:
                         return
-
-                v = _CONTEXT_TABLE.values()
-                if v and type(v[0]) is not list:
-                        _TIMER_LIST = [ ]
-                        _CONTEXT_TABLE = { }
 
                 logger.debug("[load]: %d context loaded", len(_CONTEXT_TABLE))
 
@@ -360,7 +358,7 @@ def wakeup(now):
         if now - _last_wakeup < _next_wakeup:
                 return
 
-        _next_wakeup = sys.maxint
+        _next_wakeup = sys.maxsize
 
         i = 0
         tlen = len(_TIMER_LIST)
@@ -391,6 +389,6 @@ def stats():
                 else:
                         with_threshold.append(ctx)
 
-        with_threshold.sort(lambda x, y: x.getUpdateCount() - y.getUpdateCount())
+        with_threshold.sort(key=lambda x: x.getUpdateCount())
         for ctx in with_threshold:
                 logger.info(ctx.getStat(now))

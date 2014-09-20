@@ -20,13 +20,13 @@
 from collections import defaultdict
 import tempfile, re, itertools, operator
 import PreludeEasy
-import utils
+from PreludeCorrelator import utils
 
 _RegexType = type(re.compile(""))
 
 class IDMEF(PreludeEasy.IDMEF):
         def __setstate__(self, dict):
-                fd = tempfile.TemporaryFile("r+")
+                fd = tempfile.TemporaryFile("rb+")
                 fd.write(dict["idmef_encoded"])
                 fd.seek(0)
 
@@ -37,7 +37,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 self.__dict__.update(dict)
 
         def __getstate__(self):
-                fd = tempfile.TemporaryFile("r+")
+                fd = tempfile.TemporaryFile("rb+")
                 self.Write(fd)
                 fd.seek(0)
 
@@ -137,8 +137,8 @@ class IDMEF(PreludeEasy.IDMEF):
         def _mergePort(self, fpath, value):
                 strl = []
                 has_range = False
-                for k, g in itertools.groupby(enumerate(sorted(set(value))), lambda (i, x): i - x):
-                        ilist = map(operator.itemgetter(1), g)
+                for k, g in itertools.groupby(enumerate(sorted(set(value))), lambda i_x: i_x[0] - i_x[1]):
+                        ilist = list(map(operator.itemgetter(1), g))
                         if len(ilist) > 1:
                                 has_range = True
                                 strl.append('%d-%d' % (ilist[0], ilist[-1]))
@@ -167,10 +167,10 @@ class IDMEF(PreludeEasy.IDMEF):
                         if value and preproc_func:
                                 fpath, value = preproc_func(value)
 
-                        if not filtered.has_key(idx):
+                        if not idx in filtered:
                                 filtered[idx] = {}
 
-                        if not filtered[idx].has_key(fpath):
+                        if not fpath in filtered[idx]:
                                 filtered[idx][fpath] = []
 
                         if value:
@@ -197,7 +197,7 @@ class IDMEF(PreludeEasy.IDMEF):
                 for idx, value in newset:
                         PreludeEasy.IDMEF.Set(self, path + "(>>)", value)
                         for fpath, value in filtered_new.get(idx, {}).items():
-                                if value and postproc.has_key(fpath):
+                                if value and fpath in postproc:
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
@@ -205,7 +205,7 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 for idx in unmodified_set:
                         for fpath, value in filtered_cur.get(idx, {}).items():
-                                if value and postproc.has_key(fpath):
+                                if value and fpath in postproc:
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
@@ -214,11 +214,11 @@ class IDMEF(PreludeEasy.IDMEF):
                 common = defaultdict(list)
                 for idx, nidx in sharedset:
                         common = defaultdict(list)
-                        for a, b in filtered_new.get(nidx, {}).items() + filtered_cur.get(idx, {}).items():
+                        for a, b in list(filtered_new.get(nidx, {}).items()) + list(filtered_cur.get(idx, {}).items()):
                                 common[a] += b
 
                         for fpath, value in common.items():
-                                if value and postproc.has_key(fpath):
+                                if value and fpath in postproc:
                                         fpath, value = postproc[fpath](fpath, value)
 
                                 if value:
@@ -227,7 +227,7 @@ class IDMEF(PreludeEasy.IDMEF):
 
                 for idx, values in filtered_new.items():
                     for fpath, value in values.items():
-                        if value and postproc.has_key(fpath):
+                        if value and fpath in postproc:
                             fpath, value = postproc[fpath](fpath, value)
 
                         if value:

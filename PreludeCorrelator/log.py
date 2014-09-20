@@ -79,7 +79,7 @@ def initLogger(options):
 
         try:
                 logging.config.fileConfig(options.config)
-        except Exception, e:
+        except Exception as e:
                 DATEFMT = "%d %b %H:%M:%S"
                 FORMAT="%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
                 logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)

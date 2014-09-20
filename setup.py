@@ -22,8 +22,12 @@
 from ez_setup import use_setuptools
 use_setuptools()
 
+try:
+    import urllib.request as urlreq
+except:
+    import urllib2 as urlreq
+
 import os, sys, shutil
-import urllib2
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
@@ -38,10 +42,10 @@ class my_sdist(sdist):
 
         def _downloadDatabase(self, dname, url, filename):
 
-                print "Downloading %s database, this might take a while..." % (dname)
-                req = urllib2.Request(url)
+                print("Downloading %s database, this might take a while..." % (dname))
+                req = urlreq.Request(url)
                 req.add_header('User-agent', 'Mozilla 5.10')
-                r = urllib2.urlopen(req)
+                r = urlreq.urlopen(req)
                 fd = open(filename, "w")
                 fd.write(r.read())
                 fd.close()
@@ -55,7 +59,7 @@ class my_sdist(sdist):
 
         def run(self):
                 if self.disabledl :
-                    print "You have disable the download of DShield and Spamhaus databases. You will have to download them later to use these plugin"
+                    print("You have disable the download of DShield and Spamhaus databases. You will have to download them later to use these plugin")
                 else:
                     self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "PreludeCorrelator/plugins/dshield.dat")
                     self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "PreludeCorrelator/plugins/spamhaus_drop.dat")
@@ -87,8 +91,8 @@ class my_install(install):
 
         def init_siteconfig(self, prefix):
                 config = open("PreludeCorrelator/siteconfig.py", "w")
-                print >> config, "conf_dir = '%s'" % os.path.abspath(prefix + "/etc/prelude-correlator")
-                print >> config, "lib_dir = '%s'" % os.path.abspath(prefix + "/var/lib/prelude-correlator")
+                config.write("conf_dir = '%s'\n" % os.path.abspath(prefix + "/etc/prelude-correlator"))
+                config.write("lib_dir = '%s'\n" % os.path.abspath(prefix + "/var/lib/prelude-correlator"))
                 config.close()
 
 is_egg = "bdist_egg" in sys.argv

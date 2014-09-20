@@ -17,17 +17,23 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, time, urllib2
+try:
+    import urllib.request as urlreq
+except:
+    import urllib2 as urlreq
+
+import os, time
 from PreludeCorrelator.context import Timer
 from PreludeCorrelator.pluginmanager import PluginError
 
 class DownloadCache:
-        def __init__(self, name, filename, reload, logger):
+        def __init__(self, name, filename, reload, logger, bindata=False):
                 self._name = name
                 self._filename = filename
                 self._reload = reload
                 self._data = None
                 self.logger = logger
+                self._bindata = bindata
 
                 age = self._doInit()
                 if self._reload > 0:
@@ -72,16 +78,13 @@ class DownloadCache:
                                 self._load(age)
                                 return age
 
-                except OSError, e:
+                except OSError:
                         pass
 
                 try:
                         self._download()
                         age = 0
-                except PluginError, e:
-                        self.logger.warning("%s data couldn't be retrieved : %s" % (self._name, str(e)))
-                        self._load(age)
-                except Exception, e:
+                except Exception:
                         # There was an error downloading newer data, use any older data that we have, even if it's expired
                         # If we don't have any older data available, then this is an error, and there is no fallback.
                         if not age:
@@ -98,12 +101,12 @@ class DownloadCache:
                 try:
                         unparsed_data = self.download()
                         self.__data = self.parse(unparsed_data)
-                except Exception, e:
+                except Exception as e:
                         self.logger.error("error %s %s report : %s", status.lower(), self._name, e)
                         if not timer:
                                 raise
 
-                fd = open(self._filename, "w")
+                fd = open(self._filename, "wb" if self._bindata else "w")
                 self.write(fd, unparsed_data)
                 fd.close()
 
@@ -115,7 +118,7 @@ class DownloadCache:
 
         def _load(self, age):
                 self._checkDownloadedFileR()
-                self.__data = self.parse(self.read(open(self._filename, "r")))
+                self.__data = self.parse(self.read(open(self._filename, "rb" if self._bindata else "r")))
                 self.logger.info("Loaded %s data from a previous run (age=%.2f hours)", self._name, age / 60 / 60)
 
         def download(self):
@@ -128,10 +131,10 @@ class DownloadCache:
                 return self.__data
 
 class HTTPDownloadCache(DownloadCache):
-    def __init__(self, name, filename, uri, timeout, reload, logger):
+    def __init__(self, name, filename, uri, timeout, reload, logger, bindata=False):
         self.__uri = uri
         self.__timeout = timeout
-        DownloadCache.__init__(self, name, filename, reload, logger)
+        DownloadCache.__init__(self, name, filename, reload, logger, bindata)
 
     def read(self, fd):
         return fd.read()
@@ -142,5 +145,12 @@ class HTTPDownloadCache(DownloadCache):
     def download(self,headers=None):
         if headers == None:
             headers={'User-Agent' : "Prelude-Correlator"}
-        con = urllib2.urlopen(urllib2.Request(self.__uri, headers=headers))
-        return con.read()
+
+        con = urlreq.urlopen(urlreq.Request(self.__uri, headers=headers))
+        data = con.read()
+
+        if not self._bindata:
+            encoding = con.headers['content-type'].split('charset=')[-1]
+            data = data.decode(encoding)
+
+        return data

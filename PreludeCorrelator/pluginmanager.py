@@ -17,7 +17,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import pkg_resources, ConfigParser
+import pkg_resources
 from PreludeCorrelator import log
 
 
@@ -68,10 +68,10 @@ class PluginManager:
 
             try:
                 plugin_class = entrypoint.load()
-            except PluginError, e:
+            except PluginError as e:
                 logger.error("[%s]: %s", pname, e)
                 continue
-            except Exception, e:
+            except Exception as e:
                 logger.exception("error loading '%s': %s", pname, e)
                 continue
 
@@ -101,17 +101,17 @@ class PluginManager:
         for plugin_class in self.getPluginsClassesList():
             pname = plugin_class.__name__
 
-            if pname in conflict and not force_enable.has_key(pname):
+            if pname in conflict and not pname in force_enable:
                 logger.info("[%s]: disabled by plugin '%s' reason:%s", pname, conflict[pname][0], conflict[pname][1])
                 continue
 
             if plugin_class.autoload:
                 try:
                     pi = plugin_class(env)
-                except PluginError, e:
+                except PluginError as e:
                     logger.error("[%s]: %s", pname, e)
                     continue
-                except Exception, e:
+                except Exception:
                     logger.exception("[%s]: exception occurred while loading", pname)
                     continue
 
@@ -135,19 +135,19 @@ class PluginManager:
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.stats()
-            except Exception, e:
+            except Exception:
                 logger.exception("[%s]: exception occurred while retrieving statistics", plugin._getName())
 
     def signal(self, signo, frame):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.signal(signo, frame)
-            except Exception, e:
+            except Exception:
                 logger.exception("[%s]: exception occurred while signaling", plugin._getName())
 
     def run(self, idmef):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.run(idmef)
-            except Exception, e:
+            except Exception:
                 logger.exception("[%s]: exception occurred while running", plugin._getName())

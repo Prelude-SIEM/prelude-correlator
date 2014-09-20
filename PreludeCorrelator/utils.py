@@ -17,6 +17,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import collections
+
 def flatten(x):
     """flatten(sequence) -> list
 
@@ -35,7 +37,7 @@ def flatten(x):
 
     result = []
     for el in x:
-        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+        if isinstance(el, collections.Iterable) and not isinstance(el, str):
             result.extend(flatten(el))
         else:
             result.append(el)

@@ -19,12 +19,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import require
 import sys, os, time, signal
 from optparse import OptionParser, OptionGroup
 from PreludeEasy import ClientEasy, CheckVersion, IDMEFCriteria
 from PreludeCorrelator import __version__ as VERSION
-from PreludeCorrelator import idmef, pluginmanager, context, log, config
+from PreludeCorrelator import idmef, pluginmanager, context, log, config, require
 
 
 logger = log.getLogger(__name__)
@@ -133,7 +132,7 @@ class PreludeClient:
 
                 try:
                     criteria = IDMEFCriteria(criteria)
-                except Exception, e:
+                except Exception as e:
                     logger.error("Error processing criteria '%s': %s", criteria, e)
                     raise
 
@@ -152,7 +151,7 @@ class PreludeClient:
                                 last = now
 
         def readEvents(self, offset):
-                for i in xrange(0, offset):
+                for i in range(0, offset):
                         self._readEventsFromFile(idmef.IDMEF(), count=False)
 
                 self._readEvents(self._readEventsFromFile)
@@ -165,8 +164,7 @@ class PreludeClient:
 
 
 def main():
-        if not CheckVersion(LIBPRELUDE_REQUIRED_VERSION):
-                raise Exception, ("Libprelude version '%s' is required" % LIBPRELUDE_REQUIRED_VERSION)
+        CheckVersion(LIBPRELUDE_REQUIRED_VERSION)
 
         config_filename = require.get_config_filename(None, "prelude-correlator.conf")
 
@@ -211,10 +209,10 @@ def main():
             if os.fork():
                 os._exit(0)
 
-            os.umask(077)
+            os.umask(0o77)
 
             fd = os.open('/dev/null', os.O_RDWR)
-            for i in xrange(3):
+            for i in range(3):
                 os.dup2(fd, i)
 
             os.close(fd)
@@ -223,7 +221,7 @@ def main():
 
         try:
             env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
-        except Exception, e:
+        except Exception as e:
             logger.error(e)
             sys.exit(1)
 

@@ -52,6 +52,6 @@ class OpenSSHAuthPlugin(Plugin):
                     ctx.authtype = { data: True }
                     ctx.addAlertReference(idmef)
 
-                elif not ctx.authtype.has_key(data):
+                elif not data in ctx.authtype:
                     ctx.authtype[data] = True
                     ctx.addAlertReference(idmef)

@@ -59,7 +59,8 @@ class my_sdist(sdist):
 
         def run(self):
                 if self.disabledl :
-                    print("You have disable the download of DShield and Spamhaus databases. You will have to download them later to use these plugin")
+                    print("Automatic downloading of DShield and Spamhaus databases is disabled.")
+                    print("As a result, they won't be included in the generated source distribution.")
                 else:
                     self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "preludecorrelator/plugins/dshield.dat")
                     self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "preludecorrelator/plugins/spamhaus_drop.dat")

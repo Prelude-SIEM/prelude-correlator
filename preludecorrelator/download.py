@@ -27,6 +27,15 @@ from preludecorrelator.context import Timer
 from preludecorrelator.pluginmanager import PluginError
 
 class DownloadCache:
+        def _checkPermissions(self):
+            dirname = os.path.dirname(self._filename)
+
+            if not os.access(dirname, os.R_OK|os.W_OK|os.X_OK):
+                raise Exception("DownloadCache directory '%s' does not exist or has wrong permissions" % (dirname))
+
+            if os.path.exists(self._filename) and not os.access(self._filename, os.R_OK|os.W_OK):
+                raise Exception("DownloadCache file '%s' cannot be opened in read-write mode" % (self._filename))
+
         def __init__(self, name, filename, reload, logger, bindata=False):
                 self._name = name
                 self._filename = filename
@@ -35,41 +44,18 @@ class DownloadCache:
                 self.logger = logger
                 self._bindata = bindata
 
+                self._checkPermissions()
+
                 age = self._doInit()
                 if self._reload > 0:
                         try:
-                            self._checkDownloadedFileRW()
                             Timer(self._reload - age, self._download).start()
                         except:
                             self.logger.warning("File %s is not writtable, disable upgrade it during execution." % self._filename)
 
-        def _checkFolder(self, filename):
-                # Try to access the folder
-                folder_access = os.path.exists(filename)
-                if not folder_access :
-                    raise PluginError("Folder %s does not exists or you do not have enough permissions to access it." % os.path.dirname(filename))
-
-        def _checkFile(self, filename,mode):
-                # Check file permissions
-                file_permissions = os.access(filename,mode)
-                if not file_permissions :
-                    if mode == os.R_OK:
-                        raise PluginError("File %s couldn't be read." % filename)
-                    else:
-                        raise PluginError("File %s couldn't be read and write." % filename)
-
-        def _checkDownloadedFileR(self):
-                self._checkFolder(self._filename)
-                self._checkFile(self._filename,os.R_OK)
-
-        def _checkDownloadedFileRW(self):
-                self._checkFolder(self._filename)
-                self._checkFile(self._filename,os.R_OK|os.W_OK)
-
         def _doInit(self):
                 age = False
                 try:
-                        self._checkDownloadedFileR()
                         st = os.stat(self._filename)
                         age = time.time() - st.st_mtime
 
@@ -88,13 +74,12 @@ class DownloadCache:
                         # There was an error downloading newer data, use any older data that we have, even if it's expired
                         # If we don't have any older data available, then this is an error, and there is no fallback.
                         if not age:
-                                raise PluginError("%s data couldn't be retrieved, and no previous data available" % self._name)
+                                raise Exception("%s data couldn't be retrieved, and no previous data available" % self._name)
                         self._load(age)
 
                 return age
 
         def _download(self, timer=None):
-                self._checkDownloadedFileRW()
                 status ="Downloading" if not timer else "Updating"
                 self.logger.info("%s %s report, this might take some time...", status, self._name)
 
@@ -117,7 +102,6 @@ class DownloadCache:
                 self.logger.info("%s %s report done.", status, self._name)
 
         def _load(self, age):
-                self._checkDownloadedFileR()
                 self.__data = self.parse(self.read(open(self._filename, "rb" if self._bindata else "r")))
                 self.logger.info("Loaded %s data from a previous run (age=%.2f hours)", self._name, age / 60 / 60)
 

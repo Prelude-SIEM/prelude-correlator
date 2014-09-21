@@ -21,24 +21,24 @@ try:
         import os
         from preludecorrelator import siteconfig
 
-        def get_config_filename(module, fname):
+        def get_config_filename(fname, module=None, package="prelude-correlator"):
                 return os.path.join(siteconfig.conf_dir, fname)
 
-        def get_data_filename(module, fname):
+        def get_data_filename(fname, module=None, package="prelude-correlator"):
                 return os.path.join(siteconfig.lib_dir, fname)
 
 except:
         import pkg_resources
 
-        def get_config_filename(module, fname):
+        def get_config_filename(fname, module=None, package="prelude-correlator"):
                 if module is None:
-                        module = pkg_resources.Requirement.parse("prelude-correlator")
+                        module = pkg_resources.Requirement.parse(package)
 
                 return pkg_resources.resource_filename(module, fname)
 
-        def get_data_filename(module, fname):
+        def get_data_filename(fname, module=None, package="prelude-correlator"):
                 if module is None:
-                        module = pkg_resources.Requirement.parse("prelude-correlator")
+                        module = pkg_resources.Requirement.parse(package)
 
                 return pkg_resources.resource_filename(module, fname)
 

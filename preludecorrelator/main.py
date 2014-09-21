@@ -166,7 +166,7 @@ class PreludeClient:
 def main():
         checkVersion(LIBPRELUDE_REQUIRED_VERSION)
 
-        config_filename = require.get_config_filename(None, "prelude-correlator.conf")
+        config_filename = require.get_config_filename("prelude-correlator.conf")
 
         parser = OptionParser(usage="%prog", version="%prog " + VERSION)
         parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE", default=config_filename)

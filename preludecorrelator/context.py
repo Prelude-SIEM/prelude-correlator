@@ -326,7 +326,7 @@ def search(name, idmef=None, update=False):
     return None
 
 
-_ctxt_filename = require.get_data_filename(None, "context.dat")
+_ctxt_filename = require.get_data_filename("context.dat")
 
 def save():
         fd = open(_ctxt_filename, "wb")

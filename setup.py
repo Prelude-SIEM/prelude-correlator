@@ -96,18 +96,6 @@ class my_install(install):
                 config.write("lib_dir = '%s'\n" % os.path.abspath(prefix + "/var/lib/prelude-correlator"))
                 config.close()
 
-is_egg = "bdist_egg" in sys.argv
-if is_egg:
-        # Make sure we remove any trace of siteconfig.py
-        try: shutil.rmtree("build")
-        except: pass
-        package_data = { '': [ "*.dat"], 'docs/sample-plugin': ["docs/sample-plugin/setup.py"] }
-        data_files = [ ("", ["prelude-correlator.conf"]) ]
-else:
-        package_data = {}
-        data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
-                       ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ]
-
 setup(
         name="prelude-correlator",
         version=PRELUDE_CORRELATOR_VERSION,
@@ -164,10 +152,10 @@ suits your needs.
                 ]
         },
 
-        zip_safe = False,
-        data_files = data_files,
-        package_data = package_data,
-        install_requires = [ "prelude >= 1.2.6rc1" ],
+        package_data = {},
+        data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
+                       ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ],
 
+        install_requires = [ "prelude >= 1.2.6rc1" ],
         cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

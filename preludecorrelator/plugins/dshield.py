@@ -49,7 +49,7 @@ class DshieldPlugin(Plugin):
     DSHIELD_RELOAD = 7 * 24 * 60 * 60
     DSHIELD_URI = "http://www.dshield.org/ipsascii.html?limit=10000"
     DSHIELD_TIMEOUT = 10
-    DSHIELD_FILENAME = require.get_data_filename(__name__, "dshield.dat")
+    DSHIELD_FILENAME = require.get_data_filename("dshield.dat", module=__name__)
 
     def __init__(self, env):
         Plugin.__init__(self, env)

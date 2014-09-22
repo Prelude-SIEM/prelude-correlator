@@ -66,6 +66,18 @@ class PluginManager:
 
             pname = entrypoint.name
 
+            enable_s = env.config.get(pname, "enable", default=None)
+            if enable_s:
+                    enable_s = enable_s.lower()
+
+            enable = enable_s in ("true", "yes", "force", None)
+            disable = env.config.getAsBool(pname, "disable", default=False)
+
+            # do not load if the user specifically used disable=true, or enable=false
+            if not enable or disable:
+                logger.info("[%s]: disabled on user request", pname)
+                continue
+
             try:
                 plugin_class = entrypoint.load()
             except PluginError as e:
@@ -75,21 +87,18 @@ class PluginManager:
                 logger.exception("error loading '%s': %s", pname, e)
                 continue
 
-            enable_s = env.config.get(pname, "enable", default=str(plugin_class.enable)).lower()
-            enable = enable_s in ("true", "yes", "force")
+            if not enable_s:
+                    enable = plugin_class.enable
 
             if enable:
-                if env.config.getAsBool(pname, "disable", default=False):
+                if disable:
                     enable = False
 
                 elif enable_s == "force":
                     force_enable[pname] = enable
 
             if not enable:
-                if plugin_class.enable:
-                    logger.info("[%s]: disabled on user request", pname)
-                else:
-                    logger.info("[%s]: disabled by default", pname)
+                logger.info("[%s]: disabled by default", pname)
                 continue
 
             for reason, namelist in plugin_class.conflict:

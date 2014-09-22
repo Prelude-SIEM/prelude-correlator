@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import pkg_resources
-from preludecorrelator import log
+from preludecorrelator import log, error
 
 
 logger = log.getLogger(__name__)
@@ -48,7 +48,7 @@ class Plugin(object):
         pass
 
 
-class PluginError(Exception):
+class PluginDependenciesError(ImportError):
      pass
 
 class PluginManager:
@@ -80,11 +80,13 @@ class PluginManager:
 
             try:
                 plugin_class = entrypoint.load()
-            except PluginError as e:
-                logger.error("[%s]: %s", pname, e)
+
+            except (ImportError) as e:
+                logger.error("[%s]: import error: %s", pname, e)
                 continue
+
             except Exception as e:
-                logger.exception("error loading '%s': %s", pname, e)
+                logger.exception("[%s]: error loading : %s", pname, e)
                 continue
 
             if not enable_s:
@@ -117,12 +119,10 @@ class PluginManager:
             if plugin_class.autoload:
                 try:
                     pi = plugin_class(env)
-                except PluginError as e:
+
+                except error.UserError as e:
                     logger.error("[%s]: %s", pname, e)
-                    continue
-                except Exception:
-                    logger.exception("[%s]: exception occurred while loading", pname)
-                    continue
+                    raise error.UserError("Plugin '%s' failed to load, please fix the issue or disable the plugin" % pname)
 
                 self.__plugins_instances.append(pi)
 
@@ -158,5 +158,9 @@ class PluginManager:
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.run(idmef)
+
+            except error.UserError:
+                logger.error("[%s]: error running plugin : %s", plugin._getName(), e)
+
             except Exception:
                 logger.exception("[%s]: exception occurred while running", plugin._getName())

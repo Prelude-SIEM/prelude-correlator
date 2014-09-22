@@ -19,6 +19,7 @@ preludecorrelator/__init__.py
 preludecorrelator/config.py
 preludecorrelator/context.py
 preludecorrelator/download.py
+preludecorrelator/error.py
 preludecorrelator/idmef.py
 preludecorrelator/log.py
 preludecorrelator/main.py

@@ -23,18 +23,18 @@ except:
     import urllib2 as urlreq
 
 import os, time
+from preludecorrelator import error
 from preludecorrelator.context import Timer
-from preludecorrelator.pluginmanager import PluginError
 
 class DownloadCache:
         def _checkPermissions(self):
             dirname = os.path.dirname(self._filename)
 
             if not os.access(dirname, os.R_OK|os.W_OK|os.X_OK):
-                raise Exception("DownloadCache directory '%s' does not exist or has wrong permissions" % (dirname))
+                raise error.UserError("DownloadCache directory '%s' does not exist or has wrong permissions" % (dirname))
 
             if os.path.exists(self._filename) and not os.access(self._filename, os.R_OK|os.W_OK):
-                raise Exception("DownloadCache file '%s' cannot be opened in read-write mode" % (self._filename))
+                raise error.UserError("DownloadCache file '%s' cannot be opened in read-write mode" % (self._filename))
 
         def __init__(self, name, filename, reload, logger, bindata=False):
                 self._name = name
@@ -48,10 +48,7 @@ class DownloadCache:
 
                 age = self._doInit()
                 if self._reload > 0:
-                        try:
-                            Timer(self._reload - age, self._download).start()
-                        except:
-                            self.logger.warning("File %s is not writtable, disable upgrade it during execution." % self._filename)
+                        Timer(self._reload - age, self._download).start()
 
         def _doInit(self):
                 age = False

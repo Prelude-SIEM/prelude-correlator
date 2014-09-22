@@ -19,13 +19,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from preludecorrelator import require, log, download
-from preludecorrelator.pluginmanager import Plugin, PluginError
+from preludecorrelator.pluginmanager import Plugin, PluginDependenciesError
 from preludecorrelator.context import Context
 
 try:
     import netaddr
 except:
-    raise PluginError("missing netaddr module : https://pypi.python.org/pypi/netaddr")
+    raise PluginDependenciesError("missing netaddr module, https://pypi.python.org/pypi/netaddr")
 
 logger = log.getLogger(__name__)
 

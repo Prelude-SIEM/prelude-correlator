@@ -22,12 +22,14 @@
 import sys, os, time, signal, pkg_resources
 from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
-from preludecorrelator import idmef, pluginmanager, context, log, config, require
+from preludecorrelator import idmef, pluginmanager, context, log, config, require, error
 
 
 logger = log.getLogger(__name__)
 VERSION = pkg_resources.get_distribution('prelude-correlator').version
 LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
+
+
 
 
 class Env:
@@ -133,8 +135,7 @@ class PreludeClient:
                 try:
                     criteria = IDMEFCriteria(criteria)
                 except Exception as e:
-                    logger.error("Error processing criteria '%s': %s", criteria, e)
-                    raise
+                    raise error.UserError("Invalid criteria provided '%s': %s" % (criteria, e))
 
                 last = time.time()
                 while self._continue:
@@ -163,7 +164,7 @@ class PreludeClient:
                 self._continue = False
 
 
-def main():
+def runCorrelator():
         checkVersion(LIBPRELUDE_REQUIRED_VERSION)
 
         config_filename = require.get_config_filename("prelude-correlator.conf")
@@ -222,8 +223,7 @@ def main():
         try:
             env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
         except Exception as e:
-            logger.error(e)
-            sys.exit(1)
+            raise UserError(e)
 
         idmef.set_prelude_client(env.prelude_client)
 
@@ -239,3 +239,15 @@ def main():
 
         # save existing context
         context.save()
+
+
+def main():
+    try:
+        runCorrelator()
+
+    except error.UserError as e:
+        logger.error("error caught while starting prelude-correlator : %s", e)
+        sys.exit(1)
+
+    except:
+        raise

@@ -1,3 +1,31 @@
+* 2014-09-23, prelude-correlator-1.2.6rc2:
+
+Author: Yoann Vandoorselaere
+
+- Rework exception flow
+
+- Verify plugin enable/disable attribute before entrypoint loading
+
+    Allow the user to disable a plugin before the entrypoint is called
+    (useful if the plugin entrypoint triggers, for example, an exception).
+
+- Remove semi broken EGG support for now, improve require API for future use
+
+- Namespace support
+
+- Corrected permissions checking
+
+- Remove uppercase from package name, as specified in PEP8
+
+- Update for latest libprelude bindings API changes
+
+    High level bindings in libprelude are now the standard, and got renamed
+    from "PreludeEasy" to "prelude". Method names were also renamed.
+
+- Python3 compatibility work
+
+
+
 * 2014-09-16, prelude-correlator-1.2.6rc1:
 
 Author: Yoann Vandoorselaere

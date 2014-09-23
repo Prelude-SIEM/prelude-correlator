@@ -223,7 +223,7 @@ def runCorrelator():
         try:
             env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
         except Exception as e:
-            raise UserError(e)
+            raise error.UserError(e)
 
         idmef.set_prelude_client(env.prelude_client)
 

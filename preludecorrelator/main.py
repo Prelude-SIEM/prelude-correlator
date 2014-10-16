@@ -34,6 +34,8 @@ LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
 
 class Env:
         def __init__(self, options):
+                self.prelude_client = None
+
                 log.initLogger(options)
                 self.config = config.Config(options.config)
 
@@ -48,6 +50,7 @@ class Env:
 class SignalHandler:
         def __init__(self, env):
                 self._env = env
+
                 signal.signal(signal.SIGTERM, self._handle_signal)
                 signal.signal(signal.SIGINT, self._handle_signal)
                 signal.signal(signal.SIGQUIT, self._handle_signal)
@@ -57,9 +60,11 @@ class SignalHandler:
                 self._env.pluginmanager.signal(signum, frame)
 
                 if signum == signal.SIGQUIT:
-                        self._env.prelude_client.stats()
                         context.stats()
                         self._env.pluginmanager.stats()
+
+                        if self._env.prelude_client:
+                                self._env.prelude_client.stats()
                 else:
                         self._env.prelude_client.stop()
 
@@ -187,6 +192,7 @@ def runCorrelator():
         (options, args) = parser.parse_args()
 
         env = Env(options)
+        SignalHandler(env)
 
         ifd = None
         if options.print_input:
@@ -226,8 +232,6 @@ def runCorrelator():
             raise error.UserError(e)
 
         idmef.set_prelude_client(env.prelude_client)
-
-        SignalHandler(env)
 
         if options.readfile:
                 env._input_limit = options.readlimit

@@ -66,7 +66,6 @@ class DownloadCache:
 
                 try:
                         self._download()
-                        age = 0
                 except Exception:
                         # There was an error downloading newer data, use any older data that we have, even if it's expired
                         # If we don't have any older data available, then this is an error, and there is no fallback.
@@ -74,7 +73,7 @@ class DownloadCache:
                                 raise Exception("%s data couldn't be retrieved, and no previous data available" % self._name)
                         self._load(age)
 
-                return age
+                return 0
 
         def _download(self, timer=None):
                 status ="Downloading" if not timer else "Updating"
@@ -83,20 +82,20 @@ class DownloadCache:
                 try:
                         unparsed_data = self.download()
                         self.__data = self.parse(unparsed_data)
+
+                        fd = open(self._filename, "wb" if self._bindata else "w")
+                        self.write(fd, unparsed_data)
+                        fd.close()
+
+                        self.logger.info("%s %s report done.", status, self._name)
                 except Exception as e:
                         self.logger.error("error %s %s report : %s", status.lower(), self._name, e)
                         if not timer:
                                 raise
 
-                fd = open(self._filename, "wb" if self._bindata else "w")
-                self.write(fd, unparsed_data)
-                fd.close()
-
                 if timer:
                         timer.setExpire(self._reload)
                         timer.reset()
-
-                self.logger.info("%s %s report done.", status, self._name)
 
         def _load(self, age):
                 self.__data = self.parse(self.read(open(self._filename, "rb" if self._bindata else "r")))

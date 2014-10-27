@@ -1,3 +1,15 @@
+* 2014-10-27, prelude-correlator-1.2.6rc4:
+
+Author: Yoann Vandoorselaere
+
+- Reset IDMEF CreateTime when sending an alert
+
+- Fix possible exception in case of download failure
+
+- Minor fixes
+
+
+
 * 2014-09-23, prelude-correlator-1.2.6rc2:
 
 Author: Yoann Vandoorselaere

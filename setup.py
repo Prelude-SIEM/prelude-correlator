@@ -100,12 +100,12 @@ setup(
         name="prelude-correlator",
         version=PRELUDE_CORRELATOR_VERSION,
         maintainer = "Prelude Team",
-        maintainer_email = "contact.prelude@c-s.fr",
+        maintainer_email = "support.prelude@c-s.fr",
         author = "Yoann Vandoorselaere",
-        author_email = "yoann.v@prelude-ids.com",
+        author_email = "yoannv@gmail.com",
         license = "GPL",
-        url = "https://www.prelude-ids.org",
-        download_url = "https://www.prelude-ids.org/projects/prelude/files",
+        url = "https://www.prelude-siem.org",
+        download_url = "https://www.prelude-siem.org/projects/prelude/files",
         description = "Prelude-Correlator perform real time correlation of events received by Prelude",
         long_description = """
 Prelude-Correlator perform real time correlation of events received by Prelude.

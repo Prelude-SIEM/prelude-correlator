@@ -32,7 +32,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "1.2.6rc5"
+PRELUDE_CORRELATOR_VERSION = "1.2.6"
 
 
 class my_sdist(sdist):
@@ -156,6 +156,6 @@ suits your needs.
         data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
                        ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ],
 
-        install_requires = [ "prelude >= 1.2.6rc5" ],
+        install_requires = [ "prelude >= 1.2.6" ],
         cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

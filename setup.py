@@ -37,7 +37,7 @@ PRELUDE_CORRELATOR_VERSION = "1.3.0rc2"
 
 class my_sdist(sdist):
 
-        user_options = sdist.user_options + [ ( 'disabledl',None,"Disable the download of DShield and Spamhaus databases" ) ]
+        user_options = sdist.user_options + [ ( 'disabledl', None, "Disable the download of databases" ) ]
         disabledl = False
 
         def _downloadDatabase(self, dname, url, filename):
@@ -59,11 +59,12 @@ class my_sdist(sdist):
 
         def run(self):
                 if self.disabledl :
-                    print("Automatic downloading of DShield and Spamhaus databases is disabled.")
+                    print("Automatic downloading of databases is disabled.")
                     print("As a result, they won't be included in the generated source distribution.")
                 else:
                     self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "rules/dshield.dat")
                     self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "rules/spamhaus_drop.dat")
+                    self._downloadDatabase("CIArmy", "http://cinsscore.com/list/ci-badguys.txt", "rules/ciarmy.dat")
                 sdist.run(self)
 
 

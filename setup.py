@@ -154,6 +154,7 @@ suits your needs.
 
         package_data = {},
         data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
+                       ("etc/prelude-correlator/conf.d", ['README']),
                        ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ],
 
         install_requires = [ "prelude >= 1.2.6" ],

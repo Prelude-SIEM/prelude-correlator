@@ -17,6 +17,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
+import glob
 try:
     import configparser
 except:
@@ -24,8 +26,25 @@ except:
 
 class Config(configparser.ConfigParser):
         def __init__(self, filename):
-                configparser.ConfigParser.__init__(self)
+                configparser.ConfigParser.__init__(self, allow_no_value=True)
                 self.read(filename)
+
+                # Allow inclusion of additional configuration files in
+                # prelude-correlator.conf.
+                # These additional configuration files can be used by plugins.
+                if self.has_section('include'):
+                    dataset = []
+                    includes = self.items('include')
+                    confdir = os.path.dirname(os.path.abspath(filename))
+
+                    for fpattern, _dummy in includes:
+                        fpattern = os.path.join(confdir, fpattern)
+
+                        # Files are loaded in alphabetical order
+                        for fname in sorted(glob.glob(fpattern)):
+                            dataset.append(fname)
+
+                    self.read(dataset)
 
         def get(self, section, option, raw=None, vars=None, default=None, type=str):
                 try:

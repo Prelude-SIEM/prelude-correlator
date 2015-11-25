@@ -6,3 +6,4 @@ include README
 include ez_setup.py
 include prelude-correlator.conf
 recursive-include preludecorrelator *
+recursive-include selinux *

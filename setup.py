@@ -62,8 +62,8 @@ class my_sdist(sdist):
                     print("Automatic downloading of DShield and Spamhaus databases is disabled.")
                     print("As a result, they won't be included in the generated source distribution.")
                 else:
-                    self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "preludecorrelator/plugins/dshield.dat")
-                    self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "preludecorrelator/plugins/spamhaus_drop.dat")
+                    self._downloadDatabase("DShield", "http://www.dshield.org/ipsascii.html?limit=10000", "rules/dshield.dat")
+                    self._downloadDatabase("Spamhaus", "http://www.spamhaus.org/drop/drop.lasso", "rules/spamhaus_drop.dat")
                 sdist.run(self)
 
 
@@ -132,30 +132,21 @@ suits your needs.
                         "Topic :: Security",
                         "Topic :: System :: Monitoring" ],
 
-        packages = find_packages(),
+        packages = find_packages(".", exclude=["rules"]),
         entry_points = {
                 'console_scripts': [
                         'prelude-correlator = preludecorrelator.main:main',
                 ],
 
                 'preludecorrelator.plugins': [
-                        'BruteForcePlugin = preludecorrelator.plugins.bruteforce:BruteForcePlugin',
-                        'BusinessHourPlugin = preludecorrelator.plugins.businesshour:BusinessHourPlugin',
-                        'DshieldPlugin = preludecorrelator.plugins.dshield:DshieldPlugin',
-                        'FirewallPlugin = preludecorrelator.plugins.firewall:FirewallPlugin',
-                        'OpenSSHAuthPlugin = preludecorrelator.plugins.opensshauth:OpenSSHAuthPlugin',
-                        'EventScanPlugin = preludecorrelator.plugins.scan:EventScanPlugin',
-                        'EventStormPlugin = preludecorrelator.plugins.scan:EventStormPlugin',
-                        'EventSweepPlugin = preludecorrelator.plugins.scan:EventSweepPlugin',
-                        'WormPlugin = preludecorrelator.plugins.worm:WormPlugin',
-                        'SpamhausDropPlugin = preludecorrelator.plugins.spamhausdrop:SpamhausDropPlugin'
                 ]
         },
 
         package_data = {},
         data_files = [ ("etc/prelude-correlator", ["prelude-correlator.conf"]),
                        ("etc/prelude-correlator/conf.d", ['data/conf.d/README']),
-                       ("var/lib/prelude-correlator", ["preludecorrelator/plugins/dshield.dat", "preludecorrelator/plugins/spamhaus_drop.dat"]) ],
+                       ("etc/prelude-correlator/rules/python", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.py')]),
+                       ("var/lib/prelude-correlator", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.dat')]) ],
 
         install_requires = [ "prelude >= 1.2.6" ],
         cmdclass = { 'sdist': my_sdist, 'install': my_install }

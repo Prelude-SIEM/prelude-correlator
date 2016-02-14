@@ -23,23 +23,6 @@
 from preludecorrelator.context import Context
 from preludecorrelator.pluginmanager import Plugin
 
-class EventScanPlugin(Plugin):
-    def run(self, idmef):
-        source = idmef.get("alert.source(*).node.address(*).address")
-        target = idmef.get("alert.target(*).node.address(*).address")
-
-        if not source or not target:
-            return
-
-        for saddr in source:
-            for daddr in target:
-                ctx = Context(("SCAN EVENTSCAN", saddr, daddr), { "expire": 60, "threshold": 30, "alert_on_expire": True }, update = True, idmef=idmef)
-                if ctx.getUpdateCount() == 0:
-                    ctx.set("alert.correlation_alert.name", "A single host has played many events against a single target. This may be a vulnerability scan")
-                    ctx.set("alert.classification.text", "Eventscan")
-                    ctx.set("alert.assessment.impact.severity", "high")
-
-
 # Detect Eventsweep:
 # Playing the same event from a single host against multiple hosts
 class EventSweepPlugin(Plugin):
@@ -66,20 +49,3 @@ class EventSweepPlugin(Plugin):
                         return
 
             ctx.update(idmef=idmef, timer_rst=ctx.getUpdateCount())
-
-
-# Detect Eventstorm:
-# Playing excessive events by a single host
-class EventStormPlugin(Plugin):
-    def run(self, idmef):
-        source = idmef.get("alert.source(*).node.address(*).address")
-        if not source:
-            return
-
-        for saddr in source:
-            ctx = Context(("SCAN EVENTSTORM", saddr), { "expire": 120, "threshold": 150, "alert_on_expire": True }, update = True, idmef = idmef)
-            if ctx.getUpdateCount() == 0:
-                ctx.set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
-                ctx.set("alert.classification.text", "Eventstorm")
-                ctx.set("alert.assessment.impact.severity", "high")
-

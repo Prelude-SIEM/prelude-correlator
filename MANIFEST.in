@@ -5,6 +5,7 @@ include NEWS
 include README
 include ez_setup.py
 include prelude-correlator.conf
-recursive-include preludecorrelator *
-recursive-include selinux *
+graft preludecorrelator
+graft selinux
+graft rules
 graft data

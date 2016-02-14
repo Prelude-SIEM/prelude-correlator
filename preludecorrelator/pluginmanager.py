@@ -19,6 +19,8 @@
 
 import pkg_resources
 from preludecorrelator import log, error
+import os
+import imp
 
 
 logger = log.getLogger(__name__)
@@ -52,7 +54,9 @@ class PluginDependenciesError(ImportError):
      pass
 
 class PluginManager:
-    def __init__(self, env, entrypoint='preludecorrelator.plugins'):
+    _default_entrypoint = 'preludecorrelator.plugins'
+
+    def __init__(self, env, entrypoint=None):
         self._env = env
         self._count = 0
         self.__plugins_instances = []
@@ -61,10 +65,12 @@ class PluginManager:
         conflict = {}
         force_enable = {}
 
-        for entrypoint in pkg_resources.iter_entry_points(entrypoint):
-            logger.debug("loading entry point %s", entrypoint.module_name, level=1)
+        plugin_entries =  [ (e.name, e, self._load_entrypoint) for e in pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)]
+        if entrypoint is None:
+            plugin_entries += [ (u[0], u, self._load_userpoint ) for u in self._get_userpoints(env)]
 
-            pname = entrypoint.name
+        for pname, e, fct in plugin_entries:
+            logger.debug("loading point %s", pname, level=1)
 
             enable_s = env.config.get(pname, "enable", default=None)
             if enable_s:
@@ -78,15 +84,9 @@ class PluginManager:
                 logger.info("[%s]: disabled on user request", pname)
                 continue
 
-            try:
-                plugin_class = entrypoint.load()
-
-            except (ImportError) as e:
-                logger.error("[%s]: import error: %s", pname, e)
-                continue
-
-            except Exception as e:
-                logger.exception("[%s]: error loading : %s", pname, e)
+            plugin_class = fct(e)
+            
+            if plugin_class is None:
                 continue
 
             if not enable_s:
@@ -127,6 +127,48 @@ class PluginManager:
                 self.__plugins_instances.append(pi)
 
             self._count += 1
+
+    def _get_userpoints(self, env):
+        for pathdir in env.config.get("python_rules", "paths", default=[]).splitlines():
+            if not os.access(pathdir, os.R_OK) or not os.path.isdir(pathdir):
+                logger.warning("Can not load %s python rules dir" % pathdir)
+                continue
+
+            for f in os.listdir(pathdir):
+                if not f.endswith('.py') or f == '__init__.py':
+                    continue
+
+                if os.path.isdir(os.path.join(pathdir, f)):
+                    continue
+
+                yield (f.rpartition('.')[0], pathdir)
+
+    def _load_entrypoint(self, entrypoint):
+        try:
+            return entrypoint.load()
+
+        except (ImportError) as e:
+            logger.error("[%s]: import error: %s", pname, e)
+            return None
+
+        except Exception as e:
+            logger.exception("[%s]: error loading : %s", pname, e)
+            return None
+
+    def _load_userpoint(self, (name, path)):
+        try:
+            mod_info = imp.find_module(name, [path])
+
+        except ImportError:
+            logger.warning( 'Invalid plugin "%s" in "%s"' % (name, path) )
+            return None
+
+        try:
+            return getattr(imp.load_module( self._default_entrypoint + '.' + name , *mod_info), name)
+
+        except Exception, e:
+            logger.warning( "Unable to load %(file)s: %(error)s" % {'file': name,'error': str(e),})
+            return None
 
     def getPluginCount(self):
         return self._count

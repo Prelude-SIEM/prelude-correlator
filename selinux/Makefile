@@ -11,5 +11,5 @@ all: ${TARGETS:=.pp.bz2}
 	make -f /usr/share/selinux/devel/Makefile $@
 
 clean:
-	rm -f *~ *.tc *.pp *.pp.bz2
-	rm -rf tmp
+	make -f /usr/share/selinux/devel/Makefile clean
+	rm -f *.pp.bz2

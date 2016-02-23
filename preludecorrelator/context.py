@@ -101,18 +101,19 @@ class Context(IDMEF, Timer):
         FORMAT_VERSION = 0.2
 
         def __setstate__(self, dict):
-                Timer.__setstate__(self, dict)
                 IDMEF.__setstate__(self, dict)
+                Timer.__setstate__(self, dict)
 
         def __init__(self, name, options={}, overwrite=True, update=False, idmef=None):
                 already_initialized = (update or (overwrite is False)) and hasattr(self, "_name")
                 if already_initialized is True:
                         return
 
-                self._version = self.FORMAT_VERSION
-                self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
                 IDMEF.__init__(self)
                 Timer.__init__(self, 0)
+
+                self._version = self.FORMAT_VERSION
+                self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
 
                 name = getName(name)
                 self._name = name
@@ -330,7 +331,7 @@ _ctxt_filename = require.get_data_filename("context.dat")
 
 def save():
         fd = open(_ctxt_filename, "wb")
-        pickle.dump(_CONTEXT_TABLE, fd)
+        pickle.dump(_CONTEXT_TABLE, fd, -1)
         fd.close()
 
 def load(_env):

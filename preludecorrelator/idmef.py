@@ -25,28 +25,6 @@ from preludecorrelator import utils
 _RegexType = type(re.compile(""))
 
 class IDMEF(prelude.IDMEF):
-        def __setstate__(self, dict):
-                fd = tempfile.TemporaryFile("rb+")
-                fd.write(dict["idmef_encoded"])
-                fd.seek(0)
-
-                prelude.IDMEF.__init__(self)
-                self.read(fd)
-
-                del(dict["idmef_encoded"])
-                self.__dict__.update(dict)
-
-        def __getstate__(self):
-                fd = tempfile.TemporaryFile("rb+")
-                self.write(fd)
-                fd.seek(0)
-
-                odict = self.__dict__.copy()
-                odict["idmef_encoded"] = fd.read()
-                del(odict["this"])
-
-                return odict
-
         def getTime(self):
                 itime = self.get("alert.detect_time")
                 if not itime:

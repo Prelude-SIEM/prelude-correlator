@@ -1,3 +1,19 @@
+* 2016-03-01, prelude-correlator-1.3.0beta1:
+
+Author: Song Tran
+
+- Add additional SELinux policies
+
+Author: Thomas Andrejak
+
+- Load plugins from entrypoints and directories
+
+- The README in conf.d was not the right file
+
+- Change prelude-ids.com to prelude-siem.com
+
+
+
 * 2016-01-11, prelude-correlator-1.3.0alpha1:
 
 Author: Louis-David Gabet

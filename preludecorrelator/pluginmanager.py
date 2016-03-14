@@ -129,7 +129,7 @@ class PluginManager:
             self._count += 1
 
     def _get_userpoints(self, env):
-        for pathdir in env.config.get("python_rules", "paths", default=[]).splitlines():
+        for pathdir in env.config.get("python_rules", "paths", default="").splitlines():
             if not os.access(pathdir, os.R_OK) or not os.path.isdir(pathdir):
                 logger.warning("Can not load %s python rules dir" % pathdir)
                 continue

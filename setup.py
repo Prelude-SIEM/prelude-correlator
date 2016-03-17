@@ -32,7 +32,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "1.3.0beta1"
+PRELUDE_CORRELATOR_VERSION = "1.3.0beta2"
 
 
 class my_sdist(sdist):

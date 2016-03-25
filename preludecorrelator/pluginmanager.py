@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import pkg_resources
-from preludecorrelator import log, error
+from preludecorrelator import log, error, require
 import os
 import imp
 
@@ -129,7 +129,12 @@ class PluginManager:
             self._count += 1
 
     def _get_userpoints(self, env):
-        for pathdir in env.config.get("python_rules", "paths", default="").splitlines():
+        if not env.config.has_section("python_rules"):
+            python_rules_dirs = require.get_config_filename("rules/python")
+        else:
+            python_rules_dirs = env.config.get("python_rules", "paths", default="")
+
+        for pathdir in python_rules_dirs.splitlines():
             if not os.access(pathdir, os.R_OK) or not os.path.isdir(pathdir):
                 logger.warning("Can not load %s python rules dir" % pathdir)
                 continue

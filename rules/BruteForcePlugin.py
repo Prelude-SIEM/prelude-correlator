@@ -23,13 +23,17 @@ from preludecorrelator.context import Context
 
 class BruteForcePlugin(Plugin):
     def _BruteForce(self, idmef):
-        sadd = idmef.get("alert.source(*).node.address(*).address")
-        tadd = idmef.get("alert.target(*).node.address(*).address")
-        if not sadd or not tadd:
-            return
+        sadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.source(*)')]
+        tadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.target(*)')]
 
         for source in sadd:
+            if not source:
+                continue
+
             for target in tadd:
+                if not target:
+                    continue
+
                 ctx = Context(("BRUTE ST", source, target), { "expire": 120, "threshold": 5, "alert_on_expire": True }, update=True, idmef = idmef)
                 if ctx.getUpdateCount() == 0:
                     ctx.set("alert.classification.text", "Brute Force attack")

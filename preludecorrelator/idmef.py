@@ -137,17 +137,18 @@ class IDMEF(prelude.IDMEF):
                                 if value == reqval or reqval is None:
                                         prelude.IDMEF.set(idmef, basepath + "(%d)." % idx + fpath, None)
 
+                        fpath2 = fpath
                         if value and preproc_func:
-                                fpath, value = preproc_func(value)
+                                fpath2, value = preproc_func(value)
 
                         if not idx in filtered:
                                 filtered[idx] = {}
 
-                        if not fpath in filtered[idx]:
-                                filtered[idx][fpath] = []
+                        if not fpath2 in filtered[idx]:
+                                filtered[idx][fpath2] = []
 
                         if value:
-                                filtered[idx][fpath] += value if isinstance(value, list) else [value]
+                                filtered[idx][fpath2] += value if isinstance(value, list) else [value]
 
                 return fpath
 
@@ -160,11 +161,8 @@ class IDMEF(prelude.IDMEF):
                         r1 = self._getFilteredValue(path, fpath, reqval, self, preproc_func, filtered_cur)
                         r2 = self._getFilteredValue(path, fpath, reqval, idmef, preproc_func, filtered_new)
 
-                        if not postproc_func:
-                                postproc[r1 or r2] = self._defaultMerge
+                        postproc[r1 or r2] = postproc_func if postproc_func else self._defaultMerge
 
-                        if postproc_func:
-                                postproc[r1 or r2] = postproc_func
 
                 unmodified_set, sharedset, newset = self._getMergeList(path, idmef)
                 for idx, value in newset:

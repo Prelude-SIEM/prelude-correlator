@@ -1,4 +1,14 @@
+* 2016-04-08, prelude-correlator-1.3.0rc3:
+
+No new changes.
+
+
+
 * 2016-04-01, prelude-correlator-1.3.0rc2:
+
+Author: Yoann Vandoorselaere
+
+- Fix incorrect aggregation in some corner case
 
 Author: François Poirotte
 

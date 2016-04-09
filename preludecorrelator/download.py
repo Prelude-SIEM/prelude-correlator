@@ -130,7 +130,7 @@ class HTTPDownloadCache(DownloadCache):
         data = con.read()
 
         if not self._bindata:
-            encoding = con.headers['content-type'].split('charset=')[-1]
-            data = data.decode(encoding)
+            _mime_type, _sep, encoding = con.headers['content-type'].partition('charset=')
+            data = data.decode(encoding or 'ascii')
 
         return data

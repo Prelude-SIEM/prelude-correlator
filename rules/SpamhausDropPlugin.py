@@ -23,6 +23,10 @@ from preludecorrelator.pluginmanager import Plugin, PluginDependenciesError
 from preludecorrelator.context import Context
 
 try:
+    # Note:
+    #   Versions 0.7.10 to 0.7.15 (inclusive) are known to be very slow
+    #   due to a bug in python-netaddr.
+    #   See https://github.com/drkjam/netaddr/issues/94 for more information
     import netaddr
 except:
     raise PluginDependenciesError("missing netaddr module, https://pypi.python.org/pypi/netaddr")

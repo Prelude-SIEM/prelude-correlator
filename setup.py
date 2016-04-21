@@ -32,7 +32,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-PRELUDE_CORRELATOR_VERSION = "3.0.0rc4"
+PRELUDE_CORRELATOR_VERSION = "3.0.0"
 
 
 class my_sdist(sdist):
@@ -149,6 +149,6 @@ suits your needs.
                        ("etc/prelude-correlator/rules/python", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.py')]),
                        ("var/lib/prelude-correlator", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.dat')]) ],
 
-        install_requires = [ "prelude >= 1.2.6" ],
+        install_requires = [ "prelude >= 3.0.0" ],
         cmdclass = { 'sdist': my_sdist, 'install': my_install }
 )

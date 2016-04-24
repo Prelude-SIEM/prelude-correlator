@@ -1,3 +1,13 @@
+* 2016-04-24, prelude-correlator-3.0.1:
+
+Author: Thomas Andrejak
+
+ - Disable flatten when getting alert.source(*) in BruteForce
+
+ - Missing import in prelude-correlator plugin manager
+
+
+
 * 2016-04-22, prelude-correlator-3.0.0:
 
 No new changes.

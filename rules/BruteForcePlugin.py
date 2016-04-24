@@ -23,8 +23,8 @@ from preludecorrelator.context import Context
 
 class BruteForcePlugin(Plugin):
     def _BruteForce(self, idmef):
-        sadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.source(*)')]
-        tadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.target(*)')]
+        sadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.source(*)', False)]
+        tadd = [sorted(node.get('node.address(*).address')) for node in idmef.get('alert.target(*)', False)]
 
         for source in sadd:
             if not source:

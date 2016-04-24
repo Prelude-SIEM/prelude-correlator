@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import pkg_resources
-from preludecorrelator import log, error, require
+from preludecorrelator import log, error, require, plugins
 import os
 import imp
 

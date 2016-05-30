@@ -206,7 +206,7 @@ class PluginManager:
             try:
                 plugin.run(idmef)
 
-            except error.UserError:
+            except error.UserError as e:
                 logger.error("[%s]: error running plugin : %s", plugin._getName(), e)
 
             except Exception:

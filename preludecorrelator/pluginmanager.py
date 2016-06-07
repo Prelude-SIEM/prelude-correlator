@@ -152,12 +152,12 @@ class PluginManager:
         try:
             return entrypoint.load()
 
-        except (ImportError) as e:
-            logger.error("[%s]: import error: %s", e.name, e)
+        except ImportError as e:
+            logger.error("[%s]: import error: %s", entrypoint.name, e)
             return None
 
         except Exception as e:
-            logger.exception("[%s]: error loading : %s", e.name, e)
+            logger.exception("[%s]: loading error: %s", entrypoint.name, e)
             return None
 
     def _load_userpoint(self, (name, path)):

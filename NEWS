@@ -1,3 +1,11 @@
+* 2016-06-10, prelude-correlator-1.2.7:
+
+Author: Yoann Vandoorselaere
+
+- Pickle compatibility for IDMEF object
+
+
+
 * 2015-07-31, prelude-correlator-1.2.6:
 
 No new changes.

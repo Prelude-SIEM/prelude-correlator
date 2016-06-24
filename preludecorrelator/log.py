@@ -24,71 +24,71 @@ import logging, logging.config, logging.handlers, sys, os, stat
 debug_level = 0
 
 def _debug(self, msg, *args, **kwargs):
-        level = kwargs.pop("level", 0)
+    level = kwargs.pop("level", 0)
 
-        if debug_level and level <= debug_level:
-                self.log(logging.DEBUG, msg, *args, **kwargs)
+    if debug_level and level <= debug_level:
+        self.log(logging.DEBUG, msg, *args, **kwargs)
 
 
 logging.Logger.debug = _debug
 
 
 def __C_log_callback(level, log):
-        log = log.rstrip('\n')
-        logger = getLogger("libprelude")
+    log = log.rstrip('\n')
+    logger = getLogger("libprelude")
 
-        if level == prelude.PreludeLog.DEBUG:
-                logger.debug(log)
+    if level == prelude.PreludeLog.DEBUG:
+        logger.debug(log)
 
-        elif level == prelude.PreludeLog.INFO:
-                logger.info(log)
+    elif level == prelude.PreludeLog.INFO:
+        logger.info(log)
 
-        elif level == prelude.PreludeLog.WARNING:
-                logger.warning(log)
+    elif level == prelude.PreludeLog.WARNING:
+        logger.warning(log)
 
-        elif level == prelude.PreludeLog.ERROR:
-                logger.error(log)
+    elif level == prelude.PreludeLog.ERROR:
+        logger.error(log)
 
-        elif level == prelude.PreludeLog.CRITICAL:
-                logger.critical(log)
+    elif level == prelude.PreludeLog.CRITICAL:
+        logger.critical(log)
 
-        else:
-                logger.warning(("[unknown:%d] " % level) + log)
+    else:
+        logger.warning(("[unknown:%d] " % level) + log)
 
 
 def getSyslogHandlerAddress():
-        for f in ("/dev/log", "/var/run/log", "/var/run/syslog"):
-            try:
-                if stat.S_ISSOCK(os.stat(f).st_mode):
-                    return f
-            except:
-                pass
+    for f in ("/dev/log", "/var/run/log", "/var/run/syslog"):
+        try:
+            if stat.S_ISSOCK(os.stat(f).st_mode):
+                return f
+        except:
+            pass
 
-        return ("localhost", 514)
+    return ("localhost", 514)
 
 def initLogger(options):
-        global debug_level
+    global debug_level
 
-        debug_level = options.debug
+    debug_level = options.debug
 
-        try:
-                prelude.PreludeLog.setCallback(__C_log_callback)
-        except:
-                # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
-                pass
+    try:
+        prelude.PreludeLog.setCallback(__C_log_callback)
+    except:
+        # PreludeLog is available in recent libprelude version, we do not want to fail if it's not.
+        pass
 
-        try:
-                logging.config.fileConfig(options.config)
-        except Exception as e:
-                DATEFMT = "%d %b %H:%M:%S"
-                FORMAT="%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
-                logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
+    try:
+        logging.config.fileConfig(options.config)
+    except Exception as e:
+        DATEFMT = "%d %b %H:%M:%S"
+        FORMAT="%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
+        logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
 
-        if options.daemon is True:
-                hdlr = logging.handlers.SysLogHandler(getSyslogHandlerAddress(), facility=logging.handlers.SysLogHandler.LOG_DAEMON)
-                hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
-                logging.getLogger().addHandler(hdlr)
+    if options.daemon is True:
+        hdlr = logging.handlers.SysLogHandler(getSyslogHandlerAddress(), facility=logging.handlers.SysLogHandler.LOG_DAEMON)
+        hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
+        logging.getLogger().addHandler(hdlr)
 
 
 def getLogger(name=__name__):
-        return logging.getLogger(name)
+    return logging.getLogger(name)

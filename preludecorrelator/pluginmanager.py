@@ -74,7 +74,7 @@ class PluginManager:
 
             enable_s = env.config.get(pname, "enable", default=None)
             if enable_s:
-                    enable_s = enable_s.lower()
+                enable_s = enable_s.lower()
 
             enable = enable_s in ("true", "yes", "force", None)
             disable = env.config.getAsBool(pname, "disable", default=False)
@@ -90,7 +90,7 @@ class PluginManager:
                 continue
 
             if not enable_s:
-                    enable = plugin_class.enable
+                enable = plugin_class.enable
 
             if enable:
                 if disable:

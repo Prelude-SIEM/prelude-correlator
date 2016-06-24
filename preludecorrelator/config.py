@@ -25,44 +25,44 @@ except:
     import ConfigParser as configparser
 
 class Config(configparser.ConfigParser):
-        def __init__(self, filename):
-                configparser.ConfigParser.__init__(self, allow_no_value=True)
-                self.read(filename)
+    def __init__(self, filename):
+        configparser.ConfigParser.__init__(self, allow_no_value=True)
+        self.read(filename)
 
-                # Allow inclusion of additional configuration files in
-                # prelude-correlator.conf.
-                # These additional configuration files can be used by plugins.
-                if self.has_section('include'):
-                    dataset = []
-                    includes = self.items('include')
-                    confdir = os.path.dirname(os.path.abspath(filename))
+        # Allow inclusion of additional configuration files in
+        # prelude-correlator.conf.
+        # These additional configuration files can be used by plugins.
+        if self.has_section('include'):
+            dataset = []
+            includes = self.items('include')
+            confdir = os.path.dirname(os.path.abspath(filename))
 
-                    for fpattern, _dummy in includes:
-                        fpattern = os.path.join(confdir, fpattern)
+            for fpattern, _dummy in includes:
+                fpattern = os.path.join(confdir, fpattern)
 
-                        # Files are loaded in alphabetical order
-                        for fname in sorted(glob.glob(fpattern)):
-                            dataset.append(fname)
+                # Files are loaded in alphabetical order
+                for fname in sorted(glob.glob(fpattern)):
+                    dataset.append(fname)
 
-                    self.read(dataset)
+            self.read(dataset)
 
-        def get(self, section, option, raw=None, vars=None, default=None, type=str):
-                try:
-                        return type(configparser.ConfigParser.get(self, section, option, raw=raw, vars=vars))
+    def get(self, section, option, raw=None, vars=None, default=None, type=str):
+        try:
+            return type(configparser.ConfigParser.get(self, section, option, raw=raw, vars=vars))
 
-                except configparser.NoSectionError:
-                        return default
+        except configparser.NoSectionError:
+            return default
 
-                except configparser.NoOptionError:
-                        return default
+        except configparser.NoOptionError:
+            return default
 
-        def getAsBool(self, section, option, raw=None, vars=None, default=None):
-                b = self.get(section, option, raw, vars, default)
-                if type(b) is bool:
-                        return b
+    def getAsBool(self, section, option, raw=None, vars=None, default=None):
+        b = self.get(section, option, raw, vars, default)
+        if type(b) is bool:
+            return b
 
-                b = b.strip().lower()
-                if b == "true" or b == "yes":
-                        return True
+        b = b.strip().lower()
+        if b == "true" or b == "yes":
+            return True
 
-                return False
+        return False

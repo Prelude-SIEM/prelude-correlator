@@ -17,7 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, time, pickle, sys
+import os
+import time
+import pickle
+import sys
+
 from prelude import IDMEFTime
 from preludecorrelator.idmef import IDMEF
 from preludecorrelator import require, log

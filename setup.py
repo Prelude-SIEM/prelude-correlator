@@ -27,7 +27,7 @@ try:
 except:
     import urllib2 as urlreq
 
-import os, sys, shutil
+import os
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist

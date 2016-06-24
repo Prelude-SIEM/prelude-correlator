@@ -18,7 +18,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import prelude
-import logging, logging.config, logging.handlers, sys, os, stat
+import logging
+import logging.config
+import logging.handlers
+import sys
+import os
+import stat
 
 
 debug_level = 0

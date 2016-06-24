@@ -17,7 +17,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys, os, time, signal, pkg_resources
+import sys
+import os
+import time
+import signal
+import pkg_resources
+
 from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
 from preludecorrelator import idmef, pluginmanager, context, log, config, require, error

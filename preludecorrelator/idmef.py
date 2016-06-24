@@ -18,8 +18,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from collections import defaultdict
-import tempfile, re, itertools, operator
+import re
+import itertools
+import operator
 import prelude
+
 from preludecorrelator import utils
 
 _RegexType = type(re.compile(""))

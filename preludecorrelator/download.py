@@ -22,7 +22,9 @@ try:
 except:
     import urllib2 as urlreq
 
-import os, time
+import os
+import time
+
 from preludecorrelator import error
 from preludecorrelator.context import Timer
 

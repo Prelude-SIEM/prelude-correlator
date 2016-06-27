@@ -67,8 +67,54 @@ class SignalHandler:
             self._env.prelude_client.stop()
 
 
-class PreludeClient:
-    def __init__(self, env, print_input=None, print_output=None, dry_run=False):
+class GenericReader(object):
+    def run(self):
+        pass
+
+
+class ClientReader(GenericReader):
+    def __init__(self, prelude_client):
+        self.prelude_client = prelude_client
+
+    def run(self):
+        while True:
+            msg = idmef.IDMEF()
+            try:
+                ret = self.prelude_client.client.recvIDMEF(msg, 1000)
+            except Exception:
+                ret = None
+
+            if ret:
+                yield msg
+            else:
+                yield None
+
+
+class FileReader(GenericReader):
+    def __init__(self, filename, offset=0, limit=-1):
+        self.filename = filename
+        self.offset = offset
+        self.limit = limit
+
+    def run(self):
+        count = 0
+
+        with open(self.filename, 'r') as input_file:
+            while self.limit == -1 or count < self.limit + self.offset:
+                msg = idmef.IDMEF()
+                try:
+                    msg << input_file
+                except EOFError:
+                    break
+
+                count += 1
+
+                if count >= self.offset:
+                    yield msg
+
+
+class PreludeClient(object):
+    def __init__(self, env, options, print_input=None, print_output=None, dry_run=False):
         self._env = env
         self._events_processed = 0
         self._alert_generated = 0
@@ -76,12 +122,18 @@ class PreludeClient:
         self._print_output = print_output
         self._continue = True
         self._dry_run = dry_run
+        self._criteria = self._parse_criteria(self._env.config.get("general", "criteria"))
 
-        self._client = ClientEasy(
+        if not options.readfile:
+            self._receiver = ClientReader(self)
+        else:
+            self._receiver = FileReader(options.readfile, options.readoff, options.readlimit)
+
+        self.client = ClientEasy(
             "prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
             "Prelude-Correlator", "Correlator", "CS-SI", VERSION)
 
-        self._client.start()
+        self.client.start()
 
     def _handle_event(self, idmef):
         if self._print_input:
@@ -97,72 +149,39 @@ class PreludeClient:
         self._alert_generated = self._alert_generated + 1
 
         if not self._dry_run:
-            self._client.sendIDMEF(idmef)
+            self.client.sendIDMEF(idmef)
 
         if self._print_output:
             self._print_output.write(str(idmef))
 
-    def _recvEventsFromClient(self, idmef):
-        try:
-            ret = self._client.recvIDMEF(idmef, 1000)
-        except:
-            ret = 0
-
-        return ret
-
-    def _readEventsFromFile(self, idmef, count=True):
-        if count and self._env._input_limit > 0 and self._env._input_count >= self._env._input_limit:
-            self._continue = 0
-            return 0
-
-        try:
-            idmef << self._env._input_fd
-        except EOFError:
-            self._continue = 0
-            return 0
-
-        if count:
-            self._env._input_count += 1
-
-        return 1
-
-    def _readEvents(self, _read_func_cb):
-        criteria = self._env.config.get("general", "criteria")
-        if criteria:
-            criteria = "alert && (%s)" % (criteria)
-        else:
-            criteria = "alert"
-
-        try:
-            criteria = IDMEFCriteria(criteria)
-        except Exception as e:
-            raise error.UserError("Invalid criteria provided '%s': %s" % (criteria, e))
-
+    def run(self):
         last = time.time()
-        while self._continue:
-            msg = idmef.IDMEF()
-            r = _read_func_cb(msg)
-
-            if r:
-                if criteria.match(msg):
-                    self._handle_event(msg)
+        for msg in self._receiver.run():
+            if msg and self._criteria.match(msg):
+                self._handle_event(msg)
 
             now = time.time()
             if now - last >= 1:
                 context.wakeup(now)
                 last = now
 
-    def readEvents(self, offset):
-        for i in range(0, offset):
-            self._readEventsFromFile(idmef.IDMEF(), count=False)
-
-        self._readEvents(self._readEventsFromFile)
-
-    def recvEvents(self):
-        self._readEvents(self._recvEventsFromClient)
+            if not self._continue:
+                break
 
     def stop(self):
         self._continue = False
+
+    @staticmethod
+    def _parse_criteria(criteria):
+        if not criteria:
+            return IDMEFCriteria("alert")
+
+        criteria = "alert && (%s)" % (criteria)
+
+        try:
+            return IDMEFCriteria(criteria)
+        except Exception as e:
+            raise error.UserError("Invalid criteria provided '%s': %s" % (criteria, e))
 
 
 def runCorrelator():
@@ -223,19 +242,13 @@ def runCorrelator():
             open(options.pidfile, "w").write(str(os.getpid()))
 
     try:
-        env.prelude_client = PreludeClient(env, print_input=ifd, print_output=ofd, dry_run=options.dry_run)
+        env.prelude_client = PreludeClient(env, options, print_input=ifd, print_output=ofd)
     except Exception as e:
         raise error.UserError(e)
 
     idmef.set_prelude_client(env.prelude_client)
 
-    if options.readfile:
-        env._input_limit = options.readlimit
-        env._input_count = 0
-        env._input_fd = open(options.readfile, "r")
-        env.prelude_client.readEvents(options.readoff)
-    else:
-        env.prelude_client.recvEvents()
+    env.prelude_client.run()
 
     # save existing context
     context.save()

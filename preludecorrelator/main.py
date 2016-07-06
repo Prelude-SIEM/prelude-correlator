@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright (C) 2009-2016 CS-SI. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 #

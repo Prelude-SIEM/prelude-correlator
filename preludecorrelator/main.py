@@ -129,7 +129,7 @@ class PreludeClient(object):
 
         self.client = ClientEasy(
             "prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
-            "Prelude-Correlator", "Correlator", "CS-SI", VERSION)
+            "Prelude Correlator", "Correlator", "CS-SI", VERSION)
 
         self.client.start()
 

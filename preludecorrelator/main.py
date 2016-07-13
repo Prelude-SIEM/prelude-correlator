@@ -27,7 +27,7 @@ from preludecorrelator import idmef, pluginmanager, context, log, config, requir
 
 logger = log.getLogger(__name__)
 VERSION = pkg_resources.get_distribution('prelude-correlator').version
-LIBPRELUDE_REQUIRED_VERSION = "0.9.25"
+LIBPRELUDE_REQUIRED_VERSION = "1.2.6"
 
 
 class Env:

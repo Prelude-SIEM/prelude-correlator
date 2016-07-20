@@ -46,7 +46,6 @@ class CIArmyPlugin(Plugin):
     CIARMY_RELOAD = 7 * 24 * 60 * 60
     CIARMY_URI = "http://cinsscore.com/list/ci-badguys.txt"
     CIARMY_TIMEOUT = 10
-    CIARMY_FILENAME = require.get_data_filename("ciarmy.dat", module=__name__)
 
     def __init__(self, env):
         Plugin.__init__(self, env)
@@ -54,7 +53,7 @@ class CIArmyPlugin(Plugin):
         uri = self.getConfigValue("uri", self.CIARMY_URI)
         timeout = self.getConfigValue("timeout", self.CIARMY_TIMEOUT, type=float)
         reload = self.getConfigValue("reload", self.CIARMY_RELOAD, type=int)
-        filename = self.getConfigValue("filename", self.CIARMY_FILENAME)
+        filename = self.getConfigValue("filename", require.get_data_filename("ciarmy.dat", module=__name__, profile=env.profile))
 
         self.__data = CIArmyDownloader(filename, uri, timeout, reload)
 

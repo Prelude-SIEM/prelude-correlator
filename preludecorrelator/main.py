@@ -22,6 +22,7 @@ import os
 import time
 import signal
 import pkg_resources
+import errno
 
 from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
@@ -31,6 +32,17 @@ from preludecorrelator import idmef, pluginmanager, context, log, config, requir
 logger = log.getLogger(__name__)
 VERSION = pkg_resources.get_distribution('prelude-correlator').version
 LIBPRELUDE_REQUIRED_VERSION = "1.2.6"
+_DEFAULT_PROFILE = "prelude-correlator"
+
+
+def _init_profile_dir(profile):
+    filename = require.get_data_filename("context.dat", profile=profile)
+
+    try:
+        os.makedirs(os.path.dirname(filename), mode=0700)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 
 class Env:
@@ -39,10 +51,16 @@ class Env:
 
         log.initLogger(options)
         self.config = config.Config(options.config)
+        self.profile = options.profile
 
         # restore previous context
         # (this need to be called after logger is setup, and before plugin loading).
-        context.load(self)
+        context.load(self.profile)
+
+        # Since we can launch different instances of prelude-correlator with different profiles,
+        # we need to separate their context and specific rules data files
+        # (this need to be called before plugin loading)
+        _init_profile_dir(self.profile)
 
         self.pluginmanager = pluginmanager.PluginManager(self)
         logger.info("%d plugins have been loaded.", self.pluginmanager.getPluginCount())
@@ -133,7 +151,7 @@ class PreludeClient(object):
             self._receiver = FileReader(options.readfile, options.readoff, options.readlimit)
 
         self.client = ClientEasy(
-            "prelude-correlator", ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
+            options.profile, ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
             "Prelude Correlator", "Correlator", "CS-SI", VERSION)
 
         self.client.start()
@@ -189,7 +207,6 @@ class PreludeClient(object):
 
 def runCorrelator():
     checkVersion(LIBPRELUDE_REQUIRED_VERSION)
-
     config_filename = require.get_config_filename("prelude-correlator.conf")
 
     parser = OptionParser(usage="%prog", version="%prog " + VERSION)
@@ -202,6 +219,10 @@ def runCorrelator():
     grp.add_option("", "--input-file", action="store", dest="readfile", type="string", help="Read IDMEF events from the specified file", metavar="FILE")
     grp.add_option("", "--input-offset", action="store", dest="readoff", type="int", help="Start processing events starting at the given offset", metavar="OFFSET", default=0)
     grp.add_option("", "--input-limit", action="store", dest="readlimit", type="int", help="Read events until the given limit is reached", metavar="LIMIT", default=-1)
+    parser.add_option_group(grp)
+
+    grp = OptionGroup(parser, "Prelude", "Prelude generic options")
+    grp.add_option("", "--profile", dest="profile", type="string", help="Profile to use for this analyzer", default=_DEFAULT_PROFILE)
     parser.add_option_group(grp)
 
     parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
@@ -254,7 +275,7 @@ def runCorrelator():
     env.prelude_client.run()
 
     # save existing context
-    context.save()
+    context.save(options.profile)
 
 
 def main():

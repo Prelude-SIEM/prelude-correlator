@@ -49,7 +49,6 @@ class DshieldPlugin(Plugin):
     DSHIELD_RELOAD = 7 * 24 * 60 * 60
     DSHIELD_URI = "http://www.dshield.org/ipsascii.html?limit=10000"
     DSHIELD_TIMEOUT = 10
-    DSHIELD_FILENAME = require.get_data_filename("dshield.dat", module=__name__)
 
     def __init__(self, env):
         Plugin.__init__(self, env)
@@ -57,7 +56,7 @@ class DshieldPlugin(Plugin):
         uri = self.getConfigValue("uri", self.DSHIELD_URI)
         timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT, type=float)
         reload = self.getConfigValue("reload", self.DSHIELD_RELOAD, type=int)
-        filename = self.getConfigValue("filename", self.DSHIELD_FILENAME)
+        filename = self.getConfigValue("filename", require.get_data_filename("dshield.dat", module=__name__, profile=env.profile))
 
         self.__data = DShieldDownloader(filename, uri, timeout, reload)
 

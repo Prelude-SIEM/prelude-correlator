@@ -24,8 +24,8 @@ try:
     def get_config_filename(fname, module=None, package="prelude-correlator"):
         return os.path.join(siteconfig.conf_dir, fname)
 
-    def get_data_filename(fname, module=None, package="prelude-correlator"):
-        return os.path.join(siteconfig.lib_dir, fname)
+    def get_data_filename(fname, module=None, package="prelude-correlator", profile=None):
+        return os.path.join(siteconfig.lib_dir, profile or "", fname)
 
 except:
     import pkg_resources
@@ -36,9 +36,9 @@ except:
 
         return pkg_resources.resource_filename(module, fname)
 
-    def get_data_filename(fname, module=None, package="prelude-correlator"):
+    def get_data_filename(fname, module=None, package="prelude-correlator", profile=None):
         if module is None:
             module = pkg_resources.Requirement.parse(package)
 
-        return pkg_resources.resource_filename(module, fname)
+        return pkg_resources.resource_filename(module, os.path.join(profile or "", fname))
 

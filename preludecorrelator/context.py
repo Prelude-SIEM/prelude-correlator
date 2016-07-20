@@ -331,20 +331,20 @@ def search(name, idmef=None, update=False):
 
     return None
 
+def save(profile):
+    ctxt_filename = require.get_data_filename("context.dat", profile=profile)
 
-_ctxt_filename = require.get_data_filename("context.dat")
-
-def save():
-    fd = open(_ctxt_filename, "wb")
+    fd = open(ctxt_filename, "wb")
     pickle.dump(_CONTEXT_TABLE, fd, -1)
     fd.close()
 
-def load(_env):
-    if os.path.exists(_ctxt_filename):
+def load(profile):
+    ctxt_filename = require.get_data_filename("context.dat", profile=profile)
+    if os.path.exists(ctxt_filename):
         global _TIMER_LIST
         global _CONTEXT_TABLE
 
-        fd = open(_ctxt_filename, "rb")
+        fd = open(ctxt_filename, "rb")
 
         try:
             _CONTEXT_TABLE.update(pickle.load(fd))

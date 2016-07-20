@@ -73,13 +73,12 @@ class SpamhausDropPlugin(Plugin):
     RELOAD = 7 * 24 * 60 * 60
     URI = "http://www.spamhaus.org/drop/drop.txt"
     TIMEOUT = 10
-    FILENAME = require.get_data_filename("spamhaus_drop.dat", module=__name__)
 
     def __init__(self, env):
         Plugin.__init__(self, env)
 
         reload = self.getConfigValue("reload", self.RELOAD, type=int)
-        filename = self.getConfigValue("filename", self.FILENAME)
+        filename = self.getConfigValue("filename", require.get_data_filename("spamhaus_drop.dat", module=__name__, profile=env.profile))
         uri = self.getConfigValue("uri", self.URI)
         timeout = self.getConfigValue("timeout", self.TIMEOUT, type=float)
 

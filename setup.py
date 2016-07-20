@@ -149,7 +149,7 @@ suits your needs.
         ("etc/prelude-correlator", ["prelude-correlator.conf"]),
         ("etc/prelude-correlator/conf.d", ['data/conf.d/README']),
         ("etc/prelude-correlator/rules/python", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.py')]),
-        ("var/lib/prelude-correlator", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.dat')])
+        ("var/lib/prelude-correlator/prelude-correlator", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.dat')])
     ],
 
     install_requires=["prelude >= 3.0.0"],

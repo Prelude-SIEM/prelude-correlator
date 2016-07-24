@@ -53,7 +53,7 @@ class Plugin(object):
 class PluginDependenciesError(ImportError):
      pass
 
-class PluginManager:
+class PluginManager(object):
     _default_entrypoint = 'preludecorrelator.plugins'
 
     def __init__(self, env, entrypoint=None):
@@ -62,8 +62,8 @@ class PluginManager:
         self.__plugins_instances = []
         self.__plugins_classes = []
 
-        conflict = {}
-        force_enable = {}
+        self._conflict = {}
+        self._force_enable = {}
 
         plugin_entries =  [ (e.name, e, self._load_entrypoint) for e in pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)]
         if entrypoint is None:
@@ -97,28 +97,28 @@ class PluginManager:
                     enable = False
 
                 elif enable_s == "force":
-                    force_enable[pname] = enable
+                    self._force_enable[pname] = enable
 
             if not enable:
                 logger.info("[%s]: disabled by default", pname)
                 continue
 
             for reason, namelist in plugin_class.conflict:
-                conflict.update([(name, (pname, reason)) for name in namelist])
+                self._conflict.update([(name, (pname, reason)) for name in namelist])
 
             self.__plugins_classes.append(plugin_class)
 
-
+    def load(self):
         for plugin_class in self.getPluginsClassesList():
             pname = plugin_class.__name__
 
-            if pname in conflict and not pname in force_enable:
-                logger.info("[%s]: disabled by plugin '%s' reason:%s", pname, conflict[pname][0], conflict[pname][1])
+            if pname in self._conflict and not pname in self._force_enable:
+                logger.info("[%s]: disabled by plugin '%s' reason:%s", pname, self._conflict[pname][0], self._conflict[pname][1])
                 continue
 
             if plugin_class.autoload:
                 try:
-                    pi = plugin_class(env)
+                    pi = plugin_class(self._env)
 
                 except error.UserError as e:
                     logger.error("[%s]: %s", pname, e)

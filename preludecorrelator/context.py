@@ -327,6 +327,19 @@ def search(name, idmef=None, update=False):
     return None
 
 
+class _Dummy:
+    pass
+
+
+class ContextUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        try:
+            return pickle.Unpickler.find_class(self, module, name)
+        except (ImportError, AttributeError) as e:
+            logger.warning(e)
+            return _Dummy
+
+
 _ctxt_filename = require.get_data_filename("context.dat")
 
 def save():
@@ -342,7 +355,7 @@ def load(_env):
                 fd = open(_ctxt_filename, "rb")
 
                 try:
-                        _CONTEXT_TABLE.update(pickle.load(fd))
+                        _CONTEXT_TABLE.update(ContextUnpickler(fd).load())
                 except EOFError:
                         return
 
@@ -350,7 +363,10 @@ def load(_env):
 
                 for ctxlist in _CONTEXT_TABLE.values():
                     for ctx in ctxlist:
-                        if not ctx.isVersionCompatible():
+                        # Destroy the context in case of incompatibility or import failure.
+                        # Check the alert_on_expire option because it can contain
+                        # some external reference that will be called from the core.
+                        if not ctx.isVersionCompatible() or ctx.getOptions()["alert_on_expire"] is _Dummy:
                                 ctx.destroy()
 
 def wakeup(now):

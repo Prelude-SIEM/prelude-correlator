@@ -39,11 +39,13 @@ class Env:
                 log.initLogger(options)
                 self.config = config.Config(options.config)
 
+                self.pluginmanager = pluginmanager.PluginManager(self)
+
                 # restore previous context
                 # (this need to be called after logger is setup, and before plugin loading).
                 context.load(self)
 
-                self.pluginmanager = pluginmanager.PluginManager(self)
+                self.pluginmanager.load()
                 logger.info("%d plugins have been loaded.", self.pluginmanager.getPluginCount())
 
 

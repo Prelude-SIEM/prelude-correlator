@@ -1,10 +1,32 @@
-* 2016-04-24, prelude-correlator-3.0.1:
+* 2016-08-05, prelude-correlator-3.1.0rc1:
+
+Author: Antoine Luong
+
+- Prevent potential import errors when loading contexts
+
+- Rename analyzer model to 'Prelude Correlator'
+
+- Minor fixes in exception handling
 
 Author: Thomas Andrejak
 
- - Disable flatten when getting alert.source(*) in BruteForce
+- Make the context able to access plugins
 
- - Missing import in prelude-correlator plugin manager
+- Disable flatten when getting alert.source(*) in BruteForce
+
+- Missing import in prelude-correlator plugin manager
+
+Author: Abdel Elmili
+
+- Add --profile option to prelude-correlator
+
+    The goal of adding this option is to allow operators to run more than
+    one correlator on the same host. Each correlator will use a different
+    profile.
+
+Author: Sélim Menouar
+
+- Clearly separate File and IDMEFClient inputs
 
 
 

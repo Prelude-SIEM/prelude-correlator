@@ -1,5 +1,5 @@
 # Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
-# Copyright (C) 2009-2016 CS-SI <support.prelude@c-s.fr>
+# Copyright (C) 2009-2017 CS-SI <support.prelude@c-s.fr>
 # All Rights Reserved.
 #
 # This file is part of the Prelude-Correlator program.

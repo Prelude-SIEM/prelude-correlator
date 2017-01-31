@@ -1,0 +1,37 @@
+Installation Instructions
+*************************
+
+Copyright (C) 1994-1996, 1999-2002, 2004-2013 Free Software Foundation,
+Inc.
+
+   Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.  This file is offered as-is,
+without warranty of any kind.
+
+Dependencies
+============
+
+Build requires:
+
+- python >= 2.6 (not python 3.x)
+- python-setuptools
+
+Run requires:
+
+- python >= 2.6 (not python 3.x)
+- python-netaddr
+- python-setuptools
+- libprelude with python bindings
+
+Basic Installation
+==================
+
+   Briefly, the shell commands `python setup.py install' should
+configure, build, and install this package. See the `README' file for
+instructions specific to this package.  Some packages provide this
+`INSTALL' file but do not implement all of the features documented
+below.  The lack of an optional feature in a given package is not
+necessarily a bug.
+
+Go to https://www.prelude-siem.org/projects/prelude/wiki/InstallingPreludeCorrelator for more installation instructions.

@@ -31,8 +31,8 @@ class Plugin(object):
     autoload = True
     conflict = []
 
-    def getConfigValue(self, option, default=None, type=str):
-        return self.env.config.get(self.__class__.__name__, option, default=default, type=type)
+    def getConfigValue(self, option, fallback=None, type=str):
+        return self.env.config.get(self.__class__.__name__, option, fallback=fallback, type=type)
 
     def __init__(self, env):
         self.env = env
@@ -72,12 +72,12 @@ class PluginManager(object):
         for pname, e, fct in plugin_entries:
             logger.debug("loading point %s", pname, level=1)
 
-            enable_s = env.config.get(pname, "enable", default=None)
+            enable_s = env.config.get(pname, "enable", fallback=None)
             if enable_s:
                 enable_s = enable_s.lower()
 
             enable = enable_s in ("true", "yes", "force", None)
-            disable = env.config.getAsBool(pname, "disable", default=False)
+            disable = env.config.getAsBool(pname, "disable", fallback=False)
 
             # do not load if the user specifically used disable=true, or enable=false
             if not enable or disable:
@@ -132,7 +132,7 @@ class PluginManager(object):
         if not env.config.has_section("python_rules"):
             python_rules_dirs = require.get_config_filename("rules/python")
         else:
-            python_rules_dirs = env.config.get("python_rules", "paths", default="")
+            python_rules_dirs = env.config.get("python_rules", "paths", fallback="")
 
         for pathdir in python_rules_dirs.splitlines():
             if not os.access(pathdir, os.R_OK) or not os.path.isdir(pathdir):
@@ -160,7 +160,8 @@ class PluginManager(object):
             logger.exception("[%s]: loading error: %s", entrypoint.name, e)
             return None
 
-    def _load_userpoint(self, (name, path)):
+    def _load_userpoint(self, args):
+        name, path = args
         try:
             mod_info = imp.find_module(name, [path])
 
@@ -171,7 +172,7 @@ class PluginManager(object):
         try:
             return getattr(imp.load_module( self._default_entrypoint + '.' + name , *mod_info), name)
 
-        except Exception, e:
+        except Exception as e:
             logger.warning( "Unable to load %(file)s: %(error)s" % {'file': name,'error': str(e),})
             return None
 

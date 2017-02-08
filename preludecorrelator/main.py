@@ -39,7 +39,7 @@ def _init_profile_dir(profile):
     filename = require.get_data_filename("context.dat", profile=profile)
 
     try:
-        os.makedirs(os.path.dirname(filename), mode=0700)
+        os.makedirs(os.path.dirname(filename), mode=0o700)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise

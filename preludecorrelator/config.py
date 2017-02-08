@@ -46,18 +46,18 @@ class Config(configparser.ConfigParser):
 
             self.read(dataset)
 
-    def get(self, section, option, raw=None, vars=None, default=None, type=str):
+    def get(self, section, option, raw=None, vars=None, fallback=None, type=str):
         try:
             return type(configparser.ConfigParser.get(self, section, option, raw=raw, vars=vars))
 
         except configparser.NoSectionError:
-            return default
+            return fallback
 
         except configparser.NoOptionError:
-            return default
+            return fallback
 
-    def getAsBool(self, section, option, raw=None, vars=None, default=None):
-        b = self.get(section, option, raw, vars, default)
+    def getAsBool(self, section, option, raw=None, vars=None, fallback=None):
+        b = self.get(section, option, raw, vars, fallback)
         if type(b) is bool:
             return b
 

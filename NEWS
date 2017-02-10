@@ -1,3 +1,15 @@
+* 2017-02-12, prelude-correlator-4.0.0rc3:
+
+Author: Thomas Andrejak
+
+- Fix Python 3 compatibility
+
+Author: Camille Gardet
+
+- Fix CIArmy config keyword
+
+
+
 * 2017-02-03, prelude-correlator-4.0.0rc2:
 
 Author: Song Tran

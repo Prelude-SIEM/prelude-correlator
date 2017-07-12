@@ -156,6 +156,7 @@ class PreludeClient(object):
             options.profile, ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
             "Prelude Correlator", "Correlator", "CS-SI", VERSION)
 
+        self.client.setConfigFilename(options.config)
         self.client.start()
 
     def _handle_event(self, idmef):

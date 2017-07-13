@@ -1,3 +1,11 @@
+* 2017-07-13, prelude-correlator-4.1.0rc2:
+
+Author: Antoine Luong
+
+- Allow passing prelude-specific options in configuration
+
+
+
 * 2017-06-30, prelude-correlator-4.1.0rc1:
 * 2017-06-23, prelude-correlator-4.1.0beta2:
 * 2017-06-16, prelude-correlator-4.1.0beta1:

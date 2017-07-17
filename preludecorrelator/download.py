@@ -72,7 +72,7 @@ class DownloadCache:
             # There was an error downloading newer data, use any older data that we have, even if it's expired
             # If we don't have any older data available, then this is an error, and there is no fallback.
             if not age:
-                raise Exception("%s data couldn't be retrieved, and no previous data available" % self._name)
+                raise error.UserError("%s data couldn't be retrieved, and no previous data available" % self._name)
             self._load(age)
 
         return 0

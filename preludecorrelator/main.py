@@ -17,6 +17,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import argparse
 import sys
 import os
 import time
@@ -25,7 +26,6 @@ import pkg_resources
 import errno
 import itertools
 
-from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
 from preludecorrelator import idmef, pluginmanager, context, log, config, require, error
 
@@ -169,10 +169,10 @@ class PreludeClient(object):
         self._dry_run = dry_run
         self._criteria = self._parse_criteria(env.config.get("general", "criteria"))
 
-        if not options.readfile:
+        if not options.input_file:
             self._receiver = ClientReader(self)
         else:
-            self._receiver = FileReader(options.readfile, options.readoff, options.readlimit)
+            self._receiver = FileReader(options.input_file, options.input_offset, options.input_limit)
 
         self.client = ClientEasy(
             options.profile, ClientEasy.PERMISSION_IDMEF_READ | ClientEasy.PERMISSION_IDMEF_WRITE,
@@ -239,36 +239,29 @@ def runCorrelator():
     checkVersion(LIBPRELUDE_REQUIRED_VERSION)
     config_filename = require.get_config_filename("prelude-correlator.conf")
 
-    parser = OptionParser(usage="%prog", version="%prog " + VERSION)
-    parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use",
-                      metavar="FILE", default=config_filename)
-    parser.add_option("", "--dry-run", action="store_true", dest="dry_run",
-                      help="No report to the specified Manager will occur", default=False)
-    parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
-    parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string",
-                      help="Write Prelude Correlator PID to specified file", metavar="FILE")
+    parser = argparse.ArgumentParser()
 
-    grp = OptionGroup(parser, "IDMEF Input", "Read IDMEF events from file")
-    grp.add_option("", "--input-file", action="store", dest="readfile", type="string",
-                   help="Read IDMEF events from the specified file", metavar="FILE")
-    grp.add_option("", "--input-offset", action="store", dest="readoff", type="int",
-                   help="Start processing events starting at the given offset", metavar="OFFSET", default=0)
-    grp.add_option("", "--input-limit", action="store", dest="readlimit", type="int",
-                   help="Read events until the given limit is reached", metavar="LIMIT", default=-1)
-    parser.add_option_group(grp)
+    parser.add_argument("-c", "--config", default=config_filename, metavar="FILE", help="Configuration file to use")
+    parser.add_argument("--dry-run", action="store_true", help="No report to the specified Manager will occur")
+    parser.add_argument("-d", "--daemon", action="store_true", help="Run in daemon mode")
+    parser.add_argument("-P", "--pidfile", metavar="FILE", help="Write Prelude Correlator PID to specified file")
+    parser.add_argument("--print-input", metavar="FILE", help="Dump alert input from manager to the specified file")
+    parser.add_argument("--print-output", metavar="FILE", help="Dump alert output to the specified file")
+    parser.add_argument("-D", "--debug", type=int, default=0, metavar="LEVEL", nargs="?", const=1,
+                        help="Enable debugging output (level from 1 to 10)")
+    parser.add_argument("-v", "--version", action="version", version=VERSION)
 
-    grp = OptionGroup(parser, "Prelude", "Prelude generic options")
-    grp.add_option("", "--profile", dest="profile", type="string", help="Profile to use for this analyzer",
-                   default=_DEFAULT_PROFILE)
-    parser.add_option_group(grp)
+    group = parser.add_argument_group("IDMEF Input", "Read IDMEF events from file")
+    group.add_argument("--input-file", metavar="FILE", help="Read IDMEF events from the specified file")
+    group.add_argument("--input-offset", type=int, default=0, metavar="OFFSET",
+                       help="Start processing events starting at the given offset")
+    group.add_argument("--input-limit", type=int, default=-1, metavar="LIMIT",
+                       help="Read events until the given limit is reached")
 
-    parser.add_option("", "--print-input", action="store", dest="print_input", type="string",
-                      help="Dump alert input from manager to the specified file", metavar="FILE")
-    parser.add_option("", "--print-output", action="store", dest="print_output", type="string",
-                      help="Dump alert output to the specified file", metavar="FILE")
-    parser.add_option("-D", "--debug", action="store", dest="debug", type="int", default=0,
-                      help="Enable debugging output (level from 1 to 10)", metavar="LEVEL")
-    (options, args) = parser.parse_args()
+    group = parser.add_argument_group("Prelude", "Prelude generic options")
+    group.add_argument("--profile", default=_DEFAULT_PROFILE, help="Profile to use for this analyzer")
+
+    options = parser.parse_args()
 
     builtins.env = Env(options)
     env.load_plugins()

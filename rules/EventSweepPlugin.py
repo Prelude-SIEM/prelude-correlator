@@ -23,6 +23,7 @@
 from preludecorrelator.context import Context
 from preludecorrelator.pluginmanager import Plugin
 
+
 # Detect Eventsweep:
 # Playing the same event from a single host against multiple hosts
 class EventSweepPlugin(Plugin):
@@ -35,9 +36,12 @@ class EventSweepPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context(("SCAN EVENTSWEEP", classification, saddr), { "expire": 60, "threshold": 30, "alert_on_expire": True }, overwrite = False)
+            ctx = Context(("SCAN EVENTSWEEP", classification, saddr),
+                          {"expire": 60, "threshold": 30, "alert_on_expire": True}, overwrite=False)
             if ctx.getUpdateCount() == 0:
-                ctx.set("alert.correlation_alert.name", "A single host has played the same event against multiple targets. This may be a network scan for a specific vulnerability")
+                ctx.set("alert.correlation_alert.name",
+                        "A single host has played the same event against multiple targets. This may be a network scan "
+                        "for a specific vulnerability")
                 ctx.set("alert.classification.text", "Eventsweep")
                 ctx.set("alert.assessment.impact.severity", "high")
 
@@ -45,7 +49,6 @@ class EventSweepPlugin(Plugin):
             if cur:
                 for address in target:
                     if address in cur:
-                        insert = False
                         return
 
             ctx.update(idmef=idmef, timer_rst=ctx.getUpdateCount())

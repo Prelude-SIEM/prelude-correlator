@@ -25,6 +25,7 @@ try:
 except:
     import ConfigParser as configparser
 
+
 class Config(configparser.ConfigParser):
     def __init__(self, filename):
         configparser.ConfigParser.__init__(self, allow_no_value=True)

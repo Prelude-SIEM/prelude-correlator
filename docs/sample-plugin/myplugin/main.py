@@ -1,4 +1,5 @@
-from PreludeCorrelator.pluginmanager import Plugin
+from preludecorrelator.pluginmanager import Plugin
+
 
 class MyPlugin(Plugin):
     def run(self, idmef):

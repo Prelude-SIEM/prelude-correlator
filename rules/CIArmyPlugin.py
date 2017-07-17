@@ -22,12 +22,13 @@ from preludecorrelator.pluginmanager import Plugin
 
 logger = log.getLogger(__name__)
 
+
 class CIArmyDownloader(download.HTTPDownloadCache):
     def __init__(self, filename, uri, timeout, reload):
         download.HTTPDownloadCache.__init__(self, "CIArmy", filename, uri, timeout, reload, logger)
 
     def __ipNormalize(self, ip):
-        return ".".join([ i.lstrip("0") for i in ip.split(".") ])
+        return ".".join([i.lstrip("0") for i in ip.split(".")])
 
     def parse(self, data):
         ret = []
@@ -53,7 +54,8 @@ class CIArmyPlugin(Plugin):
         uri = self.getConfigValue("uri", self.CIARMY_URI)
         timeout = self.getConfigValue("timeout", self.CIARMY_TIMEOUT, type=float)
         reload = self.getConfigValue("reload", self.CIARMY_RELOAD, type=int)
-        filename = self.getConfigValue("filename", require.get_data_filename("ciarmy.dat", module=__name__, profile=env.profile))
+        filename = self.getConfigValue("filename",
+                                       require.get_data_filename("ciarmy.dat", module=__name__, profile=env.profile))
 
         self.__data = CIArmyDownloader(filename, uri, timeout, reload)
 
@@ -62,10 +64,11 @@ class CIArmyPlugin(Plugin):
 
         for source in idmef.get("alert.source(*).node.address(*).address"):
             if source in data:
-                ca = context.Context(("CIARMY", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
+                ca = context.Context(("CIARMY", source), {"expire": 300, "alert_on_expire": True}, update=True,
+                                     idmef=idmef)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching CIArmy database")
                     ca.set("alert.correlation_alert.name", "IP source matching CIArmy database")
-                    ca.set("alert.assessment.impact.description", "CIArmy gathered this IP address from firewall drop logs (%s)" % (source))
+                    ca.set("alert.assessment.impact.description",
+                           "CIArmy gathered this IP address from firewall drop logs (%s)" % source)
                     ca.set("alert.assessment.impact.severity", "high")
-

@@ -28,6 +28,7 @@ import stat
 
 debug_level = 0
 
+
 def _debug(self, msg, *args, **kwargs):
     level = kwargs.pop("level", 0)
 
@@ -69,7 +70,8 @@ def getSyslogHandlerAddress():
         except:
             pass
 
-    return ("localhost", 514)
+    return "localhost", 514
+
 
 def initLogger(options):
     global debug_level
@@ -84,13 +86,14 @@ def initLogger(options):
 
     try:
         logging.config.fileConfig(options.config)
-    except Exception as e:
+    except Exception:
         DATEFMT = "%d %b %H:%M:%S"
-        FORMAT="%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
+        FORMAT = "%(asctime)s %(name)s (pid:%(process)d) %(levelname)s: %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT, stream=sys.stderr)
 
     if options.daemon is True:
-        hdlr = logging.handlers.SysLogHandler(getSyslogHandlerAddress(), facility=logging.handlers.SysLogHandler.LOG_DAEMON)
+        hdlr = logging.handlers.SysLogHandler(getSyslogHandlerAddress(),
+                                              facility=logging.handlers.SysLogHandler.LOG_DAEMON)
         hdlr.setFormatter(logging.Formatter('%(name)s: %(levelname)s: %(message)s'))
         logging.getLogger().addHandler(hdlr)
 

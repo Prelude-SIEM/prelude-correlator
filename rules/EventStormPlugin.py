@@ -23,6 +23,7 @@
 from preludecorrelator.context import Context
 from preludecorrelator.pluginmanager import Plugin
 
+
 # Detect Eventstorm:
 # Playing excessive events by a single host
 class EventStormPlugin(Plugin):
@@ -32,9 +33,9 @@ class EventStormPlugin(Plugin):
             return
 
         for saddr in source:
-            ctx = Context(("SCAN EVENTSTORM", saddr), { "expire": 120, "threshold": 150, "alert_on_expire": True }, update = True, idmef = idmef)
+            ctx = Context(("SCAN EVENTSTORM", saddr), {"expire": 120, "threshold": 150, "alert_on_expire": True},
+                          update=True, idmef=idmef)
             if ctx.getUpdateCount() == 0:
                 ctx.set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
                 ctx.set("alert.classification.text", "Eventstorm")
                 ctx.set("alert.assessment.impact.severity", "high")
-

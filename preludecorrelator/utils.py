@@ -19,6 +19,7 @@
 
 import collections
 
+
 def flatten(x):
     """flatten(sequence) -> list
 

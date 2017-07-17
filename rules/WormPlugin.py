@@ -25,6 +25,7 @@
 from preludecorrelator import context
 from preludecorrelator.pluginmanager import Plugin
 
+
 class WormPlugin(Plugin):
     REPEAT = 5
 
@@ -40,7 +41,7 @@ class WormPlugin(Plugin):
         # Create context for classification combined with all the target.
         tlist = {}
         for target in idmef.get("alert.target(*).node.address(*).address"):
-            ctx = context.Context(("WORM HOST", ctxt, target), { "expire": 300 }, overwrite=False, idmef=idmef)
+            ctx = context.Context(("WORM HOST", ctxt, target), {"expire": 300}, overwrite=False, idmef=idmef)
             if ctx.getUpdateCount() == 0:
                 ctx._target_list = {}
 
@@ -65,6 +66,8 @@ class WormPlugin(Plugin):
                 ctx.set("alert.classification.text", "Possible Worm Activity")
                 ctx.set("alert.correlation_alert.name", "Source host is repeating actions taken against it recently")
                 ctx.set("alert.assessment.impact.severity", "high")
-                ctx.set("alert.assessment.impact.description", source + " has repeated actions taken against it recently at least %d times. It may have been infected with a worm." % (self.__repeat_target))
+                ctx.set("alert.assessment.impact.description",
+                        source + " has repeated actions taken against it recently at least %d times. It may have been "
+                                 "infected with a worm." % self.__repeat_target)
                 ctx.alert()
                 ctx.destroy()

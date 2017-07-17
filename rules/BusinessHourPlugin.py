@@ -21,18 +21,18 @@ import time
 from preludecorrelator.idmef import IDMEF
 from preludecorrelator.pluginmanager import Plugin
 
-# Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
 
+# Alert only on saturday and sunday, and everyday from 6:00pm to 9:00am.
 class BusinessHourPlugin(Plugin):
     def run(self, idmef):
 
         t = time.localtime(int(idmef.get("alert.create_time")))
 
         if not (t.tm_wday == 5 or t.tm_wday == 6 or t.tm_hour < 9 or t.tm_hour > 17):
-                return
+            return
 
         if idmef.get("alert.assessment.impact.completion") != "succeeded":
-                return
+            return
 
         ca = IDMEF()
         ca.addAlertReference(idmef)

@@ -78,7 +78,9 @@ class SpamhausDropPlugin(Plugin):
         Plugin.__init__(self, env)
 
         reload = self.getConfigValue("reload", self.RELOAD, type=int)
-        filename = self.getConfigValue("filename", require.get_data_filename("spamhaus_drop.dat", module=__name__, profile=env.profile))
+        filename = self.getConfigValue("filename", require.get_data_filename("spamhaus_drop.dat",
+                                                                             module=__name__,
+                                                                             profile=env.profile))
         uri = self.getConfigValue("uri", self.URI)
         timeout = self.getConfigValue("timeout", self.TIMEOUT, type=float)
 
@@ -92,9 +94,10 @@ class SpamhausDropPlugin(Plugin):
                 continue
 
             if addr in self.__data.get():
-                ca = Context(("SPAMHAUS", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
+                ca = Context(("SPAMHAUS", source), {"expire": 300, "alert_on_expire": True}, update=True, idmef=idmef)
                 if ca.getUpdateCount() == 0:
-                        ca.set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
-                        ca.set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")
-                        ca.set("alert.assessment.impact.description", "Spamhaus gathered this IP address in their DROP list - %s" % (source))
-                        ca.set("alert.assessment.impact.severity", "medium")
+                    ca.set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
+                    ca.set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")
+                    ca.set("alert.assessment.impact.description",
+                           "Spamhaus gathered this IP address in their DROP list - %s" % source)
+                    ca.set("alert.assessment.impact.severity", "medium")

@@ -28,8 +28,8 @@ from preludecorrelator import require, log
 
 _last_wakeup = 0
 _next_wakeup = 0
-_TIMER_LIST = [ ]
-_CONTEXT_TABLE = { }
+_TIMER_LIST = []
+_CONTEXT_TABLE = {}
 logger = log.getLogger(__name__)
 
 
@@ -80,7 +80,7 @@ class Timer:
         return now - self._timer_start
 
     def running(self):
-        return self._timer_start != None
+        return self._timer_start is not None
 
     def setExpire(self, expire):
         self._timer_expire = expire
@@ -117,7 +117,7 @@ class Context(IDMEF, Timer):
         Timer.__init__(self, 0)
 
         self._version = self.FORMAT_VERSION
-        self._options = { "threshold": -1, "expire": 0, "alert_on_expire": False }
+        self._options = {"threshold": -1, "expire": 0, "alert_on_expire": False}
 
         name = getName(name)
         self._name = name
@@ -137,7 +137,7 @@ class Context(IDMEF, Timer):
         else:
             self._time_max = -1
 
-        if not name in _CONTEXT_TABLE:
+        if name not in _CONTEXT_TABLE:
             _CONTEXT_TABLE[name] = []
 
         _CONTEXT_TABLE[name].append(self)
@@ -145,10 +145,11 @@ class Context(IDMEF, Timer):
 
         x = self._mergeIntersect(debug=False)
         if x > 0:
-            logger.critical("A context merge happened on initialization. This should NOT happen : please report this error.")
+            logger.critical(
+                "A context merge happened on initialization. This should NOT happen : please report this error.")
 
     def __getnewargs__(self):
-        return (self._name, )
+        return self._name,
 
     def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
         if update or (overwrite is False):
@@ -265,15 +266,15 @@ class Context(IDMEF, Timer):
         logger.debug("[update]%s", self.getStat(), level=3)
 
     def getStat(self, now=None):
-        str = ""
+        string = ""
         if not now:
             now = time.time()
 
         if self._options["threshold"] != -1:
-            str += " threshold=%d/%d" % (self._update_count + 1, self._options["threshold"])
+            string += " threshold=%d/%d" % (self._update_count + 1, self._options["threshold"])
 
         if self._timer_start:
-            str += " expire=%d/%d" % (self.elapsed(now), self._options["expire"])
+            string += " expire=%d/%d" % (self.elapsed(now), self._options["expire"])
 
         tmin = time.strftime("%X", time.localtime(self._time_min))
         if self._time_max == -1:
@@ -281,7 +282,7 @@ class Context(IDMEF, Timer):
         else:
             tmax = time.strftime("%X", time.localtime(self._time_max))
 
-        return ("[%s]: tmin=%s tmax=%s update=%d%s" % (self._name, tmin, tmax, self._update_count, str))
+        return "[%s]: tmin=%s tmax=%s update=%d%s" % (self._name, tmin, tmax, self._update_count, string)
 
     def getOptions(self):
         return self._options
@@ -290,7 +291,7 @@ class Context(IDMEF, Timer):
         self._options = options
 
         Timer.setExpire(self, self._options.get("expire", 0))
-        Timer.start(self) # will only start the timer if not already running
+        Timer.start(self)  # will only start the timer if not already running
 
     def getUpdateCount(self):
         return self._update_count
@@ -304,6 +305,7 @@ class Context(IDMEF, Timer):
         _CONTEXT_TABLE[self._name].remove(self)
         if not _CONTEXT_TABLE[self._name]:
             _CONTEXT_TABLE.pop(self._name)
+
 
 def getName(arg):
     def escape(s):
@@ -321,6 +323,7 @@ def getName(arg):
         cnt += 1
 
     return name
+
 
 def search(name, idmef=None, update=False):
     name = getName(name)
@@ -352,6 +355,7 @@ def save(profile):
     pickle.dump(_CONTEXT_TABLE, fd, -1)
     fd.close()
 
+
 def load(profile):
     ctxt_filename = require.get_data_filename("context.dat", profile=profile)
     if os.path.exists(ctxt_filename):
@@ -374,6 +378,7 @@ def load(profile):
                 # some external reference that will be called from the core.
                 if not ctx.isVersionCompatible() or ctx.getOptions()["alert_on_expire"] is _Dummy:
                     ctx.destroy()
+
 
 def wakeup(now):
     global _TIMER_LIST, _next_wakeup, _last_wakeup
@@ -400,6 +405,7 @@ def wakeup(now):
 
     logger.debug("woke-up %d/%d timer, next wake-up in %.2f seconds", i, tlen, _next_wakeup)
     _last_wakeup = now
+
 
 def stats():
     now = time.time()

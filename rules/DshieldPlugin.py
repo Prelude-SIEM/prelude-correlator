@@ -30,7 +30,7 @@ class DShieldDownloader(download.HTTPDownloadCache):
         download.HTTPDownloadCache.__init__(self, "DShield", filename, uri, timeout, reload, logger)
 
     def __ipNormalize(self, ip):
-        return ".".join([ i.lstrip("0") for i in ip.split(".") ])
+        return ".".join([i.lstrip("0") for i in ip.split(".")])
 
     def parse(self, data):
         ret = {}
@@ -56,7 +56,8 @@ class DshieldPlugin(Plugin):
         uri = self.getConfigValue("uri", self.DSHIELD_URI)
         timeout = self.getConfigValue("timeout", self.DSHIELD_TIMEOUT, type=float)
         reload = self.getConfigValue("reload", self.DSHIELD_RELOAD, type=int)
-        filename = self.getConfigValue("filename", require.get_data_filename("dshield.dat", module=__name__, profile=env.profile))
+        filename = self.getConfigValue("filename",
+                                       require.get_data_filename("dshield.dat", module=__name__, profile=env.profile))
 
         self.__data = DShieldDownloader(filename, uri, timeout, reload)
 
@@ -66,10 +67,12 @@ class DshieldPlugin(Plugin):
         for source in idmef.get("alert.source(*).node.address(*).address"):
             entry = data.get(source, None)
             if entry:
-                ca = context.Context(("DSHIELD", source), { "expire": 300, "alert_on_expire": True }, update = True, idmef = idmef)
+                ca = context.Context(("DSHIELD", source), {"expire": 300, "alert_on_expire": True}, update=True,
+                                     idmef=idmef)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching Dshield database")
                     ca.set("alert.correlation_alert.name", "IP source matching Dshield database")
-                    ca.set("alert.assessment.impact.description", "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
+                    ca.set("alert.assessment.impact.description",
+                           "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, "
+                           "first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))
                     ca.set("alert.assessment.impact.severity", "high")
-

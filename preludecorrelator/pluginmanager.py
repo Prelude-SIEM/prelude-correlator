@@ -21,7 +21,9 @@ import pkg_resources
 import os
 import imp
 
-from preludecorrelator import log, error, require, plugins
+from preludecorrelator import log, error, require
+from preludecorrelator import plugins  # noqa : used in rules (flake8 will ignore "unused import")
+
 
 logger = log.getLogger(__name__)
 
@@ -51,7 +53,8 @@ class Plugin(object):
 
 
 class PluginDependenciesError(ImportError):
-     pass
+    pass
+
 
 class PluginManager(object):
     _default_entrypoint = 'preludecorrelator.plugins'
@@ -65,9 +68,10 @@ class PluginManager(object):
         self._conflict = {}
         self._force_enable = {}
 
-        plugin_entries =  [ (e.name, e, self._load_entrypoint) for e in pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)]
+        entry_points = pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)
+        plugin_entries = [(entry.name, entry, self._load_entrypoint) for entry in entry_points]
         if entrypoint is None:
-            plugin_entries += [ (u[0], u, self._load_userpoint ) for u in self._get_userpoints(env)]
+            plugin_entries += [(u[0], u, self._load_userpoint) for u in self._get_userpoints(env)]
 
         for pname, e, fct in plugin_entries:
             logger.debug("loading point %s", pname, level=1)
@@ -85,7 +89,7 @@ class PluginManager(object):
                 continue
 
             plugin_class = fct(e)
-            
+
             if plugin_class is None:
                 continue
 
@@ -112,8 +116,11 @@ class PluginManager(object):
         for plugin_class in self.getPluginsClassesList():
             pname = plugin_class.__name__
 
-            if pname in self._conflict and not pname in self._force_enable:
-                logger.info("[%s]: disabled by plugin '%s' reason:%s", pname, self._conflict[pname][0], self._conflict[pname][1])
+            if pname in self._conflict and pname not in self._force_enable:
+                logger.info("[%s]: disabled by plugin '%s' reason:%s",
+                            pname,
+                            self._conflict[pname][0],
+                            self._conflict[pname][1])
                 continue
 
             if plugin_class.autoload:
@@ -122,7 +129,8 @@ class PluginManager(object):
 
                 except error.UserError as e:
                     logger.error("[%s]: %s", pname, e)
-                    raise error.UserError("Plugin '%s' failed to load, please fix the issue or disable the plugin" % pname)
+                    raise error.UserError("Plugin '%s' failed to load, please fix the issue or disable the plugin"
+                                          % pname)
 
                 self.__plugins_instances.append(pi)
 
@@ -166,14 +174,14 @@ class PluginManager(object):
             mod_info = imp.find_module(name, [path])
 
         except ImportError:
-            logger.warning( 'Invalid plugin "%s" in "%s"' % (name, path) )
+            logger.warning('Invalid plugin "%s" in "%s"' % (name, path))
             return None
 
         try:
-            return getattr(imp.load_module( self._default_entrypoint + '.' + name , *mod_info), name)
+            return getattr(imp.load_module(self._default_entrypoint + '.' + name, *mod_info), name)
 
         except Exception as e:
-            logger.warning( "Unable to load %(file)s: %(error)s" % {'file': name,'error': str(e),})
+            logger.warning("Unable to load %(file)s: %(error)s" % {'file': name, 'error': str(e)})
             return None
 
     def getPluginCount(self):

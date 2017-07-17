@@ -19,18 +19,23 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# flake8: noqa: E402 (ignore "module level import not at top of file" because of ez_setup)
+
+import os
+
 from ez_setup import use_setuptools
+
 use_setuptools()
+
+from setuptools import setup, find_packages
+from setuptools.command.install import install
+from setuptools.command.sdist import sdist
 
 try:
     import urllib.request as urlreq
 except:
     import urllib2 as urlreq
 
-import os
-from setuptools import setup, find_packages
-from setuptools.command.install import install
-from setuptools.command.sdist import sdist
 
 PRELUDE_CORRELATOR_VERSION = "4.1.0"
 
@@ -94,6 +99,7 @@ class my_install(install):
         config.write("lib_dir = '%s'\n" % os.path.abspath(prefix + "/var/lib/prelude-correlator"))
         config.close()
 
+
 setup(
     name="prelude-correlator",
     version=PRELUDE_CORRELATOR_VERSION,
@@ -131,28 +137,24 @@ suits your needs.
         "Topic :: Security",
         "Topic :: System :: Monitoring"
     ],
-
     packages=find_packages(".", exclude=["rules"]),
-
     entry_points={
         'console_scripts': [
             'prelude-correlator = preludecorrelator.main:main',
         ],
-
         'preludecorrelator.plugins': [
         ]
     },
-
     package_data={},
-
     data_files=[
         ("etc/prelude-correlator", ["prelude-correlator.conf"]),
         ("etc/prelude-correlator/conf.d", ['data/conf.d/README']),
-        ("etc/prelude-correlator/rules/python", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.py')]),
-        ("var/lib/prelude-correlator/prelude-correlator", [os.path.join('rules',x) for x in os.listdir('rules') if x.endswith('.dat')])
+        ("etc/prelude-correlator/rules/python", [os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.py')]),
+        ("var/lib/prelude-correlator/prelude-correlator", [os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.dat')])
     ],
-
     install_requires=["prelude >= 4.1.0"],
-
-    cmdclass={'sdist': my_sdist, 'install': my_install}
+    cmdclass={
+        'sdist': my_sdist,
+        'install': my_install
+    }
 )

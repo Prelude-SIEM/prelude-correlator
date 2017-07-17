@@ -41,4 +41,3 @@ except:
             module = pkg_resources.Requirement.parse(package)
 
         return pkg_resources.resource_filename(module, os.path.join(profile or "", fname))
-

@@ -28,15 +28,16 @@ import time
 from preludecorrelator import error
 from preludecorrelator.context import Timer
 
+
 class DownloadCache:
     def _checkPermissions(self):
         dirname = os.path.dirname(self._filename)
 
-        if not os.access(dirname, os.R_OK|os.W_OK|os.X_OK):
-            raise error.UserError("DownloadCache directory '%s' does not exist or has wrong permissions" % (dirname))
+        if not os.access(dirname, os.R_OK | os.W_OK | os.X_OK):
+            raise error.UserError("DownloadCache directory '%s' does not exist or has wrong permissions" % dirname)
 
-        if os.path.exists(self._filename) and not os.access(self._filename, os.R_OK|os.W_OK):
-            raise error.UserError("DownloadCache file '%s' cannot be opened in read-write mode" % (self._filename))
+        if os.path.exists(self._filename) and not os.access(self._filename, os.R_OK | os.W_OK):
+            raise error.UserError("DownloadCache file '%s' cannot be opened in read-write mode" % self._filename)
 
     def __init__(self, name, filename, reload, logger, bindata=False):
         self._name = name
@@ -78,7 +79,7 @@ class DownloadCache:
         return 0
 
     def _download(self, timer=None):
-        status ="Downloading" if not timer else "Updating"
+        status = "Downloading" if not timer else "Updating"
         self.logger.info("%s %s report, this might take some time...", status, self._name)
 
         try:
@@ -125,9 +126,9 @@ class HTTPDownloadCache(DownloadCache):
     def write(self, fd, data):
         fd.write(data)
 
-    def download(self,headers=None):
-        if headers == None:
-            headers={'User-Agent' : "Prelude-Correlator"}
+    def download(self, headers=None):
+        if headers is None:
+            headers = {'User-Agent': "Prelude-Correlator"}
 
         con = urlreq.urlopen(urlreq.Request(self.__uri, headers=headers))
         data = con.read()

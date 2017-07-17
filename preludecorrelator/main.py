@@ -153,7 +153,7 @@ class PreludeClient(object):
             self._receiver = FileReader(options.readfile, options.readoff, options.readlimit)
 
         self.client = ClientEasy(
-            options.profile, ClientEasy.PERMISSION_IDMEF_READ|ClientEasy.PERMISSION_IDMEF_WRITE,
+            options.profile, ClientEasy.PERMISSION_IDMEF_READ | ClientEasy.PERMISSION_IDMEF_WRITE,
             "Prelude Correlator", "Correlator", "CS-SI", VERSION)
 
         self.client.setConfigFilename(options.config)
@@ -167,7 +167,9 @@ class PreludeClient(object):
         self._events_processed += 1
 
     def stats(self):
-        logger.info("%d events received, %d correlationAlerts generated.", self._events_processed, self._alert_generated)
+        logger.info("%d events received, %d correlationAlerts generated.",
+                    self._events_processed,
+                    self._alert_generated)
 
     def correlationAlert(self, idmef):
         self._alert_generated = self._alert_generated + 1
@@ -200,7 +202,7 @@ class PreludeClient(object):
         if not criteria:
             return IDMEFCriteria("alert")
 
-        criteria = "alert && (%s)" % (criteria)
+        criteria = "alert && (%s)" % criteria
 
         try:
             return IDMEFCriteria(criteria)
@@ -213,24 +215,34 @@ def runCorrelator():
     config_filename = require.get_config_filename("prelude-correlator.conf")
 
     parser = OptionParser(usage="%prog", version="%prog " + VERSION)
-    parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use", metavar="FILE", default=config_filename)
-    parser.add_option("", "--dry-run", action="store_true", dest="dry_run", help="No report to the specified Manager will occur", default=False)
+    parser.add_option("-c", "--config", action="store", dest="config", type="string", help="Configuration file to use",
+                      metavar="FILE", default=config_filename)
+    parser.add_option("", "--dry-run", action="store_true", dest="dry_run",
+                      help="No report to the specified Manager will occur", default=False)
     parser.add_option("-d", "--daemon", action="store_true", dest="daemon", help="Run in daemon mode")
-    parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string", help="Write Prelude Correlator PID to specified file", metavar="FILE")
+    parser.add_option("-P", "--pidfile", action="store", dest="pidfile", type="string",
+                      help="Write Prelude Correlator PID to specified file", metavar="FILE")
 
     grp = OptionGroup(parser, "IDMEF Input", "Read IDMEF events from file")
-    grp.add_option("", "--input-file", action="store", dest="readfile", type="string", help="Read IDMEF events from the specified file", metavar="FILE")
-    grp.add_option("", "--input-offset", action="store", dest="readoff", type="int", help="Start processing events starting at the given offset", metavar="OFFSET", default=0)
-    grp.add_option("", "--input-limit", action="store", dest="readlimit", type="int", help="Read events until the given limit is reached", metavar="LIMIT", default=-1)
+    grp.add_option("", "--input-file", action="store", dest="readfile", type="string",
+                   help="Read IDMEF events from the specified file", metavar="FILE")
+    grp.add_option("", "--input-offset", action="store", dest="readoff", type="int",
+                   help="Start processing events starting at the given offset", metavar="OFFSET", default=0)
+    grp.add_option("", "--input-limit", action="store", dest="readlimit", type="int",
+                   help="Read events until the given limit is reached", metavar="LIMIT", default=-1)
     parser.add_option_group(grp)
 
     grp = OptionGroup(parser, "Prelude", "Prelude generic options")
-    grp.add_option("", "--profile", dest="profile", type="string", help="Profile to use for this analyzer", default=_DEFAULT_PROFILE)
+    grp.add_option("", "--profile", dest="profile", type="string", help="Profile to use for this analyzer",
+                   default=_DEFAULT_PROFILE)
     parser.add_option_group(grp)
 
-    parser.add_option("", "--print-input", action="store", dest="print_input", type="string", help="Dump alert input from manager to the specified file", metavar="FILE")
-    parser.add_option("", "--print-output", action="store", dest="print_output", type="string", help="Dump alert output to the specified file", metavar="FILE")
-    parser.add_option("-D", "--debug", action="store", dest="debug", type="int", default=0, help="Enable debugging output (level from 1 to 10)", metavar="LEVEL")
+    parser.add_option("", "--print-input", action="store", dest="print_input", type="string",
+                      help="Dump alert input from manager to the specified file", metavar="FILE")
+    parser.add_option("", "--print-output", action="store", dest="print_output", type="string",
+                      help="Dump alert output to the specified file", metavar="FILE")
+    parser.add_option("-D", "--debug", action="store", dest="debug", type="int", default=0,
+                      help="Enable debugging output (level from 1 to 10)", metavar="LEVEL")
     (options, args) = parser.parse_args()
 
     env = Env(options)

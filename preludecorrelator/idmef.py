@@ -25,7 +25,9 @@ import prelude
 
 from preludecorrelator import utils
 
+
 _RegexType = type(re.compile(""))
+
 
 class IDMEF(prelude.IDMEF):
     def getTime(self):
@@ -63,7 +65,7 @@ class IDMEF(prelude.IDMEF):
 
     def match(self, *args):
         if (len(args) % 2) != 0:
-            raise("Invalid number of arguments.")
+            raise Exception("Invalid number of arguments.")
 
         ret = []
 
@@ -122,17 +124,17 @@ class IDMEF(prelude.IDMEF):
                 strl.append('%d' % ilist[0])
 
         if has_range or len(strl) > 1:
-            return ("service.portlist", ",".join(strl))
+            return "service.portlist", ",".join(strl)
         else:
-            return ("service.port", value[0])
+            return "service.port", value[0]
 
     def _parsePortlist(self, portlist):
         ranges = (x.split("-") for x in portlist.split(","))
-        plist = [ i for r in ranges for i in range(int(r[0].strip()), int(r[-1].strip()) + 1) ]
-        return ("service.port", plist)
+        plist = [i for r in ranges for i in range(int(r[0].strip()), int(r[-1].strip()) + 1)]
+        return "service.port", plist
 
     def _defaultMerge(self, fpath, value):
-        return (fpath, value[0])
+        return fpath, value[0]
 
     def _getFilteredValue(self, basepath, fpath, reqval, idmef, preproc_func, filtered):
         for idx, value in enumerate(prelude.IDMEF.get(idmef, basepath + "." + fpath) or ()):
@@ -144,10 +146,10 @@ class IDMEF(prelude.IDMEF):
             if value and preproc_func:
                 fpath2, value = preproc_func(value)
 
-            if not idx in filtered:
+            if idx not in filtered:
                 filtered[idx] = {}
 
-            if not fpath2 in filtered[idx]:
+            if fpath2 not in filtered[idx]:
                 filtered[idx][fpath2] = []
 
             if value:
@@ -165,7 +167,6 @@ class IDMEF(prelude.IDMEF):
             r2 = self._getFilteredValue(path, fpath, reqval, idmef, preproc_func, filtered_new)
 
             postproc[r1 or r2] = postproc_func if postproc_func else self._defaultMerge
-
 
         unmodified_set, sharedset, newset = self._getMergeList(path, idmef)
         for idx, value in newset:
@@ -185,7 +186,6 @@ class IDMEF(prelude.IDMEF):
                 if value:
                     prelude.IDMEF.set(self, path + "(%d)." % idx + fpath, value)
 
-        common = defaultdict(list)
         for idx, nidx in sharedset:
             common = defaultdict(list)
             for a, b in list(filtered_new.get(nidx, {}).items()) + list(filtered_cur.get(idx, {}).items()):
@@ -198,7 +198,6 @@ class IDMEF(prelude.IDMEF):
                 if value:
                     prelude.IDMEF.set(self, path + "(%d)." % idx + fpath, value)
 
-
         for idx, values in filtered_new.items():
             for fpath, value in values.items():
                 if value and fpath in postproc:
@@ -207,12 +206,11 @@ class IDMEF(prelude.IDMEF):
                 if value:
                     prelude.IDMEF.set(idmef, path + "(%d)." % (idx) + fpath, value)
 
-
     def addAlertReference(self, idmef, auto_set_detect_time=True):
         if auto_set_detect_time is True:
             intime = idmef.getTime()
             curtime = self.getTime()
-            if (not curtime) or intime < curtime:
+            if not curtime or intime < curtime:
                 self.set("alert.detect_time", intime)
 
         st_filters = [(("process.pid", None), None, None),

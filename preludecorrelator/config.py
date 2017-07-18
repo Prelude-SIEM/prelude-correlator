@@ -19,6 +19,7 @@
 
 import os
 import glob
+import StringIO
 try:
     import configparser
 except:
@@ -66,3 +67,15 @@ class Config(configparser.ConfigParser):
             return True
 
         return False
+
+    def read(self, filename):
+        if not isinstance(filename, list):
+            filename = [filename]
+
+        for fname in filename:
+            try:
+                f = open(fname, 'r')
+            except IOError:
+                continue
+            self.readfp(StringIO.StringIO('[prelude]\n' + f.read()))
+            f.close()

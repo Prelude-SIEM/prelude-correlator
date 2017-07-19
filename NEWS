@@ -1,3 +1,15 @@
+* 2017-07-19, prelude-correlator-4.0.1:
+
+Author: Thomas Andrejak
+
+- Config: Add support for key:value out of a section
+
+Author: Antoine Luong
+
+- Allow passing prelude-specific options in configuration
+
+
+
 * 2017-02-16, prelude-correlator-4.0.0:
 
 No new changes.

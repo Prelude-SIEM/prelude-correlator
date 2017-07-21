@@ -1,3 +1,15 @@
+* 2017-07-21, prelude-correlator-4.1.0:
+
+Author: Thomas Andrejak
+
+- Add support for key:value out of a config section
+
+Author: Antoine Luong
+
+- Avoid displaying a traceback
+
+
+
 * 2017-07-13, prelude-correlator-4.1.0rc2:
 
 Author: Antoine Luong

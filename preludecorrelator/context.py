@@ -368,7 +368,7 @@ def load(profile):
         logger.debug("[load]: %d context loaded", len(_CONTEXT_TABLE))
 
         for ctxlist in _CONTEXT_TABLE.values():
-            for ctx in ctxlist:
+            for ctx in ctxlist[:]:
                 # Destroy the context in case of incompatibility or import failure.
                 # Check the alert_on_expire option because it can contain
                 # some external reference that will be called from the core.

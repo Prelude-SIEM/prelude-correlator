@@ -1,3 +1,11 @@
+* 2017-10-19, prelude-correlator-4.1.1:
+
+Author: Antoine Luong
+
+- Fix context destruction while iterating
+
+
+
 * 2017-07-21, prelude-correlator-4.1.0:
 
 Author: Thomas Andrejak

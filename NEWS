@@ -1,3 +1,13 @@
+* 2018-02-09, prelude-correlator-4.2.0rc1:
+
+Author: Antoine Luong
+
+- Fix context destruction while iterating
+
+- Add flake8 rules and make the code PEP-8 valid
+
+
+
 * 2017-07-21, prelude-correlator-4.1.0:
 
 Author: Thomas Andrejak

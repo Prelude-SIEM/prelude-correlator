@@ -37,7 +37,7 @@ except:
     import urllib2 as urlreq
 
 
-PRELUDE_CORRELATOR_VERSION = "4.1.0"
+PRELUDE_CORRELATOR_VERSION = "4.2.0rc1"
 
 
 class my_sdist(sdist):

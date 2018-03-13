@@ -17,9 +17,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 import glob
-import StringIO
+import io
+import os
+
 try:
     import configparser
 except:
@@ -75,8 +76,7 @@ class Config(configparser.ConfigParser):
 
         for fname in filename:
             try:
-                f = open(fname, 'r')
+                with io.open(fname, 'r') as f:
+                    self.readfp(io.StringIO('[prelude]\n' + f.read()))
             except IOError:
                 continue
-            self.readfp(StringIO.StringIO('[prelude]\n' + f.read()))
-            f.close()

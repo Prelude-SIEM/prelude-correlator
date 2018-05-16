@@ -19,13 +19,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# flake8: noqa: E402 (ignore "module level import not at top of file" because of ez_setup)
-
 import os
-
-from ez_setup import use_setuptools
-
-use_setuptools()
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -149,8 +143,12 @@ suits your needs.
     data_files=[
         ("etc/prelude-correlator", ["prelude-correlator.conf"]),
         ("etc/prelude-correlator/conf.d", ['data/conf.d/README']),
-        ("etc/prelude-correlator/rules/python", [os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.py')]),
-        ("var/lib/prelude-correlator/prelude-correlator", [os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.dat')])
+        ("etc/prelude-correlator/rules/python", [
+            os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.py')
+        ]),
+        ("var/lib/prelude-correlator/prelude-correlator", [
+            os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.dat')
+        ])
     ],
     install_requires=["prelude >= 4.1.0"],
     cmdclass={

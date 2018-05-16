@@ -4,7 +4,6 @@ include HACKING.README
 include NEWS
 include README
 include INSTALL
-include ez_setup.py
 include prelude-correlator.conf
 graft preludecorrelator
 graft selinux

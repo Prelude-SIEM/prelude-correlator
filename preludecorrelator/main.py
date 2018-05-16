@@ -29,6 +29,12 @@ from prelude import ClientEasy, checkVersion, IDMEFCriteria
 from preludecorrelator import idmef, pluginmanager, context, log, config, require, error
 
 
+if sys.version_info >= (3, 0):
+    import builtins
+else:
+    import __builtin__ as builtins
+
+
 logger = log.getLogger(__name__)
 VERSION = pkg_resources.get_distribution('prelude-correlator').version
 LIBPRELUDE_REQUIRED_VERSION = "1.2.6"
@@ -53,7 +59,8 @@ class Env:
         self.config = config.Config(options.config)
         self.profile = options.profile
 
-        self.pluginmanager = pluginmanager.PluginManager(self)
+    def load_plugins(self):
+        self.pluginmanager = pluginmanager.PluginManager()
 
         # restore previous context
         # (this need to be called after logger is setup, and before plugin loading).
@@ -69,30 +76,28 @@ class Env:
 
 
 class SignalHandler:
-    def __init__(self, env):
-        self._env = env
-
+    def __init__(self):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
         signal.signal(signal.SIGQUIT, self._handle_signal)
 
     def _handle_signal(self, signum, frame):
         logger.info("caught signal %d", signum)
-        self._env.pluginmanager.signal(signum, frame)
+        env.pluginmanager.signal(signum, frame)
 
         if signum == signal.SIGUSR1:
-            context.save(self._env.profile)
-            self._env.pluginmanager.save()
+            context.save(env.profile)
+            env.pluginmanager.save()
 
         elif signum == signal.SIGQUIT:
             context.stats()
-            self._env.pluginmanager.stats()
+            env.pluginmanager.stats()
 
-            if self._env.prelude_client:
-                self._env.prelude_client.stats()
+            if env.prelude_client:
+                env.prelude_client.stats()
 
         else:
-            self._env.prelude_client.stop()
+            env.prelude_client.stop()
 
 
 class GenericReader(object):
@@ -142,15 +147,14 @@ class FileReader(GenericReader):
 
 
 class PreludeClient(object):
-    def __init__(self, env, options, print_input=None, print_output=None, dry_run=False):
-        self._env = env
+    def __init__(self, options, print_input=None, print_output=None, dry_run=False):
         self._events_processed = 0
         self._alert_generated = 0
         self._print_input = print_input
         self._print_output = print_output
         self._continue = True
         self._dry_run = dry_run
-        self._criteria = self._parse_criteria(self._env.config.get("general", "criteria"))
+        self._criteria = self._parse_criteria(env.config.get("general", "criteria"))
 
         if not options.readfile:
             self._receiver = ClientReader(self)
@@ -168,7 +172,7 @@ class PreludeClient(object):
         if self._print_input:
             self._print_input.write(str(idmef))
 
-        self._env.pluginmanager.run(idmef)
+        env.pluginmanager.run(idmef)
         self._events_processed += 1
 
     def stats(self):
@@ -250,8 +254,9 @@ def runCorrelator():
                       help="Enable debugging output (level from 1 to 10)", metavar="LEVEL")
     (options, args) = parser.parse_args()
 
-    env = Env(options)
-    SignalHandler(env)
+    builtins.env = Env(options)
+    env.load_plugins()
+    SignalHandler()
 
     ifd = None
     if options.print_input:
@@ -286,7 +291,7 @@ def runCorrelator():
             open(options.pidfile, "w").write(str(os.getpid()))
 
     try:
-        env.prelude_client = PreludeClient(env, options, print_input=ifd, print_output=ofd)
+        env.prelude_client = PreludeClient(options, print_input=ifd, print_output=ofd)
     except Exception as e:
         raise error.UserError(e)
 

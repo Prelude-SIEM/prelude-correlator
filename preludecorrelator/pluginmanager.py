@@ -34,10 +34,10 @@ class Plugin(object):
     conflict = []
 
     def getConfigValue(self, option, fallback=None, type=str):
-        return self.env.config.get(self.__class__.__name__, option, fallback=fallback, type=type)
+        return env.config.get(self.__class__.__name__, option, fallback=fallback, type=type)
 
     def __init__(self, env):
-        self.env = env
+        # Keep the deprecated argument env for backward compatibility
         self.name = self.__class__.__name__
 
     def save(self):
@@ -60,8 +60,7 @@ class PluginDependenciesError(ImportError):
 class PluginManager(object):
     _default_entrypoint = 'preludecorrelator.plugins'
 
-    def __init__(self, env, entrypoint=None):
-        self._env = env
+    def __init__(self, entrypoint=None):
         self._count = 0
         self.__plugins_instances = []
         self.__plugins_classes = []
@@ -72,7 +71,7 @@ class PluginManager(object):
         entry_points = pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)
         plugin_entries = [(entry.name, entry, self._load_entrypoint) for entry in entry_points]
         if entrypoint is None:
-            plugin_entries += [(u[0], u, self._load_userpoint) for u in self._get_userpoints(env)]
+            plugin_entries += [(u[0], u, self._load_userpoint) for u in self._get_userpoints()]
 
         for pname, e, fct in plugin_entries:
             logger.debug("loading point %s", pname, level=1)
@@ -126,7 +125,7 @@ class PluginManager(object):
 
             if plugin_class.autoload:
                 try:
-                    pi = plugin_class(self._env)
+                    pi = plugin_class(env)
 
                 except error.UserError as e:
                     logger.error("[%s]: %s", pname, e)
@@ -137,7 +136,7 @@ class PluginManager(object):
 
             self._count += 1
 
-    def _get_userpoints(self, env):
+    def _get_userpoints(self):
         if not env.config.has_section("python_rules"):
             python_rules_dirs = require.get_config_filename("rules/python")
         else:

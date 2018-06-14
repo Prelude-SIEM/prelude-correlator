@@ -40,6 +40,9 @@ class Plugin(object):
         self.env = env
         self.name = self.__class__.__name__
 
+    def save(self):
+        pass
+
     def stats(self):
         pass
 
@@ -193,6 +196,13 @@ class PluginManager(object):
 
     def getPluginsClassesList(self):
         return self.__plugins_classes
+
+    def save(self):
+        for plugin in self.getPluginsInstancesList():
+            try:
+                plugin.save()
+            except Exception:
+                logger.exception("[%s]: exception occurred while saving state", plugin._getName())
 
     def stats(self):
         for plugin in self.getPluginsInstancesList():

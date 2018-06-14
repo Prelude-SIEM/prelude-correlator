@@ -80,12 +80,17 @@ class SignalHandler:
         logger.info("caught signal %d", signum)
         self._env.pluginmanager.signal(signum, frame)
 
-        if signum == signal.SIGQUIT:
+        if signum == signal.SIGUSR1:
+            context.save(self._env.profile)
+            self._env.pluginmanager.save()
+
+        elif signum == signal.SIGQUIT:
             context.stats()
             self._env.pluginmanager.stats()
 
             if self._env.prelude_client:
                 self._env.prelude_client.stats()
+
         else:
             self._env.prelude_client.stop()
 
@@ -291,6 +296,7 @@ def runCorrelator():
 
     # save existing context
     context.save(options.profile)
+    env.pluginmanager.save()
 
 
 def main():

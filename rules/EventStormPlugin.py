@@ -34,7 +34,7 @@ class EventStormPlugin(Plugin):
 
         for saddr in source:
             ctx = Context(("SCAN EVENTSTORM", saddr), {"expire": 120, "threshold": 150, "alert_on_expire": True},
-                          update=True, idmef=idmef)
+                          update=True, idmef=idmef, ruleid=self.name)
             if ctx.getUpdateCount() == 0:
                 ctx.set("alert.correlation_alert.name", "A single host is producing an unusual amount of events")
                 ctx.set("alert.classification.text", "Eventstorm")

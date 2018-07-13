@@ -49,7 +49,8 @@ class OpenSSHAuthPlugin(Plugin):
         data = data[0]
         for username in idmef.get("alert.target(*).user.user_id(*).name"):
             for target in idmef.get("alert.target(*).node.address(*).address"):
-                ctx = Context(("SSHAUTH", target, username), {"expire": 30, "alert_on_expire": alert}, update=True)
+                ctx = Context(("SSHAUTH", target, username), {"expire": 30, "alert_on_expire": alert},
+                              update=True, ruleid=self.name)
                 if ctx.getUpdateCount() == 0:
                     ctx.authtype = {data: True}
                     ctx.addAlertReference(idmef)

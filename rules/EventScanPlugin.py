@@ -35,7 +35,8 @@ class EventScanPlugin(Plugin):
         for saddr in source:
             for daddr in target:
                 ctx = Context(("SCAN EVENTSCAN", saddr, daddr),
-                              {"expire": 60, "threshold": 30, "alert_on_expire": True}, update=True, idmef=idmef)
+                              {"expire": 60, "threshold": 30, "alert_on_expire": True},
+                              update=True, idmef=idmef, ruleid=self.name)
                 if ctx.getUpdateCount() == 0:
                     ctx.set("alert.correlation_alert.name",
                             "A single host has played many events against a single target. This may be a vulnerability "

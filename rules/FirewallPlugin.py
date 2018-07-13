@@ -81,7 +81,7 @@ class FirewallPlugin(Plugin):
 
         ctx = context.Context("FIREWALL INFOS",
                               {"expire": self._flush_protected_hosts, "alert_on_expire": _evict},
-                              update=True)
+                              update=True, ruleid=self.name)
         if ctx.getUpdateCount() == 0:
             ctx._protected_hosts = {}
             ctx._flush_protected_hosts = self._flush_protected_hosts
@@ -103,7 +103,8 @@ class FirewallPlugin(Plugin):
             if (source + str(dport)) in ctx._protected_hosts[target][1]:
                 return
 
-            ctx = context.Context(("FIREWALL", source), {"expire": 120, "alert_on_expire": _alert}, update=True)
+            ctx = context.Context(("FIREWALL", source), {"expire": 120, "alert_on_expire": _alert},
+                                  update=True, ruleid=self.name)
             if ctx.getUpdateCount() == 0:
                 ctx.candidates = []
 

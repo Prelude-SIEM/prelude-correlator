@@ -65,7 +65,7 @@ class CIArmyPlugin(Plugin):
         for source in idmef.get("alert.source(*).node.address(*).address"):
             if source in data:
                 ca = context.Context(("CIARMY", source), {"expire": 300, "alert_on_expire": True}, update=True,
-                                     idmef=idmef)
+                                     idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching CIArmy database")
                     ca.set("alert.correlation_alert.name", "IP source matching CIArmy database")

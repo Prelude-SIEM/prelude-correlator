@@ -108,12 +108,12 @@ class Context(IDMEF, Timer):
         IDMEF.__setstate__(self, dict)
         Timer.__setstate__(self, dict)
 
-    def __init__(self, name, options={}, overwrite=True, update=False, idmef=None):
+    def __init__(self, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None):
         already_initialized = (update or (overwrite is False)) and hasattr(self, "_name")
         if already_initialized is True:
             return
 
-        IDMEF.__init__(self)
+        IDMEF.__init__(self, ruleid)
         Timer.__init__(self, 0)
 
         self._version = self.FORMAT_VERSION

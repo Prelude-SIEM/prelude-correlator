@@ -37,7 +37,7 @@ class EventSweepPlugin(Plugin):
 
         for saddr in source:
             ctx = Context(("SCAN EVENTSWEEP", classification, saddr),
-                          {"expire": 60, "threshold": 30, "alert_on_expire": True}, overwrite=False)
+                          {"expire": 60, "threshold": 30, "alert_on_expire": True}, overwrite=False, ruleid=self.name)
             if ctx.getUpdateCount() == 0:
                 ctx.set("alert.correlation_alert.name",
                         "A single host has played the same event against multiple targets. This may be a network scan "

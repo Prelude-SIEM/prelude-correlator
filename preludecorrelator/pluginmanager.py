@@ -38,9 +38,7 @@ class Plugin(object):
 
     def __init__(self, env):
         self.env = env
-
-    def _getName(self):
-        return self.__class__.__name__
+        self.name = self.__class__.__name__
 
     def stats(self):
         pass
@@ -201,14 +199,14 @@ class PluginManager(object):
             try:
                 plugin.stats()
             except Exception:
-                logger.exception("[%s]: exception occurred while retrieving statistics", plugin._getName())
+                logger.exception("[%s]: exception occurred while retrieving statistics", plugin.name)
 
     def signal(self, signo, frame):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.signal(signo, frame)
             except Exception:
-                logger.exception("[%s]: exception occurred while signaling", plugin._getName())
+                logger.exception("[%s]: exception occurred while signaling", plugin.name)
 
     def run(self, idmef):
         for plugin in self.getPluginsInstancesList():
@@ -216,7 +214,7 @@ class PluginManager(object):
                 plugin.run(idmef)
 
             except error.UserError as e:
-                logger.error("[%s]: error running plugin : %s", plugin._getName(), e)
+                logger.error("[%s]: error running plugin : %s", plugin.name, e)
 
             except Exception:
-                logger.exception("[%s]: exception occurred while running", plugin._getName())
+                logger.exception("[%s]: exception occurred while running", plugin.name)

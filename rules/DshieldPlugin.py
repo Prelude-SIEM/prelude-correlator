@@ -68,7 +68,7 @@ class DshieldPlugin(Plugin):
             entry = data.get(source, None)
             if entry:
                 ca = context.Context(("DSHIELD", source), {"expire": 300, "alert_on_expire": True}, update=True,
-                                     idmef=idmef)
+                                     idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching Dshield database")
                     ca.set("alert.correlation_alert.name", "IP source matching Dshield database")

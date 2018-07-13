@@ -94,7 +94,8 @@ class SpamhausDropPlugin(Plugin):
                 continue
 
             if addr in self.__data.get():
-                ca = Context(("SPAMHAUS", source), {"expire": 300, "alert_on_expire": True}, update=True, idmef=idmef)
+                ca = Context(("SPAMHAUS", source), {"expire": 300, "alert_on_expire": True},
+                             update=True, idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
                     ca.set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")

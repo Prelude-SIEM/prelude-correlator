@@ -30,6 +30,13 @@ _RegexType = type(re.compile(""))
 
 
 class IDMEF(prelude.IDMEF):
+    def __init__(self, ruleid=None):
+        prelude.IDMEF.__init__(self)
+        if ruleid:
+            self.set("alert.additional_data(>>).meaning", "Rule ID")
+            self.set("alert.additional_data(-1).type", "string")
+            self.set("alert.additional_data(-1).data", ruleid)
+
     def getTime(self):
         itime = self.get("alert.detect_time")
         if not itime:

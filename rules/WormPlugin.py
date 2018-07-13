@@ -41,7 +41,8 @@ class WormPlugin(Plugin):
         # Create context for classification combined with all the target.
         tlist = {}
         for target in idmef.get("alert.target(*).node.address(*).address"):
-            ctx = context.Context(("WORM HOST", ctxt, target), {"expire": 300}, overwrite=False, idmef=idmef)
+            ctx = context.Context(("WORM HOST", ctxt, target), {"expire": 300},
+                                  overwrite=False, idmef=idmef, ruleid=self.name)
             if ctx.getUpdateCount() == 0:
                 ctx._target_list = {}
 

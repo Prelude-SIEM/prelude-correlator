@@ -36,7 +36,7 @@ class BruteForcePlugin(Plugin):
                     continue
 
                 ctx = Context(("BRUTE ST", source, target), {"expire": 120, "threshold": 5, "alert_on_expire": True},
-                              update=True, idmef=idmef)
+                              update=True, idmef=idmef, ruleid=self.name)
                 if ctx.getUpdateCount() == 0:
                     ctx.set("alert.classification.text", "Brute Force attack")
                     ctx.set("alert.correlation_alert.name", "Multiple failed login")
@@ -50,8 +50,8 @@ class BruteForcePlugin(Plugin):
             return
 
         for user in userid:
-            ctx = Context(("BRUTE USER", user), {"expire": 120, "threshold": 5, "alert_on_expire": True}, update=True,
-                          idmef=idmef)
+            ctx = Context(("BRUTE USER", user), {"expire": 120, "threshold": 5, "alert_on_expire": True},
+                          update=True, idmef=idmef, ruleid=self.name)
             if ctx.getUpdateCount() == 0:
                 ctx.set("alert.classification.text", "Brute Force attack")
                 ctx.set("alert.correlation_alert.name", "Multiple failed login against a single account")

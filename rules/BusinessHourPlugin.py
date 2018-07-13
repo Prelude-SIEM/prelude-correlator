@@ -34,7 +34,7 @@ class BusinessHourPlugin(Plugin):
         if idmef.get("alert.assessment.impact.completion") != "succeeded":
             return
 
-        ca = IDMEF()
+        ca = IDMEF(ruleid=self.name)
         ca.addAlertReference(idmef)
         ca.set("alert.classification", idmef.get("alert.classification"))
         ca.set("alert.correlation_alert.name", "Critical system activity on day off")

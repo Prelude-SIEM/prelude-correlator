@@ -23,6 +23,7 @@ import time
 import signal
 import pkg_resources
 import errno
+import itertools
 
 from optparse import OptionParser, OptionGroup
 from prelude import ClientEasy, checkVersion, IDMEFCriteria
@@ -72,6 +73,7 @@ class Env:
         _init_profile_dir(self.profile)
 
         self.pluginmanager.load()
+        self.pluginmanager.check_dependencies()
         logger.info("%d plugins have been loaded.", self.pluginmanager.getPluginCount())
 
 
@@ -101,8 +103,13 @@ class SignalHandler:
 
 
 class GenericReader(object):
+    _messages = iter([])
+
     def run(self):
         pass
+
+    def inject(self, idmef):
+        self._messages = itertools.chain(self._messages, [idmef])
 
 
 class ClientReader(GenericReader):
@@ -111,6 +118,9 @@ class ClientReader(GenericReader):
 
     def run(self):
         while True:
+            for msg in self._messages:
+                yield msg
+
             msg = idmef.IDMEF()
             try:
                 ret = self.prelude_client.client.recvIDMEF(msg, 1000)
@@ -134,6 +144,9 @@ class FileReader(GenericReader):
 
         with open(self.filename, 'r') as input_file:
             while self.limit == -1 or count < self.limit + self.offset:
+                for msg in self._messages:
+                    yield msg
+
                 msg = idmef.IDMEF()
                 try:
                     msg << input_file
@@ -188,6 +201,9 @@ class PreludeClient(object):
 
         if self._print_output:
             self._print_output.write(str(idmef))
+
+        # Reinject correlation alerts for meta-correlation
+        self._receiver.inject(idmef)
 
     def run(self):
         last = time.time()

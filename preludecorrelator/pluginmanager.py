@@ -21,14 +21,14 @@ import pkg_resources
 import os
 import imp
 
-from preludecorrelator import log, error, require
+from preludecorrelator import log, error, require, rule
 from preludecorrelator import plugins  # noqa : used in rules (flake8 will ignore "unused import")
 
 
 logger = log.getLogger(__name__)
 
 
-class Plugin(object):
+class Plugin(rule.AbstractRule):
     enable = True
     autoload = True
     conflict = []
@@ -39,6 +39,7 @@ class Plugin(object):
     def __init__(self, env):
         # Keep the deprecated argument env for backward compatibility
         self.name = self.__class__.__name__
+        env.pluginmanager.register_dependencies(self.name, self.depends)
 
     def save(self):
         pass
@@ -51,6 +52,10 @@ class Plugin(object):
 
     def run(self, idmef):
         pass
+
+    def run_safe(self, idmef):
+        if self._can_correlate(idmef):
+            self.run(idmef)
 
 
 class PluginDependenciesError(ImportError):
@@ -67,6 +72,7 @@ class PluginManager(object):
 
         self._conflict = {}
         self._force_enable = {}
+        self._dependencies = {}
 
         entry_points = pkg_resources.iter_entry_points(entrypoint if entrypoint else self._default_entrypoint)
         plugin_entries = [(entry.name, entry, self._load_entrypoint) for entry in entry_points]
@@ -196,12 +202,33 @@ class PluginManager(object):
     def getPluginsClassesList(self):
         return self.__plugins_classes
 
+    def register_dependencies(self, plugin, dependencies):
+        self._dependencies[plugin] = dependencies
+
+    def check_dependencies(self):
+        """Check that the dependency graph is acyclic."""
+        all_plugins = self._dependencies.keys()
+        while all_plugins:
+            for plugin in all_plugins:
+                if self._dependencies[plugin]:
+                    continue
+
+                all_plugins.remove(plugin)
+                for p, depends in self._dependencies.items():
+                    try:
+                        depends.remove(plugin)
+                    except ValueError:
+                        pass
+                break
+            else:
+                raise error.UserError("Circular dependencies detected for rules %s" % ", ".join(all_plugins))
+
     def save(self):
         for plugin in self.getPluginsInstancesList():
             try:
                 plugin.save()
             except Exception:
-                logger.exception("[%s]: exception occurred while saving state", plugin._getName())
+                logger.exception("[%s]: exception occurred while saving state", plugin.name)
 
     def stats(self):
         for plugin in self.getPluginsInstancesList():
@@ -220,7 +247,7 @@ class PluginManager(object):
     def run(self, idmef):
         for plugin in self.getPluginsInstancesList():
             try:
-                plugin.run(idmef)
+                plugin.run_safe(idmef)
 
             except error.UserError as e:
                 logger.error("[%s]: error running plugin : %s", plugin.name, e)

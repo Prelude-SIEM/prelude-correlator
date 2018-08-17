@@ -1,3 +1,22 @@
+* 2018-08-17, prelude-correlator-5.0.0rc1:
+
+Author: Antoine Luong
+
+- Allow local meta-correlation
+- Provide the rule ID in correlation alerts
+- Stop using ez_setup.py
+
+Author: Yoann Vandoorselaere
+
+- Environment should be globally available
+- Implement a plugin state saving method
+
+Author: Thomas Andrejak
+
+- Fix python 3 compatibility
+
+
+
 * 2018-05-04, prelude-correlator-5.0.0beta2:
 * 2018-04-13, prelude-correlator-5.0.0beta1:
 

@@ -151,7 +151,7 @@ class Context(IDMEF, Timer):
     def __getnewargs__(self):
         return self._name,
 
-    def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None):
+    def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None):
         if update or (overwrite is False):
             ctx = search(name, idmef, update=True)
             if ctx:

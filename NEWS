@@ -1,3 +1,11 @@
+* 2018-09-28, prelude-correlator-5.0.1:
+
+Author: Antoine Luong
+
+- Fix context constructor signature
+
+
+
 * 2018-09-07, prelude-correlator-5.0.0:
 
 No new changes.

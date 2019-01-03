@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2018 CS-SI. All Rights Reserved.
+# Copyright (C) 2015-2019 CS-SI. All Rights Reserved.
 # Author: Thomas Andrejak <thomas.andrejak@c-s.fr>
 #
 # This file is part of the Prelude-Correlator program.

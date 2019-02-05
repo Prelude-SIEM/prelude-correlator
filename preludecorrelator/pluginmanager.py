@@ -207,7 +207,7 @@ class PluginManager(object):
 
     def check_dependencies(self):
         """Check that the dependency graph is acyclic."""
-        all_plugins = self._dependencies.keys()
+        all_plugins = list(self._dependencies.keys())
         while all_plugins:
             for plugin in all_plugins:
                 if self._dependencies[plugin]:

@@ -203,7 +203,7 @@ class PluginManager(object):
         return self.__plugins_classes
 
     def register_dependencies(self, plugin, dependencies):
-        self._dependencies[plugin] = dependencies
+        self._dependencies[plugin] = list(dependencies)
 
     def check_dependencies(self):
         """Check that the dependency graph is acyclic."""

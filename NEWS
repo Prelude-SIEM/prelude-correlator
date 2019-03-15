@@ -1,3 +1,20 @@
+* 2019-03-15, prelude-correlator-5.1.0alpha1:
+
+Author: Antoine Luong
+
+- Fix meta-correlation
+- Fix context constructor signature
+
+Author: Augustin Laville
+
+- Replace optparse with argparse
+
+Author: Yoann Vandoorselaere
+
+- Fix python 3 compatibility
+
+
+
 * 2018-09-07, prelude-correlator-5.0.0:
 
 No new changes.

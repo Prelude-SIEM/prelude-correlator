@@ -231,6 +231,10 @@ class IDMEF(prelude.IDMEF):
         self.set("alert.correlation_alert.alertident(>>).alertident", idmef.get("alert.messageid"))
         self.set("alert.correlation_alert.alertident(-1).analyzerid", idmef.get("alert.analyzer(*).analyzerid")[-1])
 
+        path, value = env.prelude_client.get_grouping(idmef)
+        if path:
+            self.set(path, value)
+
 
 def set_prelude_client(client):
     global prelude_client

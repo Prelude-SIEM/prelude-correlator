@@ -156,6 +156,11 @@ class Context(IDMEF, Timer):
         return self._name,
 
     def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None, timer_rst=False):
+        if idmef:
+            path, value = env.prelude_client.get_grouping(idmef)
+            if value:
+                name = "%s_%s" % (name, value)
+
         if update or not overwrite:
             ctx = search(name, idmef, update=True)
             if ctx:

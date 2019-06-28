@@ -26,7 +26,7 @@ import pkg_resources
 import errno
 import itertools
 
-from prelude import ClientEasy, checkVersion, IDMEFCriteria
+from prelude import ClientEasy, checkVersion, IDMEFCriteria, IDMEFPath
 from preludecorrelator import idmef, pluginmanager, context, log, config, require, error
 
 
@@ -168,6 +168,7 @@ class PreludeClient(object):
         self._continue = True
         self._dry_run = dry_run
         self._criteria = self._parse_criteria(env.config.get("general", "criteria"))
+        self._grouping = self._parse_path(env.config.get("general", "grouping"))
 
         if not options.input_file:
             self._receiver = ClientReader(self)
@@ -192,6 +193,9 @@ class PreludeClient(object):
         logger.info("%d events received, %d correlationAlerts generated.",
                     self._events_processed,
                     self._alert_generated)
+
+    def get_grouping(self, idmef):
+        return self._grouping, idmef.get(self._grouping) if self._grouping else None
 
     def correlationAlert(self, idmef):
         self._alert_generated = self._alert_generated + 1
@@ -233,6 +237,18 @@ class PreludeClient(object):
             return IDMEFCriteria(criteria)
         except Exception as e:
             raise error.UserError("Invalid criteria provided '%s': %s" % (criteria, e))
+
+    @staticmethod
+    def _parse_path(path):
+        if not path:
+            return None
+
+        try:
+            IDMEFPath(path)
+        except Exception as e:
+            raise error.UserError("Invalid path provided '%s': %s" % (path, e))
+
+        return path
 
 
 def runCorrelator():

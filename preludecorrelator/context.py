@@ -33,6 +33,9 @@ _CONTEXT_TABLE = {}
 logger = log.getLogger(__name__)
 
 
+_IDMEF_QUEUE_LIMIT = 256
+
+
 class Timer:
     def __setstate__(self, dict):
         self.__dict__.update(dict)
@@ -85,20 +88,22 @@ class Timer:
     def setExpire(self, expire):
         self._timer_expire = expire
 
-    def start(self):
-        if self._timer_expire:
-            if not self._timer_start:
-                _TIMER_LIST.append(self)
+    def start(self, reset=False):
+        if not self._timer_expire or self.running() and not reset:
+            return
 
-            self._timer_start = time.time()
-            global _next_wakeup
-            _next_wakeup = min(_next_wakeup, self._timer_expire)
+        if not reset:
+            _TIMER_LIST.append(self)
+
+        self._timer_start = time.time()
+        global _next_wakeup
+        _next_wakeup = min(_next_wakeup, self._timer_expire)
 
     def stop(self):
         self._timer_start = None
 
     def reset(self):
-        self.start()
+        self.start(reset=True)
 
 
 class Context(IDMEF, Timer):
@@ -108,8 +113,8 @@ class Context(IDMEF, Timer):
         IDMEF.__setstate__(self, dict)
         Timer.__setstate__(self, dict)
 
-    def __init__(self, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None):
-        already_initialized = (update or (overwrite is False)) and hasattr(self, "_name")
+    def __init__(self, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None, timer_rst=False):
+        already_initialized = (update or not overwrite) and hasattr(self, "_name")
         if already_initialized is True:
             return
 
@@ -123,8 +128,7 @@ class Context(IDMEF, Timer):
         self._name = name
         self._update_count = 0
 
-        self._options.update(options)
-        self.setOptions(self._options)
+        self.setOptions(options)
 
         if isinstance(idmef, IDMEF):
             self.addAlertReference(idmef)
@@ -151,19 +155,17 @@ class Context(IDMEF, Timer):
     def __getnewargs__(self):
         return self._name,
 
-    def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None):
-        if update or (overwrite is False):
+    def __new__(cls, name, options={}, overwrite=True, update=False, idmef=None, ruleid=None, timer_rst=False):
+        if update or not overwrite:
             ctx = search(name, idmef, update=True)
             if ctx:
                 if update:
-                    ctx.update(options, idmef)
+                    ctx.update(options, idmef, timer_rst)
 
                     # If a context was updated, check intersection
                     ctx._mergeIntersect()
-                    return ctx
 
-                if overwrite is False:
-                    return ctx
+                return ctx
         else:
             ctx = search(name, idmef, update=False)
             if ctx:
@@ -234,17 +236,20 @@ class Context(IDMEF, Timer):
 
         return True
 
+    def _alert(self):
+        alert_on_expire = self._options["alert_on_expire"]
+        if callable(alert_on_expire):
+            alert_on_expire(self)
+        else:
+            self.alert()
+            self.destroy()
+
     def _timerExpireCallback(self):
         threshold = self._options["threshold"]
-        alert_on_expire = self._options["alert_on_expire"]
 
-        if alert_on_expire:
+        if self._options["alert_on_expire"]:
             if threshold == -1 or (self._update_count + 1) >= threshold:
-                if callable(alert_on_expire):
-                    alert_on_expire(self)
-                    return
-                else:
-                    self.alert()
+                return self._alert()
 
         self.destroy()
 
@@ -252,17 +257,19 @@ class Context(IDMEF, Timer):
         version = self.__dict__.get("_version", None)
         return self.FORMAT_VERSION == version
 
-    def update(self, options={}, idmef=None, timer_rst=True):
+    def update(self, options={}, idmef=None, timer_rst=False):
         self._update_count += 1
 
         if idmef:
             self.addAlertReference(idmef)
 
+            if self._options["alert_on_expire"] and self._update_count >= _IDMEF_QUEUE_LIMIT:
+                return self._alert()
+
         if timer_rst and self.running():
             self.reset()
 
-        self._options.update(options)
-        self.setOptions(self._options)
+        self.setOptions(options)
         logger.debug("[update]%s", self.getStat(), level=3)
 
     def getStat(self, now=None):
@@ -287,8 +294,8 @@ class Context(IDMEF, Timer):
     def getOptions(self):
         return self._options
 
-    def setOptions(self, options={}):
-        self._options = options
+    def setOptions(self, options):
+        self._options.update(options)
 
         Timer.setExpire(self, self._options.get("expire", 0))
         Timer.start(self)  # will only start the timer if not already running

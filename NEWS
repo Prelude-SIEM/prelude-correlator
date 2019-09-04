@@ -1,3 +1,20 @@
+* 2019-09-04, prelude-correlator-5.1.0rc1:
+
+Author: Antoine Luong
+
+- Add a correlation grouping option
+
+Author: Song Tran
+
+- Document the 'filename' option for CTI rules
+- Update default CTI data
+
+Author: Yoann Vandoorselaere
+
+- Do not reset timer on update by default
+
+
+
 * 2019-07-17, prelude-correlator-5.1.0beta1:
 
 No new changes.

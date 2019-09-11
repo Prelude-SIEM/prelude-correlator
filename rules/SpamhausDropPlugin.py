@@ -1,3 +1,6 @@
+# VERSION: 1.0
+# AUTHOR: Prelude Team <support.prelude@c-s.fr>
+# DESCRIPTION: Triggered when the source IP is present in the Spamhaus reputation database
 # Copyright (C) 2009-2019 CS-SI. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 # Author: Wes Young <wes@barely3am.com>

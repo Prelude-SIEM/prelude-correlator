@@ -1,3 +1,6 @@
+# VERSION: 1.0
+# AUTHOR: Prelude Team <support.prelude@c-s.fr>
+# DESCRIPTION: Triggered by a single host being the source of many similar actions on multiple targets
 # Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
 # Copyright (C) 2009-2019 CS-SI <support.prelude@c-s.fr>
 #

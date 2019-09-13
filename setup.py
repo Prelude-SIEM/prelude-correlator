@@ -31,7 +31,7 @@ except:
     import urllib2 as urlreq
 
 
-PRELUDE_CORRELATOR_VERSION = "5.1.0rc1"
+PRELUDE_CORRELATOR_VERSION = "5.1.0"
 
 
 class my_sdist(sdist):
@@ -150,7 +150,7 @@ suits your needs.
             os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.dat')
         ])
     ],
-    install_requires=["prelude >= 5.0.0"],
+    install_requires=["prelude >= 5.1.0"],
     cmdclass={
         'sdist': my_sdist,
         'install': my_install

@@ -1,3 +1,11 @@
+* 2019-09-13, prelude-correlator-5.1.1:
+
+Author: Antoine Luong
+
+- Avoid undefined analyzerid when referencing alerts
+
+
+
 * 2019-09-13, prelude-correlator-5.1.0:
 
 Author: Antoine Luong

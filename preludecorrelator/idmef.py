@@ -229,7 +229,12 @@ class IDMEF(prelude.IDMEF):
         self._mergeSet("alert.target", idmef, st_filters)
 
         self.set("alert.correlation_alert.alertident(>>).alertident", idmef.get("alert.messageid"))
-        self.set("alert.correlation_alert.alertident(-1).analyzerid", idmef.get("alert.analyzer(*).analyzerid")[-1])
+
+        for analyzer in reversed(idmef.get("alert.analyzer")):
+            analyzerid = analyzer.get("analyzerid")
+            if analyzerid:
+                self.set("alert.correlation_alert.alertident(-1).analyzerid", analyzerid)
+                break
 
         path, value = env.prelude_client.get_grouping(idmef)
         if path:

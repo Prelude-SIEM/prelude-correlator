@@ -195,7 +195,14 @@ class PreludeClient(object):
                     self._alert_generated)
 
     def get_grouping(self, idmef):
-        return self._grouping, idmef.get(self._grouping) if self._grouping else None
+        if self._grouping:
+            value = idmef.get(self._grouping)
+            if isinstance(value, list):
+                value = value[0]
+        else:
+            value = None
+
+        return self._grouping, value
 
     def correlationAlert(self, idmef):
         self._alert_generated = self._alert_generated + 1

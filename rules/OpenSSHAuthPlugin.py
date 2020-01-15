@@ -1,7 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered by two SSH attempts happening to the same target and user but through different methods
-# Copyright (C) 2009-2019 CS-SI. All Rights Reserved.
+# Copyright (C) 2009-2020 CS-SI. All Rights Reserved.
 # Author: Sebastien Tricaud <stricaud@inl.fr>
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 #

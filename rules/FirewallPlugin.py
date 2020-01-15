@@ -1,7 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered when events have not been dropped for a host known to be protected by a firewall
-# Copyright (C) 2009-2019 CS-SI. All Rights Reserved.
+# Copyright (C) 2009-2020 CS-SI. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 #
 # This file is part of the Prelude-Correlator program.

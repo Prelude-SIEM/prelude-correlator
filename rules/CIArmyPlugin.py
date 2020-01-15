@@ -1,7 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered when the source IP is present in the CIArmy reputation database
-# Copyright (C) 2015-2019 CS-SI. All Rights Reserved.
+# Copyright (C) 2015-2020 CS-SI. All Rights Reserved.
 # Author: Thomas Andrejak <thomas.andrejak@c-s.fr>
 #
 # This file is part of the Prelude-Correlator program.

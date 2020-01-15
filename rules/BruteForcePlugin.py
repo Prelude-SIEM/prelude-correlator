@@ -2,7 +2,7 @@
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered by multiple failed login attempts
 # Copyright (C) 2006 G Ramon Gomez <gene at gomezbrothers dot com>
-# Copyright (C) 2009-2019 CS-SI <support.prelude@c-s.fr>
+# Copyright (C) 2009-2020 CS-SI <support.prelude@c-s.fr>
 #
 # This file is part of the Prelude-Correlator program.
 #

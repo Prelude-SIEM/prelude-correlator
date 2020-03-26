@@ -1,6 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered when the source IP is present in the CIArmy reputation database
+# CATEGORY: CTI
 # Copyright (C) 2015-2020 CS-SI. All Rights Reserved.
 # Author: Thomas Andrejak <thomas.andrejak@c-s.fr>
 #
@@ -70,8 +71,8 @@ class CIArmyPlugin(Plugin):
                 ca = context.Context(("CIARMY", source), {"expire": 20, "alert_on_expire": True}, update=True,
                                      idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
-                    ca.set("alert.classification.text", "IP source matching CIArmy database")
-                    ca.set("alert.correlation_alert.name", "IP source matching CIArmy database")
+                    ca.set("alert.classification.text", "Source IP matching a CTI database")
+                    ca.set("alert.correlation_alert.name", "Source IP matching a CTI database")
                     ca.set("alert.assessment.impact.description",
                            "CIArmy gathered this IP address from firewall drop logs (%s)" % source)
                     ca.set("alert.assessment.impact.severity", "high")

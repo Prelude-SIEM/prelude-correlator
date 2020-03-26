@@ -1,6 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered when the source IP is present in the Spamhaus reputation database
+# CATEGORY: CTI
 # Copyright (C) 2009-2020 CS-SI. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 # Author: Wes Young <wes@barely3am.com>
@@ -100,8 +101,8 @@ class SpamhausDropPlugin(Plugin):
                 ca = Context(("SPAMHAUS", source), {"expire": 20, "alert_on_expire": True},
                              update=True, idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
-                    ca.set("alert.classification.text", "IP source matching Spamhaus DROP dataset")
-                    ca.set("alert.correlation_alert.name", "IP source matching Spamhaus DROP dataset")
+                    ca.set("alert.classification.text", "Source IP matching a CTI database")
+                    ca.set("alert.correlation_alert.name", "Source IP matching a CTI database")
                     ca.set("alert.assessment.impact.description",
                            "Spamhaus gathered this IP address in their DROP list - %s" % source)
                     ca.set("alert.assessment.impact.severity", "medium")

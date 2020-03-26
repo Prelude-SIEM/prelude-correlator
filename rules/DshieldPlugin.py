@@ -1,6 +1,7 @@
 # VERSION: 1.0
 # AUTHOR: Prelude Team <support.prelude@c-s.fr>
 # DESCRIPTION: Triggered when the source IP is present in the DShield reputation database
+# CATEGORY: CTI
 # Copyright (C) 2009-2020 CS-SI. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 # Author: Sebastien Tricaud <stricaud@inl.fr>
@@ -73,8 +74,8 @@ class DshieldPlugin(Plugin):
                 ca = context.Context(("DSHIELD", source), {"expire": 20, "alert_on_expire": True}, update=True,
                                      idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
-                    ca.set("alert.classification.text", "IP source matching Dshield database")
-                    ca.set("alert.correlation_alert.name", "IP source matching Dshield database")
+                    ca.set("alert.classification.text", "Source IP matching a CTI database")
+                    ca.set("alert.correlation_alert.name", "Source IP matching a CTI database")
                     ca.set("alert.assessment.impact.description",
                            "Dshield gathered this IP address from firewall drops logs (%s - reports: %d, attacks: %d, "
                            "first/last seen: %s - %s)" % (source, entry[0], entry[1], entry[2], entry[3]))

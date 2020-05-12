@@ -70,7 +70,7 @@ class DshieldPlugin(Plugin):
         for source in idmef.get("alert.source(*).node.address(*).address"):
             entry = data.get(source, None)
             if entry:
-                ca = context.Context(("DSHIELD", source), {"expire": 300, "alert_on_expire": True}, update=True,
+                ca = context.Context(("DSHIELD", source), {"expire": 20, "alert_on_expire": True}, update=True,
                                      idmef=idmef, ruleid=self.name)
                 if ca.getUpdateCount() == 0:
                     ca.set("alert.classification.text", "IP source matching Dshield database")

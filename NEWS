@@ -1,3 +1,20 @@
+* 2020-06-19, prelude-correlator-5.2.0beta1:
+
+Author: Camille Gardet
+
+- Add 'CTI' in CTI related alerts
+
+Author: Thomas Andrejak
+
+- Change 300s to 20s for CTI correlation rules
+
+Author: Antoine Luong
+
+- Fix grouping option with listed path
+- Avoid undefined analyzerid when referencing alerts
+
+
+
 * 2019-09-13, prelude-correlator-5.1.0:
 
 Author: Antoine Luong

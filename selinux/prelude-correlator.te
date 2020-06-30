@@ -13,7 +13,7 @@ require {
     class sock_file write;
     class capability { sys_tty_config ipc_lock };
     class dir { write read add_name remove_name search };
-    class file { read create write getattr unlink open };
+    class file { read create write getattr unlink open execute };
     class tcp_socket name_connect;
 }
 
@@ -39,3 +39,6 @@ allow prelude_correlator_t http_port_t:tcp_socket name_connect;
 # Add a policy for temporary files
 allow prelude_correlator_t tmp_t:dir { write remove_name add_name };
 allow prelude_correlator_t tmp_t:file { write create unlink open };
+
+# This is needed for systemd service to start
+allow prelude_correlator_t bin_t:file { execute };

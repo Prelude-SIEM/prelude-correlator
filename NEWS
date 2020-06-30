@@ -1,3 +1,11 @@
+* 2020-06-30, prelude-correlator-5.2.0beta2:
+
+Author: Antoine Luong
+
+- Add SELinux rule for service startup
+
+
+
 * 2020-06-19, prelude-correlator-5.2.0beta1:
 
 Author: Camille Gardet

@@ -43,7 +43,7 @@ class DownloadCache:
         self._name = name
         self._filename = filename
         self._reload = reload
-        self._data = None
+        self.__data = None
         self.logger = logger
         self._bindata = bindata
 

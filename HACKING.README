@@ -2,9 +2,9 @@ This directory and its children contain the Prelude-Correlator software.
 
 Changes: if you wish to contribute a change which is a significant one
 in terms of the amount of code changes (rulesets excluded), please be aware 
-that CS-SI wishes to retain copyright of the Prelude-Correlator software.
+that CS GROUP - France wishes to retain copyright of the Prelude-Correlator software.
 Therefore you will have to sign over copyright ownership of your code 
-to CS-SI before we can include your changes in the main source tree.
+to CS GROUP - France before we can include your changes in the main source tree.
 
 Before you start modifying anything for real, you should probably join
 the prelude-devel mailing list and send a mail describing what you want to 

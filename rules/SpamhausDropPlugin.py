@@ -1,8 +1,8 @@
 # VERSION: 1.0
-# AUTHOR: Prelude Team <support.prelude@c-s.fr>
+# AUTHOR: Prelude Team <support.prelude@csgroup.eu>
 # DESCRIPTION: Triggered when the source IP is present in the Spamhaus reputation database
 # CATEGORY: CTI
-# Copyright (C) 2009-2020 CS-SI. All Rights Reserved.
+# Copyright (C) 2009-2020 CS GROUP - France. All Rights Reserved.
 # Author: Yoann Vandoorselaere <yoann.v@prelude-ids.com>
 # Author: Wes Young <wes@barely3am.com>
 #

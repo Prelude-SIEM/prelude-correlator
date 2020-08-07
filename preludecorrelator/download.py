@@ -130,7 +130,7 @@ class HTTPDownloadCache(DownloadCache):
         if headers is None:
             headers = {'User-Agent': "Prelude-Correlator"}
 
-        con = urlreq.urlopen(urlreq.Request(self.__uri, headers=headers))
+        con = urlreq.urlopen(urlreq.Request(self.__uri, headers=headers), timeout=self.__timeout)
         data = con.read()
 
         if not self._bindata:

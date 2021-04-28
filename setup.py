@@ -150,7 +150,7 @@ suits your needs.
             os.path.join('rules', x) for x in os.listdir('rules') if x.endswith('.dat')
         ])
     ],
-    install_requires=["prelude >= 5.2.0"],
+    install_requires=["prelude >= 5.2.0", "setuptools"],
     cmdclass={
         'sdist': my_sdist,
         'install': my_install
